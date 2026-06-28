@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinMate</title>
+</head>
+<body>
+<div class="page">
+    <header class="header">
+        <div class="logo">FinMate</div>
+        <!-- 헤더 레이아웃 추가 -->
+        <div th:replace="~{/layout/header :: header}"></div>
+    </header>
+
+    <main class="main">
+        <section class="content">
+            <div th:if="${message != null}">
+                <p th:text="${message}" >로그인 접근제어</p>
+            </div>
+            <h1>로그인</h1>
+            <!-- 이제 Thymeleaf 탬플릿에서도 DTO객체를 입력받는다.-->
+            <form th:action="@{/login}" th:object="${loginRequest}" method="post">
+                <p th:if="${#fields.hasGlobalErrors()}" th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+
+                <div>
+                    <label for="userId">아이디</label>
+                    <input id="userId" type="text" th:field="*{userId}">
+                    <!-- 필드 에러 발생시 해당 오류를 표시-->
+                    <p th:if="${#fields.hasErrors('userId')}" th:errors="*{userId}"></p>
+                </div>
+
+                <div>
+                    <label for="password">비밀번호</label>
+                    <input id="password" type="password" th:field="*{password}">
+                    <!-- 필드 에러 발생시 해당 오류를 표시-->
+                    <p th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
+                </div>
+                <!--만약 redirect경로가 존재한다면, 로그인 성공시 해당 redirectURL도 함께 보내도록 hidden 필드를 추가하였다.-->
+                <input type="hidden" name="redirectURL" th:value="${redirectURL}">
+                <button type="submit">로그인</button>
+            </form>
+        </section>
+    </main>
+</div>
+</body>
+</html>

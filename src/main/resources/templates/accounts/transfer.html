@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinMate</title>
+</head>
+<body>
+<div class="page">
+    <header class="header">
+        <div class="logo">FinMate</div>
+        <div th:replace="~{/layout/header :: header}"></div>
+    </header>
+
+    <main class="main">
+        <section class="content">
+            <h1>계좌 이체</h1>
+
+            <section>
+                <h2>출금 계좌 선택</h2>
+                <p th:if="${#lists.isEmpty(accounts)}">
+                    아직 개설된 계좌가 없습니다.
+                </p>
+
+                <table th:unless="${#lists.isEmpty(accounts)}">
+                    <thead>
+                    <tr>
+                        <th>은행</th>
+                        <th>계좌번호</th>
+                        <th>잔액</th>
+                        <th>이체</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="account : ${accounts}">
+                        <td th:text="${account.bankCode.displayName}">신한은행</td>
+                        <td th:text="${account.accountNumber}">000000-00-000000</td>
+                        <td>
+                            <span th:text="${#numbers.formatDecimal(account.balance, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                        </td>
+                        <td>
+                            <a th:href="@{/accounts/transfer(from=${account.accountNumber}, fromBankCode=${account.bankCode})}">이체</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <p>
+                <a th:href="@{/accounts/list}">보유계좌 목록</a>
+                <a th:href="@{/accounts}">계좌 관리 홈</a>
+            </p>
+        </section>
+    </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinMate</title>
+</head>
+<body>
+<div class="page">
+    <header class="header">
+        <div class="logo">FinMate</div>
+        <div th:replace="~{/layout/header :: header}"></div>
+    </header>
+
+    <main class="main">
+        <section class="content">
+            <h1>계좌 관리</h1>
+            <p>계좌 개설, 보유계좌 조회, 거래내역 확인을 진행할 수 있습니다.</p>
+
+            <section>
+                <h2>대표계좌</h2>
+                <!-- 대표계좌 띄우기-->
+                <div th:if="${primaryAccount != null}">
+                    <p>
+                        <strong>은행명</strong>
+                        <span th:text="${primaryAccount.bankCode.displayName}">신한은행</span>
+                    </p>
+                    <p>
+                        <strong>계좌번호</strong>
+                        <span th:text="${primaryAccount.accountNumber}">000-000-000000</span>
+                    </p>
+                    <p>
+                        <strong>금액</strong>
+                        <span th:text="${#numbers.formatDecimal(primaryAccount.balance, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    </p>
+                    <p>
+                        <a th:href="@{/accounts/transfer(from=${primaryAccount.accountNumber}, fromBankCode=${primaryAccount.bankCode})}">이체</a>
+                    </p>
+                </div>
+                <p th:if="${primaryAccount == null}">
+                    아직 대표계좌가 설정되어 있지 않습니다. 대표계좌를 설정해주세요.
+                </p>
+            </section>
+
+            <nav aria-label="계좌 관리 메뉴">
+                <ul>
+                    <li>
+                        <a th:href="@{/accounts/open}">계좌 개설</a>
+                    </li>
+                    <li>
+                        <!-- 대표 계좌 설정은 계좌목록 내에서 수행-->
+                        <a th:href="@{/accounts/list}">보유계좌 목록</a>
+                    </li>
+                    <li>
+                        <a th:href="@{/accounts/transfer}">계좌 이체</a>
+                    </li>
+                    <li>
+                        <a th:href="@{/accounts/transactions}">거래내역</a>
+                    </li>
+                </ul>
+            </nav>
+        </section>
+    </main>
+</div>
+</body>
+</html>

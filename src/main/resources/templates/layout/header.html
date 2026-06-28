@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+
+<!-- 공통 상단 영역 -->
+<div th:fragment="header">
+    <header>
+        <!--로그인 여부에 따라서 header에 노출되는 내용이 달라진다.-->
+        <div th:if="${user != null}">
+            <p th:text="|${user.username}님 환영합니다!|"></p>
+            <form th:action="@{/logout}" method="post">
+                <button type="submit">로그아웃</button>
+            </form>
+            <a href="/mypage">마이페이지</a>
+        </div>
+        <div th:if="${user == null}">
+            <a href="/signup">회원가입</a>
+            <a href="/login">로그인</a>
+        </div>
+    </header>
+    <hr>
+</div>
+
+</body>
+</html>

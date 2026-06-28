@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinMate</title>
+</head>
+<body>
+<div class="page">
+    <header class="header">
+        <div class="logo">FinMate</div>
+        <div th:replace="~{/layout/header :: header}"></div>
+    </header>
+
+    <main class="main">
+        <section class="content">
+            <h1>계좌 이체</h1>
+
+            <section>
+                <h2>이체 한도</h2>
+                <p>
+                    <!-- 일일 이체한도 표시하기 -->
+                    <strong>일일 이체한도</strong>
+                    <span th:text="${#numbers.formatDecimal(dailyTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                </p>
+                <p>
+                    <strong>오늘 이체한 금액</strong>
+                    <span th:text="${#numbers.formatDecimal(todayUsedTransferAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                </p>
+                <p>
+                    <strong>남은 일일 이체한도</strong>
+                    <span th:text="${#numbers.formatDecimal(remainingDailyTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                </p>
+                <p>
+                    <strong>1회 이체한도</strong>
+                    <span th:text="${#numbers.formatDecimal(singleTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                </p>
+                <p>
+                    <a th:href="@{/accounts/transfer-limit(accountNumber=${transferRequest.fromAccountNumber}, bankCode=${transferRequest.fromBankCode})}">
+                        이체한도 변경하기
+                    </a>
+                </p>
+            </section>
+
+            <form th:action="@{/accounts/transfer}" th:object="${transferRequest}" method="post">
+                <p th:if="${errorMessage != null}" th:text="${errorMessage}">
+                    이체 오류
+                </p>
+
+                <p th:if="${#fields.hasGlobalErrors()}"
+                   th:each="error : ${#fields.globalErrors()}"
+                   th:text="${error}">
+                    이체 오류
+                </p>
+
+                <div>
+                    <strong>출금 은행</strong>
+                    <span th:text="*{fromBankCode.displayName}">신한은행</span>
+                    <input type="hidden" th:field="*{fromBankCode}">
+                    <p th:if="${#fields.hasErrors('fromBankCode')}" th:errors="*{fromBankCode}"></p>
+                </div>
+
+                <div>
+                    <strong>출금 계좌</strong>
+                    <span th:text="*{fromAccountNumber}">000000-00-000000</span>
+                    <input type="hidden" th:field="*{fromAccountNumber}">
+                    <p th:if="${#fields.hasErrors('fromAccountNumber')}" th:errors="*{fromAccountNumber}"></p>
+                </div>
+
+                <div>
+                    <label for="toBankCode">입금 은행</label>
+                    <select id="toBankCode" th:field="*{toBankCode}">
+                        <option value="">은행을 선택하세요</option>
+                        <option th:each="bankCode : ${bankCodes}"
+                                th:value="${bankCode.name()}"
+                                th:text="${bankCode.displayName}">
+                            신한은행
+                        </option>
+                    </select>
+                    <p th:if="${#fields.hasErrors('toBankCode')}" th:errors="*{toBankCode}"></p>
+                </div>
+
+                <div>
+                    <label for="toAccountNumber">입금 계좌</label>
+                    <input id="toAccountNumber"
+                           type="text"
+                           th:field="*{toAccountNumber}"
+                           placeholder="000000-00-000000">
+                    <p th:if="${#fields.hasErrors('toAccountNumber')}" th:errors="*{toAccountNumber}"></p>
+                </div>
+
+                <div>
+                    <label for="amount">이체 금액</label>
+                    <input id="amount"
+                           type="number"
+                           th:field="*{amount}"
+                           min="1"
+                           step="1">
+                    <p th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}"></p>
+                </div>
+
+                <button type="submit">이체하기</button>
+            </form>
+
+            <p>
+                <a th:href="@{/accounts/transfer}">출금 계좌 다시 선택</a>
+                <a th:href="@{/accounts}">계좌 관리 홈</a>
+            </p>
+        </section>
+    </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinMate</title>
+</head>
+<body>
+<div class="page">
+    <header class="header">
+        <div class="logo">FinMate</div>
+        <div th:replace="~{/layout/header :: header}"></div>
+    </header>
+
+    <main class="main">
+        <section class="content">
+            <h1>회원가입</h1>
+            <!-- 이제 Thymeleaf template에서도 DTO객체를 받는다.-->
+            <form th:action="@{/signup}" th:object="${signupRequest}" method="post">
+                <p th:if="${#fields.hasGlobalErrors()}"
+                   th:each="error : ${#fields.globalErrors()}"
+                   th:text="${error}">
+                    회원가입 오류
+                </p>
+
+                <div>
+                    <label for="username">이름</label>
+                    <input id="username" type="text" th:field="*{username}">
+                    <!-- 필드 에러 발생시 해당 오류를 표시-->
+                    <p th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></p>
+                </div>
+
+                <div>
+                    <label for="telephone">전화번호</label>
+                    <input id="telephone" type="text" th:field="*{telephone}" placeholder="010-0000-0000">
+                    <!-- 필드 에러 발생시 해당 오류를 표시-->
+                    <p th:if="${#fields.hasErrors('telephone')}" th:errors="*{telephone}"></p>
+                </div>
+
+                <div>
+                    <label for="email">이메일</label>
+                    <input id="email" type="email" th:field="*{email}">
+                    <!-- 필드 에러 발생시 해당 오류를 표시-->
+                    <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
+                </div>
+
+                <div>
+                    <label for="userId">아이디</label>
+                    <input id="userId" type="text" th:field="*{userId}">
+                    <!-- 필드 에러 발생시 해당 오류를 표시-->
+                    <p th:if="${#fields.hasErrors('userId')}" th:errors="*{userId}"></p>
+                </div>
+
+                <div>
+                    <label for="password">비밀번호</label>
+                    <input id="password" type="password" th:field="*{password}">
+                    <!-- 필드 에러 발생시 해당 오류를 표시-->
+                    <p th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
+                </div>
+
+                <button type="submit">가입하기</button>
+            </form>
+        </section>
+    </main>
+</div>
+</body>
+</html>
