@@ -4,13 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinMate</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
 </head>
 <body>
 <div class="page">
-    <header class="header">
-        <div class="logo">FinMate</div>
-        <div th:replace="~{/layout/header :: header}"></div>
-    </header>
+    <div th:replace="~{/layout/header :: header}"></div>
 
     <main class="main">
         <section class="content">

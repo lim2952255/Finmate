@@ -1,6 +1,6 @@
 package com.finmate.domain.user;
 
-import com.finmate.domain.account.Account;
+import com.finmate.domain.normal.account.Account;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -45,6 +45,6 @@ public class User {
     // 양방향 연관관계 설정
     public void addAccount(Account account) {
         accountList.add(account);
-        account.setUser(this);
+        account.assignUser(this);
     }
 }

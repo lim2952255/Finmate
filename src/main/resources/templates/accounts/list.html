@@ -4,13 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinMate</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
 </head>
 <body>
 <div class="page">
-    <header class="header">
-        <div class="logo">FinMate</div>
-        <div th:replace="~{/layout/header :: header}"></div>
-    </header>
+    <div th:replace="~{/layout/header :: header}"></div>
 
     <main class="main">
         <section class="content">
@@ -32,6 +30,7 @@
                     <th>잔액</th>
                     <th>대표계좌</th>
                     <th>이체</th>
+                    <th>거래내역</th>
                     <th>설정</th>
                 </tr>
                 </thead>
@@ -50,10 +49,14 @@
                         <a th:href="@{/accounts/transfer(from=${account.accountNumber}, fromBankCode=${account.bankCode})}">이체</a>
                     </td>
                     <td>
+                        <a th:href="@{/accounts/transactions(accountNumber=${account.accountNumber}, bankCode=${account.bankCode.name()})}">거래내역</a>
+                    </td>
+                    <td>
                         <span th:if="${account.primary}">현재 대표계좌</span>
                         <form th:unless="${account.primary}"
-                              th:action="@{/accounts/list(primary=${account.accountNumber})}"
+                              th:action="@{/accounts/list}"
                               method="post">
+                            <input type="hidden" name="primaryAccountId" th:value="${account.id}">
                             <button type="submit">대표계좌 설정</button>
                         </form>
                     </td>

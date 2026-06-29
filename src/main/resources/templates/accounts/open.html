@@ -4,18 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinMate</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
 </head>
 <body>
 <div class="page">
-    <header class="header">
-        <div class="logo">FinMate</div>
-        <div th:replace="~{/layout/header :: header}"></div>
-    </header>
+    <div th:replace="~{/layout/header :: header}"></div>
 
     <main class="main">
         <section class="content">
             <h1>계좌 개설</h1>
-            <p>가상계좌 개설 시 초기 잔액 3,000,000원이 지급됩니다.</p>
+            <p>은행을 선택하면 계좌번호가 자동 발급되며, 초기 잔액 3,000,000원이 지급됩니다.</p>
 
             <form th:action="@{/accounts/open}" th:object="${openAccount}" method="post">
                 <p th:if="${#fields.hasGlobalErrors()}"
@@ -38,12 +36,8 @@
                 </div>
 
                 <div>
-                    <label for="accountNumber">계좌번호</label>
-                    <input id="accountNumber"
-                           type="text"
-                           th:field="*{accountNumber}"
-                           placeholder="000000-00-000000">
-                    <p th:if="${#fields.hasErrors('accountNumber')}" th:errors="*{accountNumber}"></p>
+                    <strong>계좌번호</strong>
+                    <span>계좌 개설 시 자동 발급</span>
                 </div>
 
                 <div>
