@@ -19,35 +19,35 @@
                 <h2>계좌 요약</h2>
                 <p>
                     <strong>총 보유금액</strong>
-                    <span th:text="${#numbers.formatDecimal(totalBalance, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(accountHomeInfo.totalBalance, 0, 'COMMA', 0, 'POINT')}">0</span>원
                 </p>
                 <p>
                     <strong>보유계좌 수</strong>
-                    <span th:text="${accountNumbers}">0</span>개
+                    <span th:text="${accountHomeInfo.accountCount}">0</span>개
                 </p>
             </section>
 
             <section>
                 <h2>대표계좌</h2>
                 <!-- 대표계좌 띄우기-->
-                <div th:if="${primaryAccount != null}">
+                <div th:if="${accountHomeInfo.primaryAccount != null}">
                     <p>
                         <strong>은행명</strong>
-                        <span th:text="${primaryAccount.bankCode.displayName}">신한은행</span>
+                        <span th:text="${accountHomeInfo.primaryAccount.bankCode.displayName}">신한은행</span>
                     </p>
                     <p>
                         <strong>계좌번호</strong>
-                        <span th:text="${primaryAccount.accountNumber}">000-000-000000</span>
+                        <span th:text="${accountHomeInfo.primaryAccount.accountNumber}">000-000-000000</span>
                     </p>
                     <p>
                         <strong>금액</strong>
-                        <span th:text="${#numbers.formatDecimal(primaryAccount.balance, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                        <span th:text="${#numbers.formatDecimal(accountHomeInfo.primaryAccount.balance, 0, 'COMMA', 0, 'POINT')}">0</span>원
                     </p>
                     <p>
-                        <a th:href="@{/accounts/transfer(from=${primaryAccount.accountNumber}, fromBankCode=${primaryAccount.bankCode})}">이체</a>
+                        <a th:href="@{/accounts/transfer(from=${accountHomeInfo.primaryAccount.accountNumber}, fromBankCode=${accountHomeInfo.primaryAccount.bankCode})}">이체</a>
                     </p>
                 </div>
-                <p th:if="${primaryAccount == null}">
+                <p th:if="${accountHomeInfo.primaryAccount == null}">
                     아직 대표계좌가 설정되어 있지 않습니다. 대표계좌를 설정해주세요.
                 </p>
             </section>

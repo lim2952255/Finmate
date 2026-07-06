@@ -3,19 +3,23 @@ package com.finmate.service.normal.account;
 import com.finmate.domain.normal.account.Account;
 import com.finmate.domain.normal.account.AccountType;
 import com.finmate.domain.normal.account.BankCode;
+import com.finmate.domain.normal.account.dto.AccountHomeInfo;
 import com.finmate.domain.normal.account.dto.OpenAccount;
 import com.finmate.domain.normal.account.dto.PrimaryAccount;
+import com.finmate.domain.normal.account.dto.TransferLimitInfo;
+import com.finmate.domain.normal.account.dto.TransferLimitPageInfo;
 import com.finmate.domain.normal.account.dto.TransferRequest;
-import com.finmate.domain.normal.accountTransaction.AccountTransaction;
-import com.finmate.domain.normal.accountTransaction.AccountTransactionType;
-import com.finmate.domain.normal.accountTransaction.TransactionPeriod;
-import com.finmate.domain.normal.accountTransaction.dto.TransactionSummary;
+import com.finmate.domain.normal.account.transaction.AccountTransaction;
+import com.finmate.domain.normal.account.transaction.AccountTransactionType;
+import com.finmate.domain.normal.account.transaction.TransactionPeriod;
+import com.finmate.domain.normal.account.transaction.dto.AccountTransactionPageInfo;
+import com.finmate.domain.normal.account.transaction.dto.TransactionSummary;
 import com.finmate.domain.normal.transfer.DailyTransferUsage;
 import com.finmate.domain.normal.transfer.Transfer;
 import com.finmate.domain.user.User;
-import com.finmate.domain.user.dto.SessionUser;
+import com.finmate.global.pagination.PaginationInfo;
 import com.finmate.repository.normal.account.AccountRepository;
-import com.finmate.repository.normal.accountTransaction.AccountTransactionRepository;
+import com.finmate.repository.normal.account.transaction.AccountTransactionRepository;
 import com.finmate.repository.normal.transfer.DailyTransferUsageRepository;
 import com.finmate.repository.normal.transfer.TransferRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +34,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.UUID;
 
@@ -58,9 +61,19 @@ public class AccountService {
             AccountTransactionType.WITHDRAW);
 
     @Transactional(readOnly = true)
-    public Optional<PrimaryAccount> getPrimaryAccount(SessionUser user) {
-        return accountRepository.findByUser_IdAndPrimaryTrue(user.getId())
-                .map(PrimaryAccount::new);
+    public AccountHomeInfo getAccountHomeInfo(Long userId) {
+        // 총 금액 + 대표계좌 + 총 계좌 수 정보를 dto에 담는다.
+        List<Account> accounts = accountRepository.findByUser_Id(userId);
+        BigDecimal totalBalance = accounts.stream()
+                .map(Account::getBalance)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        PrimaryAccount primaryAccount = accounts.stream()
+                .filter(Account::isPrimary)
+                .findFirst()
+                .map(PrimaryAccount::new)
+                .orElse(null);
+
+        return new AccountHomeInfo(primaryAccount, totalBalance, accounts.size());
     }
 
     // 계좌 개설
@@ -114,6 +127,7 @@ public class AccountService {
     public Long setPrimary(Long accountId, Long userId) {
         List<Account> accounts = accountRepository.findByUserIdForUpdate(userId);
 
+        // primary로 설정하려는 계좌가 현재 사용자 계좌가 아니라면 오류 출력
         Account newPrimary = accounts.stream()
                 .filter(account -> account.getId().equals(accountId))
                 .findFirst()
@@ -133,106 +147,184 @@ public class AccountService {
         return accountId;
     }
 
+    // 특정 사용자의 계좌목록 리턴
     @Transactional(readOnly = true)
     public List<Account> findAccounts(Long userId) {
         return accountRepository.findByUser_Id(userId);
     }
 
-    @Transactional(readOnly = true)
-    public BigDecimal getTodayUsedTransferAmount(Long accountId) {
+    // 금일 이체액 출력
+    private BigDecimal getTodayUsedTransferAmount(Long accountId) {
         LocalDate today = LocalDate.now(SERVICE_ZONE);
         return dailyTransferUsageRepository.findByAccount_IdAndUsageDate(accountId, today)
                 .map(DailyTransferUsage::getUsedAmount)
                 .orElse(BigDecimal.ZERO);
     }
 
+    // 일일 이체한도 / 일회 이체한도 정보를 dto에 담아서 반환
+    private TransferLimitInfo getTransferLimitInfo(Long userId, String accountNumber, BankCode bankCode) {
+        Account account = accountRepository.findByUser_IdAndAccountNumberAndBankCode(userId, accountNumber, bankCode)
+                .orElseThrow(() -> new RuntimeException("현재 사용자의 계좌가 아닙니다."));
+        return createTransferLimitInfo(account);
+    }
+
+    // TransferRequest에는 입금은행 정보 / 출금은행 정보가 담겨있으며, 이를 통해 입출금계좌정보를 설정
     @Transactional(readOnly = true)
-    public Account findOwnedAccount(Long userId, String accountNumber, BankCode bankCode) {
+    public TransferRequest prepareTransfer(Long userId, String fromAccountNumber, BankCode fromBankCode) {
+        Account fromAccount = accountRepository.findByUser_IdAndAccountNumberAndBankCode(
+                        userId,
+                        fromAccountNumber,
+                        fromBankCode)
+                .orElseThrow(() -> new RuntimeException("현재 사용자의 계좌가 아닙니다."));
+
+        TransferRequest transferRequest = new TransferRequest();
+        transferRequest.setFromAccountNumber(fromAccount.getAccountNumber());
+        transferRequest.setFromBankCode(fromAccount.getBankCode());
+        transferRequest.setTransferLimitInfo(createTransferLimitInfo(fromAccount));
+
+        return transferRequest;
+    }
+
+    //TransferRequest에 데이터 설정
+    @Transactional(readOnly = true)
+    public void addTransferRequestDisplayInfo(Long userId, TransferRequest transferRequest) {
+        if (transferRequest.getFromAccountNumber() == null
+                || transferRequest.getFromAccountNumber().isBlank()
+                || transferRequest.getFromBankCode() == null) {
+            transferRequest.setTransferLimitInfo(TransferLimitInfo.zero());
+            return;
+        }
+
+        try {
+            TransferLimitInfo transferLimitInfo = getTransferLimitInfo(
+                    userId,
+                    transferRequest.getFromAccountNumber(),
+                    transferRequest.getFromBankCode());
+            transferRequest.setTransferLimitInfo(transferLimitInfo);
+        } catch (Exception e) {
+            transferRequest.setTransferLimitInfo(TransferLimitInfo.zero());
+        }
+    }
+
+    // 이체한도 정보를 담은 dto 리턴
+    @Transactional(readOnly = true)
+    public TransferLimitPageInfo getTransferLimitPageInfo(Long userId, String accountNumber, BankCode bankCode) {
+        List<Account> accounts = accountRepository.findByUser_Id(userId);
+        if (accountNumber == null || accountNumber.isBlank() || bankCode == null) {
+            return new TransferLimitPageInfo(accounts, null, TransferLimitInfo.zero());
+        }
+
+        Account selectedAccount = accountRepository.findByUser_IdAndAccountNumberAndBankCode(userId, accountNumber, bankCode)
+                .orElseThrow(() -> new RuntimeException("현재 사용자의 계좌가 아닙니다."));
+
+        return new TransferLimitPageInfo(accounts, selectedAccount, createTransferLimitInfo(selectedAccount));
+    }
+
+    private TransferLimitInfo createTransferLimitInfo(Account account) {
+        BigDecimal todayUsedTransferAmount = getTodayUsedTransferAmount(account.getId());
+        return new TransferLimitInfo(
+                account.getDailyTransferLimit(),
+                account.getSingleTransferLimit(),
+                todayUsedTransferAmount);
+    }
+
+    private Account findOwnedAccount(Long userId, String accountNumber, BankCode bankCode) {
         return accountRepository.findByUser_IdAndAccountNumberAndBankCode(userId, accountNumber, bankCode)
                 .orElseThrow(() -> new RuntimeException("현재 사용자의 계좌가 아닙니다."));
     }
 
-    // 지정한 기간동안 모든 계좌의 거래내역 표시
+    // 특정 사용자 또는 특정 계좌의 거래내역정보를 담은 dto 리턴
     @Transactional(readOnly = true)
-    public Page<AccountTransaction> findTransactions(Long userId, TransactionPeriod period, int page) {
+    public AccountTransactionPageInfo getAccountTransactionPageInfo(Long userId,
+                                                                    String accountNumber,
+                                                                    BankCode bankCode,
+                                                                    TransactionPeriod period,
+                                                                    int page) {
+        List<Account> accounts = accountRepository.findByUser_Id(userId);
         TransactionPeriod safePeriod = getSafePeriod(period);
-        LocalDateTime endDateTime = LocalDateTime.now(SERVICE_ZONE);
-        LocalDateTime startDateTime = safePeriod.getStartDateTime(endDateTime);
+        int safePage = PaginationInfo.safePage(page);
+        TransactionDateRange dateRange = getTransactionDateRange(safePeriod);
 
-        return accountTransactionRepository.findAllByUserIdAndCreatedAtBetween(
-                userId,
-                startDateTime,
-                endDateTime,
-                PageRequest.of(getSafePage(page), TRANSACTION_PAGE_SIZE));
+        Account selectedAccount = null;
+        Page<AccountTransaction> transactionPage;
+        TransactionSummary transactionSummary;
+
+        if (accountNumber == null || accountNumber.isBlank() || bankCode == null) {
+            transactionPage = findUserTransactionPage(userId, dateRange, safePage);
+            transactionSummary = summarizeUserTransactions(userId, dateRange);
+        } else {
+            selectedAccount = findOwnedAccount(userId, accountNumber, bankCode);
+            transactionPage = findAccountTransactionPage(selectedAccount.getId(), dateRange, safePage);
+            transactionSummary = summarizeAccountTransactions(selectedAccount.getId(), dateRange);
+        }
+
+        return new AccountTransactionPageInfo(
+                accounts,
+                selectedAccount,
+                safePeriod,
+                TransactionPeriod.values(),
+                transactionPage,
+                transactionSummary);
     }
 
-    @Transactional(readOnly = true)
-    public TransactionSummary summarizeTransactions(Long userId, TransactionPeriod period) {
-        TransactionPeriod safePeriod = getSafePeriod(period);
+    private TransactionDateRange getTransactionDateRange(TransactionPeriod period) {
         LocalDateTime endDateTime = LocalDateTime.now(SERVICE_ZONE);
-        LocalDateTime startDateTime = safePeriod.getStartDateTime(endDateTime);
+        return new TransactionDateRange(period.getStartDateTime(endDateTime), endDateTime);
+    }
+    // 특정 사용자의 모든 계좌의 거래내역 정보를 담은 dto 반환
+    private Page<AccountTransaction> findUserTransactionPage(Long userId, TransactionDateRange dateRange, int page) {
+        return accountTransactionRepository.findAllByUserIdAndCreatedAtBetween(
+                userId,
+                dateRange.startDateTime(),
+                dateRange.endDateTime(),
+                PageRequest.of(page, TRANSACTION_PAGE_SIZE));
+    }
+    // 특정 계좌의 거래내역 정보를 담은 dto 반환
+    private Page<AccountTransaction> findAccountTransactionPage(Long accountId,
+                                                                TransactionDateRange dateRange,
+                                                                int page) {
+        return accountTransactionRepository.findAllByAccountIdAndCreatedAtBetween(
+                accountId,
+                dateRange.startDateTime(),
+                dateRange.endDateTime(),
+                PageRequest.of(page, TRANSACTION_PAGE_SIZE));
+    }
 
+    private TransactionSummary summarizeUserTransactions(Long userId, TransactionDateRange dateRange) {
         // 모든 계좌의 총 입금 금액 계산
         BigDecimal totalDepositAmount = accountTransactionRepository.sumAmountByUserIdAndTypes(
                 userId,
                 DEPOSIT_TYPES,
-                startDateTime,
-                endDateTime);
+                dateRange.startDateTime(),
+                dateRange.endDateTime());
         // 모든 계좌의 총 출금 금액 계산
         BigDecimal totalWithdrawalAmount = accountTransactionRepository.sumAmountByUserIdAndTypes(
                 userId,
                 WITHDRAWAL_TYPES,
-                startDateTime,
-                endDateTime);
+                dateRange.startDateTime(),
+                dateRange.endDateTime());
 
         return new TransactionSummary(totalDepositAmount, totalWithdrawalAmount);
     }
 
-    // 지정한 기간동안 지정한 계좌의 거래내역 표시
-    @Transactional(readOnly = true)
-    public Page<AccountTransaction> findTransactions(Long userId,
-                                                     String accountNumber,
-                                                     BankCode bankCode,
-                                                     TransactionPeriod period,
-                                                     int page) {
-        Account account = findOwnedAccount(userId, accountNumber, bankCode);
-        TransactionPeriod safePeriod = getSafePeriod(period);
-        LocalDateTime endDateTime = LocalDateTime.now(SERVICE_ZONE);
-        LocalDateTime startDateTime = safePeriod.getStartDateTime(endDateTime);
-
-        return accountTransactionRepository.findAllByAccountIdAndCreatedAtBetween(
-                account.getId(),
-                startDateTime,
-                endDateTime,
-                PageRequest.of(getSafePage(page), TRANSACTION_PAGE_SIZE));
-    }
-
-    @Transactional(readOnly = true)
-    public TransactionSummary summarizeTransactions(Long userId,
-                                                    String accountNumber,
-                                                    BankCode bankCode,
-                                                    TransactionPeriod period) {
-        Account account = findOwnedAccount(userId, accountNumber, bankCode);
-        TransactionPeriod safePeriod = getSafePeriod(period);
-        LocalDateTime endDateTime = LocalDateTime.now(SERVICE_ZONE);
-        LocalDateTime startDateTime = safePeriod.getStartDateTime(endDateTime);
-
+    private TransactionSummary summarizeAccountTransactions(Long accountId, TransactionDateRange dateRange) {
         // 총 입금액 계산
         BigDecimal totalDepositAmount = accountTransactionRepository.sumAmountByAccountIdAndTypes(
-                account.getId(),
+                accountId,
                 DEPOSIT_TYPES,
-                startDateTime,
-                endDateTime);
+                dateRange.startDateTime(),
+                dateRange.endDateTime());
         // 총 출금액 계산
         BigDecimal totalWithdrawalAmount = accountTransactionRepository.sumAmountByAccountIdAndTypes(
-                account.getId(),
+                accountId,
                 WITHDRAWAL_TYPES,
-                startDateTime,
-                endDateTime);
+                dateRange.startDateTime(),
+                dateRange.endDateTime());
 
         return new TransactionSummary(totalDepositAmount, totalWithdrawalAmount);
     }
 
+    // 조회 기간 설정
     private TransactionPeriod getSafePeriod(TransactionPeriod period) {
         if (period == null) {
             return TransactionPeriod.ONE_MONTH;
@@ -241,10 +333,7 @@ public class AccountService {
         return period;
     }
 
-    private int getSafePage(int page) {
-        return Math.max(page, 0);
-    }
-
+    // 이체한도 업데이트
     @Transactional
     public void updateTransferLimit(Long userId,
                                     String accountNumber,
@@ -283,6 +372,8 @@ public class AccountService {
         if(fromAccountId.equals(toAccountId))
             throw new RuntimeException("같은 계좌로는 이체할 수 없습니다.");
 
+        // 계좌이체의 경우 입금 계좌와 출금 계좌 모두에 대해서 lock을 획득해야 한다.
+        // 이때 lock을 획득하는 순서를 지정하지 않으면 deadlock이 발생할 수 있기 때문에 AccountId가 작은 순서대로 lock을 획득하도록 강제한다
         LockedTransferAccounts lockedAccounts = lockAccountsForTransferAvoidingDeadlock(fromAccountId, toAccountId);
         Account fromAccount = lockedAccounts.fromAccount();
         Account toAccount = lockedAccounts.toAccount();
@@ -304,7 +395,6 @@ public class AccountService {
                 fromAccount,
                 toAccount,
                 transferAmount);
-        transferRepository.save(transfer);
 
         // 출금 계좌 거래내역 추가
         AccountTransaction withdrawalTransaction = AccountTransaction.create(
@@ -331,7 +421,8 @@ public class AccountService {
                 fromAccount.getAccountNumber(),
                 fromAccount.getUser().getUsername(),
                 "계좌이체");
-
+        // 거래 내역을 Transfer에 저장하고, 각 계좌입장에서의 거래 내역을 각각 저장한다.
+        transferRepository.save(transfer);
         accountTransactionRepository.save(withdrawalTransaction);
         accountTransactionRepository.save(depositTransaction);
 
@@ -369,6 +460,10 @@ public class AccountService {
                 : secondLockedAccount;
 
         return new LockedTransferAccounts(fromAccount, toAccount);
+    }
+
+    // record는 두 객체를 묶을 때 사용한다.
+    private record TransactionDateRange(LocalDateTime startDateTime, LocalDateTime endDateTime) {
     }
 
     private record LockedTransferAccounts(Account fromAccount, Account toAccount) {

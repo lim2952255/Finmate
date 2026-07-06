@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinMate</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+</head>
+<body>
+<div class="page">
+    <div th:replace="~{/layout/header :: header}"></div>
+
+    <main class="main">
+        <section class="content">
+            <h1>증권계좌 투자금 이체</h1>
+
+            <section th:if="${investmentWithdrawalPageInfo.fromInvestment != null}">
+                <h2>출금 증권계좌</h2>
+                <p>
+                    <strong>증권사</strong>
+                    <span th:text="${investmentWithdrawalPageInfo.fromInvestment.securitiesCompanyCode.displayName}">키움증권</span>
+                </p>
+                <p>
+                    <strong>계좌번호</strong>
+                    <span th:text="${investmentWithdrawalPageInfo.fromInvestment.accountNumber}">000000-00-000000</span>
+                </p>
+                <p>
+                    <strong>예수금</strong>
+                    <span th:text="${#numbers.formatDecimal(investmentWithdrawalPageInfo.fromInvestment.depositBalance, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                </p>
+                <p>
+                    <a th:href="@{/investments/transfer}">출금 증권계좌 다시 선택</a>
+                </p>
+            </section>
+
+            <section>
+                <h2>입금 일반 계좌 선택</h2>
+
+                <p th:if="${#lists.isEmpty(investmentWithdrawalPageInfo.accounts)}">
+                    입금에 사용할 일반 계좌가 없습니다.
+                </p>
+                <p th:if="${#lists.isEmpty(investmentWithdrawalPageInfo.accounts)}">
+                    <a th:href="@{/accounts/open}">일반 계좌 개설하기</a>
+                </p>
+
+                <form th:if="${not #lists.isEmpty(investmentWithdrawalPageInfo.accounts)}"
+                      th:action="@{/investments/transfer}"
+                      th:object="${investmentWithdrawalRequest}"
+                      method="post">
+                    <p th:if="${errorMessage != null}" th:text="${errorMessage}">
+                        이체 오류
+                    </p>
+
+                    <p th:if="${#fields.hasGlobalErrors()}"
+                       th:each="error : ${#fields.globalErrors()}"
+                       th:text="${error}">
+                        이체 오류
+                    </p>
+
+                    <input type="hidden" th:field="*{fromInvestmentId}">
+                    <input type="hidden" th:field="*{fromSecuritiesCompanyCode}">
+                    <input type="hidden" th:field="*{toBankCode}">
+
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>선택</th>
+                            <th>은행</th>
+                            <th>계좌번호</th>
+                            <th>잔액</th>
+                            <th>대표계좌</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="account : ${investmentWithdrawalPageInfo.accounts}">
+                            <td>
+                                <input type="radio"
+                                       th:field="*{toAccountId}"
+                                       th:value="${account.id}"
+                                       th:attr="data-bank-code=${account.bankCode}">
+                            </td>
+                            <td th:text="${account.bankCode.displayName}">신한은행</td>
+                            <td th:text="${account.accountNumber}">000000-00-000000</td>
+                            <td>
+                                <span th:text="${#numbers.formatDecimal(account.balance, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                            </td>
+                            <td>
+                                <span th:if="${account.primary}">대표계좌</span>
+                                <span th:unless="${account.primary}">-</span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+                    <p th:if="${#fields.hasErrors('fromInvestmentId')}" th:errors="*{fromInvestmentId}">증권 계좌 오류</p>
+                    <p th:if="${#fields.hasErrors('fromSecuritiesCompanyCode')}" th:errors="*{fromSecuritiesCompanyCode}">증권사 오류</p>
+                    <p th:if="${#fields.hasErrors('toAccountId')}" th:errors="*{toAccountId}">입금 계좌 오류</p>
+                    <p th:if="${#fields.hasErrors('toBankCode')}" th:errors="*{toBankCode}">입금 은행 오류</p>
+
+                    <div>
+                        <label for="amount">이체 금액</label>
+                        <input id="amount" th:field="*{amount}" type="number" min="1" step="1" placeholder="이체 금액">
+                        <p th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}">이체 금액 오류</p>
+                    </div>
+
+                    <button type="submit">투자금 이체</button>
+                </form>
+            </section>
+
+            <p>
+                <a th:href="@{/accounts/transfer-investment}">예수금 입금</a>
+                <a th:href="@{/investments/list}">내 증권 계좌 / 예수금</a>
+                <a th:href="@{/investments}">투자 홈</a>
+            </p>
+        </section>
+    </main>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const hidden = document.getElementById("toBankCode");
+        const radios = document.querySelectorAll("input[name='toAccountId']");
+
+        if (!hidden || radios.length === 0) {
+            return;
+        }
+
+        const syncBankCode = function () {
+            const checked = document.querySelector("input[name='toAccountId']:checked");
+            hidden.value = checked ? (checked.dataset.bankCode || "") : "";
+        };
+
+        radios.forEach(function (radio) {
+            radio.addEventListener("change", syncBankCode);
+        });
+        syncBankCode();
+    });
+</script>
+</body>
+</html>

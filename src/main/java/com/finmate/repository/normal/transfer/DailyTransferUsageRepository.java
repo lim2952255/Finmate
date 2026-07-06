@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.Optional;
 
+// 일일 이체한도 조회용
 @Repository
 public interface DailyTransferUsageRepository extends JpaRepository<DailyTransferUsage, Long> {
 

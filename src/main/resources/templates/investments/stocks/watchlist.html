@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinMate</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+</head>
+<body>
+<div class="page">
+    <div th:replace="~{/layout/header :: header}"></div>
+
+    <main class="main">
+        <section class="content">
+            <h1>관심 종목</h1>
+
+            <section>
+                <h2>관심 종목 목록</h2>
+
+                <p th:if="${favoriteStockPageInfo.favoriteStocks != null and #lists.isEmpty(favoriteStockPageInfo.favoriteStocks)}">
+                    등록된 관심 종목이 없습니다.
+                </p>
+
+                <table th:if="${favoriteStockPageInfo.favoriteStocks != null and !#lists.isEmpty(favoriteStockPageInfo.favoriteStocks)}">
+                    <thead>
+                    <tr>
+                        <th>관심</th>
+                        <th>종목코드</th>
+                        <th>종목명</th>
+                        <th>시장</th>
+                        <th>상품유형</th>
+                        <th>통화</th>
+                        <th>거래 상태</th>
+                        <th>등록일시</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="favoriteStock : ${favoriteStockPageInfo.favoriteStocks}"
+                        th:with="stock=${favoriteStock.stock}">
+                        <td>
+                            <form th:action="@{/investments/stocks/favorite}" method="post">
+                                <input type="hidden" name="stockId" th:value="${stock.id}">
+                                <input type="hidden"
+                                       name="redirectUrl"
+                                       th:value="@{/investments/stocks/watchlist(page=${favoriteStockPageInfo.favoriteStockPage.number})}">
+                                <button type="submit"
+                                        title="관심 종목 해제"
+                                        aria-label="관심 종목 해제">★</button>
+                            </form>
+                        </td>
+                        <td>
+                            <a th:href="@{/investments/stocks/detail(stockId=${stock.id})}"
+                               th:text="${stock.symbol}">005930</a>
+                        </td>
+                        <td>
+                            <a th:href="@{/investments/stocks/detail(stockId=${stock.id})}">
+                                <span th:text="${stock.nameKo}">삼성전자</span>
+                                <span th:if="${stock.nameEn != null and !#strings.isEmpty(stock.nameEn)}"
+                                      th:text="|(${stock.nameEn})|">
+                                    (Samsung Electronics)
+                                </span>
+                            </a>
+                        </td>
+                        <td th:text="${stock.marketType}">KOSPI</td>
+                        <td th:text="${stock.securityType}">COMMON_STOCK</td>
+                        <td th:text="${stock.currency}">KRW</td>
+                        <td>
+                            <span th:if="${stock.tradable}">거래 가능</span>
+                            <span th:unless="${stock.tradable}">거래 불가</span>
+                        </td>
+                        <td th:text="${#temporals.format(favoriteStock.createdAt, 'yyyy-MM-dd HH:mm:ss')}">
+                            2026-07-02 12:00:00
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <nav th:if="${favoriteStockPageInfo.favoriteStockPage != null && favoriteStockPageInfo.favoriteStockPage.totalPages > 1}"
+                     aria-label="관심 종목 페이지">
+                    <p>
+                        <span th:text="${favoriteStockPageInfo.favoriteStockPage.number + 1}">1</span>
+                        /
+                        <span th:text="${favoriteStockPageInfo.favoriteStockPage.totalPages}">1</span>
+                        페이지
+                    </p>
+
+                    <a th:if="${!favoriteStockPageInfo.favoriteStockPage.first}"
+                       th:href="@{/investments/stocks/watchlist(page=0)}">처음</a>
+                    <a th:if="${favoriteStockPageInfo.favoriteStockPage.hasPrevious()}"
+                       th:href="@{/investments/stocks/watchlist(page=${favoriteStockPageInfo.favoriteStockPage.number - 1})}">이전</a>
+
+                    <span th:each="pageNumber : ${favoriteStockPageInfo.pagination.pageNumbers}">
+                        <strong th:if="${pageNumber == favoriteStockPageInfo.favoriteStockPage.number}"
+                                th:text="${pageNumber + 1}">1</strong>
+                        <a th:if="${pageNumber != favoriteStockPageInfo.favoriteStockPage.number}"
+                           th:href="@{/investments/stocks/watchlist(page=${pageNumber})}"
+                           th:text="${pageNumber + 1}">1</a>
+                    </span>
+
+                    <a th:if="${favoriteStockPageInfo.favoriteStockPage.hasNext()}"
+                       th:href="@{/investments/stocks/watchlist(page=${favoriteStockPageInfo.favoriteStockPage.number + 1})}">다음</a>
+                    <a th:if="${!favoriteStockPageInfo.favoriteStockPage.last}"
+                       th:href="@{/investments/stocks/watchlist(page=${favoriteStockPageInfo.favoriteStockPage.totalPages - 1})}">마지막</a>
+                </nav>
+            </section>
+
+            <p>
+                <a th:href="@{/investments/stocks/search}">종목 검색</a>
+                <a th:href="@{/investments}">투자 홈</a>
+            </p>
+        </section>
+    </main>
+</div>
+</body>
+</html>

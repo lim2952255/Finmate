@@ -10,6 +10,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 
+// 계좌이체 정보 입력용 dto
 @Getter
 @Setter
 public class TransferRequest {
@@ -32,4 +33,7 @@ public class TransferRequest {
     @NotNull(message = "이체 금액은 필수입니다.")
     @Positive(message = "이체 금액은 1원 이상이어야 합니다.")
     private BigDecimal amount;
+
+    // 이체 화면 표시용 정보
+    private TransferLimitInfo transferLimitInfo;
 }

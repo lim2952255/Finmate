@@ -17,14 +17,14 @@
             <section>
                 <h2>계좌 선택</h2>
                 <p>
-                    <a th:href="@{/accounts/transactions(period=${period}, page=0)}">전체 계좌</a>
+                    <a th:href="@{/accounts/transactions(period=${accountTransactionPageInfo.period}, page=0)}">전체 계좌</a>
                 </p>
 
-                <p th:if="${#lists.isEmpty(accounts)}">
+                <p th:if="${#lists.isEmpty(accountTransactionPageInfo.accounts)}">
                     아직 개설된 계좌가 없습니다.
                 </p>
 
-                <table th:unless="${#lists.isEmpty(accounts)}">
+                <table th:unless="${#lists.isEmpty(accountTransactionPageInfo.accounts)}">
                     <thead>
                     <tr>
                         <th>번호</th>
@@ -34,12 +34,12 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="account, accountStat : ${accounts}">
+                    <tr th:each="account, accountStat : ${accountTransactionPageInfo.accounts}">
                         <td th:text="${accountStat.count}">1</td>
                         <td th:text="${account.bankCode.displayName}">신한은행</td>
                         <td th:text="${account.accountNumber}">000000-00-000000</td>
                         <td>
-                            <a th:href="@{/accounts/transactions(accountNumber=${account.accountNumber}, bankCode=${account.bankCode.name()}, period=${period}, page=0)}">
+                            <a th:href="@{/accounts/transactions(accountNumber=${account.accountNumber}, bankCode=${account.bankCode.name()}, period=${accountTransactionPageInfo.period}, page=0)}">
                                 거래내역 조회
                             </a>
                         </td>
@@ -50,32 +50,32 @@
 
             <section>
                 <h2>조회 조건</h2>
-                <p th:if="${selectedAccount == null}">
+                <p th:if="${accountTransactionPageInfo.selectedAccount == null}">
                     <strong>조회 계좌</strong>
                     <span>전체 계좌</span>
                 </p>
-                <p th:if="${selectedAccount != null}">
+                <p th:if="${accountTransactionPageInfo.selectedAccount != null}">
                     <strong>조회 계좌</strong>
-                    <span th:text="${selectedAccount.bankCode.displayName}">신한은행</span>
-                    <span th:text="${selectedAccount.accountNumber}">000000-00-000000</span>
+                    <span th:text="${accountTransactionPageInfo.selectedAccount.bankCode.displayName}">신한은행</span>
+                    <span th:text="${accountTransactionPageInfo.selectedAccount.accountNumber}">000000-00-000000</span>
                 </p>
 
                 <form th:action="@{/accounts/transactions}" method="get">
-                    <input th:if="${selectedAccount != null}"
+                    <input th:if="${accountTransactionPageInfo.selectedAccount != null}"
                            type="hidden"
                            name="accountNumber"
-                           th:value="${selectedAccount.accountNumber}">
-                    <input th:if="${selectedAccount != null}"
+                           th:value="${accountTransactionPageInfo.selectedAccount.accountNumber}">
+                    <input th:if="${accountTransactionPageInfo.selectedAccount != null}"
                            type="hidden"
                            name="bankCode"
-                           th:value="${selectedAccount.bankCode.name()}">
+                           th:value="${accountTransactionPageInfo.selectedAccount.bankCode.name()}">
 
                     <label for="period">조회 기간</label>
                     <select id="period" name="period">
-                        <option th:each="periodOption : ${periods}"
+                        <option th:each="periodOption : ${accountTransactionPageInfo.periods}"
                                 th:value="${periodOption.name()}"
                                 th:text="${periodOption.displayName}"
-                                th:selected="${periodOption == period}">
+                                th:selected="${periodOption == accountTransactionPageInfo.period}">
                             최근 1개월
                         </option>
                     </select>
@@ -84,31 +84,31 @@
                 </form>
             </section>
 
-            <section th:if="${transactionSummary != null}">
+            <section th:if="${accountTransactionPageInfo.transactionSummary != null}">
                 <h2>거래 요약</h2>
                 <p>
                     <strong>총 입금액</strong>
-                    <span th:text="${#numbers.formatDecimal(transactionSummary.totalDepositAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(accountTransactionPageInfo.transactionSummary.totalDepositAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
                 </p>
                 <p>
                     <strong>총 출금액</strong>
-                    <span th:text="${#numbers.formatDecimal(transactionSummary.totalWithdrawalAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(accountTransactionPageInfo.transactionSummary.totalWithdrawalAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
                 </p>
                 <p>
                     <strong>순액</strong>
-                    <span th:if="${transactionSummary.netAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">+</span>
-                    <span th:text="${#numbers.formatDecimal(transactionSummary.netAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:if="${accountTransactionPageInfo.transactionSummary.netAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">+</span>
+                    <span th:text="${#numbers.formatDecimal(accountTransactionPageInfo.transactionSummary.netAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
                 </p>
             </section>
 
             <section>
                 <h2>거래내역 목록</h2>
 
-                <p th:if="${#lists.isEmpty(transactions)}">
+                <p th:if="${#lists.isEmpty(accountTransactionPageInfo.transactions)}">
                     조회 기간에 해당하는 거래내역이 없습니다.
                 </p>
 
-                <table th:unless="${#lists.isEmpty(transactions)}">
+                <table th:unless="${#lists.isEmpty(accountTransactionPageInfo.transactions)}">
                     <thead>
                     <tr>
                         <th>번호</th>
@@ -118,15 +118,15 @@
                         <th>거래금액</th>
                         <th>거래 전 잔액</th>
                         <th>거래 후 잔액</th>
-                        <th>상대 은행</th>
+                        <th>상대 기관</th>
                         <th>상대 계좌</th>
                         <th>상대 이름</th>
                         <th>설명</th>
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="transaction, transactionStat : ${transactions}">
-                        <td th:text="${transactionPage.number * transactionPage.size + transactionStat.count}">1</td>
+                    <tr th:each="transaction, transactionStat : ${accountTransactionPageInfo.transactions}">
+                        <td th:text="${accountTransactionPageInfo.transactionPage.number * accountTransactionPageInfo.transactionPage.size + transactionStat.count}">1</td>
                         <td th:text="${#temporals.format(transaction.createdAt, 'yyyy-MM-dd HH:mm:ss')}">
                             2026-06-29 12:00:00
                         </td>
@@ -156,7 +156,15 @@
                                   th:text="${transaction.counterpartyBankCode.displayName}">
                                 국민은행
                             </span>
-                            <span th:if="${transaction.counterpartyBankCode == null}">-</span>
+                            <span th:if="${transaction.counterpartyBankCode == null and transaction.counterpartySecuritiesCompanyCode != null}"
+                                  th:text="${transaction.counterpartySecuritiesCompanyCode.displayName}">
+                                삼성증권
+                            </span>
+                            <span th:if="${transaction.counterpartyBankCode == null and transaction.counterpartySecuritiesCompanyCode == null and transaction.description != null and #strings.startsWith(transaction.description, '증권계좌') and transaction.counterpartyName != null}"
+                                  th:text="${transaction.counterpartyName}">
+                                삼성증권
+                            </span>
+                            <span th:if="${transaction.counterpartyBankCode == null and transaction.counterpartySecuritiesCompanyCode == null and !(transaction.description != null and #strings.startsWith(transaction.description, '증권계좌') and transaction.counterpartyName != null)}">-</span>
                         </td>
                         <td>
                             <span th:if="${transaction.counterpartyAccountNumber != null}"
@@ -166,70 +174,74 @@
                             <span th:if="${transaction.counterpartyAccountNumber == null}">-</span>
                         </td>
                         <td>
-                            <span th:if="${transaction.counterpartyName != null}"
+                            <span th:if="${transaction.description != null and #strings.startsWith(transaction.description, '증권계좌')}"
+                                  th:text="${transaction.account.user.username}">
+                                홍길동
+                            </span>
+                            <span th:if="${!(transaction.description != null and #strings.startsWith(transaction.description, '증권계좌')) and transaction.counterpartyName != null}"
                                   th:text="${transaction.counterpartyName}">
                                 홍길동
                             </span>
-                            <span th:if="${transaction.counterpartyName == null}">-</span>
+                            <span th:if="${!(transaction.description != null and #strings.startsWith(transaction.description, '증권계좌')) and transaction.counterpartyName == null}">-</span>
                         </td>
                         <td th:text="${transaction.description}">계좌이체</td>
                     </tr>
                     </tbody>
                 </table>
 
-                <nav th:if="${transactionPage != null && transactionPage.totalPages > 1}"
+                <nav th:if="${accountTransactionPageInfo.transactionPage != null && accountTransactionPageInfo.transactionPage.totalPages > 1}"
                      aria-label="거래내역 페이지">
                     <p>
-                        <span th:text="${transactionPage.number + 1}">1</span>
+                        <span th:text="${accountTransactionPageInfo.transactionPage.number + 1}">1</span>
                         /
-                        <span th:text="${transactionPage.totalPages}">1</span>
+                        <span th:text="${accountTransactionPageInfo.transactionPage.totalPages}">1</span>
                         페이지
                     </p>
 
-                    <a th:if="${!transactionPage.first && selectedAccount == null}"
-                       th:href="@{/accounts/transactions(period=${period}, page=0)}">
+                    <a th:if="${!accountTransactionPageInfo.transactionPage.first && accountTransactionPageInfo.selectedAccount == null}"
+                       th:href="@{/accounts/transactions(period=${accountTransactionPageInfo.period}, page=0)}">
                         처음
                     </a>
-                    <a th:if="${!transactionPage.first && selectedAccount != null}"
-                       th:href="@{/accounts/transactions(accountNumber=${selectedAccount.accountNumber}, bankCode=${selectedAccount.bankCode.name()}, period=${period}, page=0)}">
+                    <a th:if="${!accountTransactionPageInfo.transactionPage.first && accountTransactionPageInfo.selectedAccount != null}"
+                       th:href="@{/accounts/transactions(accountNumber=${accountTransactionPageInfo.selectedAccount.accountNumber}, bankCode=${accountTransactionPageInfo.selectedAccount.bankCode.name()}, period=${accountTransactionPageInfo.period}, page=0)}">
                         처음
                     </a>
 
-                    <a th:if="${transactionPage.hasPrevious() && selectedAccount == null}"
-                       th:href="@{/accounts/transactions(period=${period}, page=${transactionPage.number - 1})}">
+                    <a th:if="${accountTransactionPageInfo.transactionPage.hasPrevious() && accountTransactionPageInfo.selectedAccount == null}"
+                       th:href="@{/accounts/transactions(period=${accountTransactionPageInfo.period}, page=${accountTransactionPageInfo.transactionPage.number - 1})}">
                         이전
                     </a>
-                    <a th:if="${transactionPage.hasPrevious() && selectedAccount != null}"
-                       th:href="@{/accounts/transactions(accountNumber=${selectedAccount.accountNumber}, bankCode=${selectedAccount.bankCode.name()}, period=${period}, page=${transactionPage.number - 1})}">
+                    <a th:if="${accountTransactionPageInfo.transactionPage.hasPrevious() && accountTransactionPageInfo.selectedAccount != null}"
+                       th:href="@{/accounts/transactions(accountNumber=${accountTransactionPageInfo.selectedAccount.accountNumber}, bankCode=${accountTransactionPageInfo.selectedAccount.bankCode.name()}, period=${accountTransactionPageInfo.period}, page=${accountTransactionPageInfo.transactionPage.number - 1})}">
                         이전
                     </a>
 
-                    <span th:each="pageNumber : ${pageNumbers}">
-                        <strong th:if="${pageNumber == transactionPage.number}"
+                    <span th:each="pageNumber : ${accountTransactionPageInfo.pagination.pageNumbers}">
+                        <strong th:if="${pageNumber == accountTransactionPageInfo.transactionPage.number}"
                                 th:text="${pageNumber + 1}">1</strong>
-                        <a th:if="${pageNumber != transactionPage.number && selectedAccount == null}"
-                           th:href="@{/accounts/transactions(period=${period}, page=${pageNumber})}"
+                        <a th:if="${pageNumber != accountTransactionPageInfo.transactionPage.number && accountTransactionPageInfo.selectedAccount == null}"
+                           th:href="@{/accounts/transactions(period=${accountTransactionPageInfo.period}, page=${pageNumber})}"
                            th:text="${pageNumber + 1}">1</a>
-                        <a th:if="${pageNumber != transactionPage.number && selectedAccount != null}"
-                           th:href="@{/accounts/transactions(accountNumber=${selectedAccount.accountNumber}, bankCode=${selectedAccount.bankCode.name()}, period=${period}, page=${pageNumber})}"
+                        <a th:if="${pageNumber != accountTransactionPageInfo.transactionPage.number && accountTransactionPageInfo.selectedAccount != null}"
+                           th:href="@{/accounts/transactions(accountNumber=${accountTransactionPageInfo.selectedAccount.accountNumber}, bankCode=${accountTransactionPageInfo.selectedAccount.bankCode.name()}, period=${accountTransactionPageInfo.period}, page=${pageNumber})}"
                            th:text="${pageNumber + 1}">1</a>
                     </span>
 
-                    <a th:if="${transactionPage.hasNext() && selectedAccount == null}"
-                       th:href="@{/accounts/transactions(period=${period}, page=${transactionPage.number + 1})}">
+                    <a th:if="${accountTransactionPageInfo.transactionPage.hasNext() && accountTransactionPageInfo.selectedAccount == null}"
+                       th:href="@{/accounts/transactions(period=${accountTransactionPageInfo.period}, page=${accountTransactionPageInfo.transactionPage.number + 1})}">
                         다음
                     </a>
-                    <a th:if="${transactionPage.hasNext() && selectedAccount != null}"
-                       th:href="@{/accounts/transactions(accountNumber=${selectedAccount.accountNumber}, bankCode=${selectedAccount.bankCode.name()}, period=${period}, page=${transactionPage.number + 1})}">
+                    <a th:if="${accountTransactionPageInfo.transactionPage.hasNext() && accountTransactionPageInfo.selectedAccount != null}"
+                       th:href="@{/accounts/transactions(accountNumber=${accountTransactionPageInfo.selectedAccount.accountNumber}, bankCode=${accountTransactionPageInfo.selectedAccount.bankCode.name()}, period=${accountTransactionPageInfo.period}, page=${accountTransactionPageInfo.transactionPage.number + 1})}">
                         다음
                     </a>
 
-                    <a th:if="${!transactionPage.last && selectedAccount == null}"
-                       th:href="@{/accounts/transactions(period=${period}, page=${transactionPage.totalPages - 1})}">
+                    <a th:if="${!accountTransactionPageInfo.transactionPage.last && accountTransactionPageInfo.selectedAccount == null}"
+                       th:href="@{/accounts/transactions(period=${accountTransactionPageInfo.period}, page=${accountTransactionPageInfo.transactionPage.totalPages - 1})}">
                         끝
                     </a>
-                    <a th:if="${!transactionPage.last && selectedAccount != null}"
-                       th:href="@{/accounts/transactions(accountNumber=${selectedAccount.accountNumber}, bankCode=${selectedAccount.bankCode.name()}, period=${period}, page=${transactionPage.totalPages - 1})}">
+                    <a th:if="${!accountTransactionPageInfo.transactionPage.last && accountTransactionPageInfo.selectedAccount != null}"
+                       th:href="@{/accounts/transactions(accountNumber=${accountTransactionPageInfo.selectedAccount.accountNumber}, bankCode=${accountTransactionPageInfo.selectedAccount.bankCode.name()}, period=${accountTransactionPageInfo.period}, page=${accountTransactionPageInfo.transactionPage.totalPages - 1})}">
                         끝
                     </a>
                 </nav>

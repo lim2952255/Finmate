@@ -6,6 +6,7 @@ import lombok.Getter;
 
 import java.math.BigDecimal;
 
+// 대표계좌 출력용
 @Getter
 public class PrimaryAccount {
 

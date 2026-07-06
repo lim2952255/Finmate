@@ -1,6 +1,6 @@
 # 일반 계좌 Summary
 
-마지막 정리일: 2026-06-29
+마지막 정리일: 2026-07-03
 
 이 문서는 FinMate의 일반 계좌 도메인 구현과 설계 의도를 정리한다.
 
@@ -17,6 +17,7 @@
 - 전체 거래내역 조회
 - 계좌별 거래내역 조회
 - 거래내역 요약
+- 일반 계좌이체와 증권 예수금 입금 메뉴 분리
 - 계좌번호 Registry 기반 중복 방지
 - 비관적 락 기반 동시성 제어
 
@@ -108,21 +109,27 @@
 
 ### Transfer
 
-`Transfer`는 계좌이체 요청 1건을 표현한다.
+`Transfer`는 자금 이동 요청 1건을 표현한다.
 
 주요 필드:
 
 - `transferGroupId`
 - `fromAccount`
 - `toAccount`
+- `fromInvestment`
+- `toInvestment`
 - `amount`
 - `status`
 - `createdAt`
 
 설계 포인트:
 
-- 사용자의 이체 요청 1건을 별도 엔티티로 표현한다.
-- `AccountTransaction` 2건을 하나의 이벤트로 묶기 위한 부모 역할을 한다.
+- 사용자의 자금 이동 요청 1건을 별도 엔티티로 표현한다.
+- 일반 계좌끼리의 계좌이체뿐 아니라 일반 계좌와 증권 계좌 사이의 예수금 입출금도 같은 자금 이동 이벤트로 묶는다.
+- 일반 계좌이체에서는 `fromAccount`, `toAccount`가 채워진다.
+- 증권 예수금 입금에서는 `fromAccount`, `toInvestment`가 채워진다.
+- 증권 예수금 출금에서는 `fromInvestment`, `toAccount`가 채워진다.
+- `AccountTransaction`과 `SecuritiesCashTransaction`을 하나의 이벤트로 묶기 위한 부모 역할을 한다.
 - `transferGroupId`는 UUID 기반이고 unique constraint로 중복을 방어한다.
 
 ### AccountTransaction
@@ -243,6 +250,18 @@
 
 - `AccountService.transfer()`
 
+화면:
+
+- `/accounts/transfer`: 출금 일반계좌 선택
+- `/accounts/transfer-target`: 입금 일반계좌 정보와 금액 입력
+
+설계 포인트:
+
+- 일반 계좌이체는 `Account` 테이블에 존재하는 일반 계좌끼리의 자금 이동이다.
+- 입금 대상은 계좌번호와 `BankCode`로 조회한다.
+- 증권 계좌는 `Investment` 테이블과 `SecuritiesCompanyCode`를 사용하므로 일반 계좌이체 화면에서 직접 이체되지 않는다.
+- 증권 계좌로 투자금을 옮기는 경우 `/accounts/transfer-investment` 예수금 입금 화면을 사용하도록 안내한다.
+
 흐름:
 
 ```text
@@ -294,6 +313,14 @@
 효과:
 
 - 모든 이체 요청이 같은 lock 순서를 따르므로 순환 대기 가능성을 줄인다.
+
+운영체제 개념과의 연결:
+
+- 운영체제에서 deadlock은 상호 배제, 점유 대기, 비선점, 순환 대기 조건이 함께 만족될 때 발생한다.
+- 계좌이체에서는 출금 계좌와 입금 계좌 row가 각각 lock 대상 자원이다.
+- A 계좌에서 B 계좌로 이체하는 요청과 B 계좌에서 A 계좌로 이체하는 요청이 동시에 들어오면 서로 반대 순서로 lock을 잡아 순환 대기가 생길 수 있다.
+- 이를 막기 위해 모든 요청이 `accountId` 오름차순이라는 동일한 자원 획득 순서를 따른다.
+- 이 방식은 운영체제에서 자원에 번호를 매기고 항상 낮은 번호부터 획득하도록 해서 circular wait 조건을 깨는 방식과 같다.
 
 ### 일일 이체한도 동시성
 

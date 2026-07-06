@@ -49,6 +49,7 @@ public class Account {
     @Column(name = "bank_code", nullable = false)
     private BankCode bankCode;
 
+    // 계좌별로 일회 이체한도와 일일 이체한도를 저장하고 관리한다.
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal dailyTransferLimit = Const.DAILY_TRANSFER_LIMIT;
 
@@ -72,6 +73,7 @@ public class Account {
         return account;
     }
 
+    // 연관관계를 설정하는 용도
     public void assignUser(User user) {
         if (user == null) {
             throw new RuntimeException("사용자는 필수입니다.");
@@ -88,6 +90,7 @@ public class Account {
         this.primary = false;
     }
 
+    // 계좌 출금 메서드
     public void withdraw(BigDecimal amount) {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("출금 금액은 0보다 커야 합니다.");
@@ -100,6 +103,7 @@ public class Account {
         this.balance = this.balance.subtract(amount);
     }
 
+    // 계좌 입금 메서드
     public void deposit(BigDecimal amount) {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("입금 금액은 0보다 커야 합니다.");
@@ -108,6 +112,7 @@ public class Account {
         this.balance = this.balance.add(amount);
     }
 
+    // 이체한도를 update하는 메서드
     public void updateTransferLimit(BigDecimal dailyTransferLimit, BigDecimal singleTransferLimit) {
         if (dailyTransferLimit == null || singleTransferLimit == null) {
             throw new RuntimeException("이체한도를 입력해주세요.");

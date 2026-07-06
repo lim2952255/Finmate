@@ -19,19 +19,19 @@
                 <p>
                     <!-- 일일 이체한도 표시하기 -->
                     <strong>일일 이체한도</strong>
-                    <span th:text="${#numbers.formatDecimal(dailyTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(transferRequest.transferLimitInfo.dailyTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
                 </p>
                 <p>
                     <strong>오늘 이체한 금액</strong>
-                    <span th:text="${#numbers.formatDecimal(todayUsedTransferAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(transferRequest.transferLimitInfo.todayUsedTransferAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
                 </p>
                 <p>
                     <strong>남은 일일 이체한도</strong>
-                    <span th:text="${#numbers.formatDecimal(remainingDailyTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(transferRequest.transferLimitInfo.remainingDailyTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
                 </p>
                 <p>
                     <strong>1회 이체한도</strong>
-                    <span th:text="${#numbers.formatDecimal(singleTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(transferRequest.transferLimitInfo.singleTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
                 </p>
                 <p>
                     <a th:href="@{/accounts/transfer-limit(accountNumber=${transferRequest.fromAccountNumber}, bankCode=${transferRequest.fromBankCode})}">
@@ -78,6 +78,12 @@
                     <p th:if="${#fields.hasErrors('toBankCode')}" th:errors="*{toBankCode}"></p>
                 </div>
 
+                <p>
+                    증권계좌로 투자금을 옮기려면
+                    <a th:href="@{/accounts/transfer-investment(from=${transferRequest.fromAccountNumber}, fromBankCode=${transferRequest.fromBankCode})}">예수금 입금</a>
+                    메뉴를 이용해주세요.
+                </p>
+
                 <div>
                     <label for="toAccountNumber">입금 계좌</label>
                     <input id="toAccountNumber"
@@ -101,6 +107,7 @@
             </form>
 
             <p>
+                <a th:href="@{/accounts/transfer-investment(from=${transferRequest.fromAccountNumber}, fromBankCode=${transferRequest.fromBankCode})}">예수금 입금</a>
                 <a th:href="@{/accounts/transfer}">출금 계좌 다시 선택</a>
                 <a th:href="@{/accounts}">계좌 관리 홈</a>
             </p>

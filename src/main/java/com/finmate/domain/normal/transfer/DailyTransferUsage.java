@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+// 각 계좌별로 일일 이체한도를 저장하고 관리하기 위한 엔티티
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinMate</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <style>
+        .ranking-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .ranking-toolbar p {
+            margin: 0;
+            color: #64748b;
+        }
+
+        .ranking-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+            gap: 16px;
+        }
+
+        .ranking-board {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+
+        .ranking-board-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            background: #f8fafc;
+        }
+
+        .ranking-board-title {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .ranking-board-title strong {
+            font-size: 18px;
+        }
+
+        .ranking-board-title span,
+        .ranking-board-meta {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .market-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            color: #475569;
+            background: #e2e8f0;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .market-status.open {
+            color: #047857;
+            background: #d1fae5;
+        }
+
+        .ranking-table-wrap {
+            overflow-x: auto;
+        }
+
+        .ranking-table {
+            min-width: 640px;
+        }
+
+        .ranking-table th,
+        .ranking-table td {
+            white-space: nowrap;
+        }
+
+        .rank-cell {
+            width: 54px;
+            color: #64748b;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .stock-cell {
+            min-width: 150px;
+        }
+
+        .stock-symbol {
+            display: block;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .numeric-cell {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .change-rate.up {
+            color: #dc2626;
+        }
+
+        .change-rate.down {
+            color: #2563eb;
+        }
+
+        .change-rate.flat {
+            color: #64748b;
+        }
+
+        .empty-ranking {
+            padding: 22px 16px;
+            color: #64748b;
+            text-align: center;
+        }
+
+        @media (max-width: 720px) {
+            .ranking-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .ranking-toolbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div th:replace="~{/layout/header :: header}"></div>
+
+    <main class="main">
+        <section class="content">
+            <div class="ranking-toolbar">
+                <div>
+                    <h1>거래량 / 거래대금 TOP10</h1>
+                    <p>KOSPI, KOSDAQ, NASDAQ 시장별 순위</p>
+                </div>
+                <a th:href="@{/investments}">투자 홈</a>
+            </div>
+
+            <div class="ranking-grid" id="rankingGrid">
+                <article class="ranking-board"
+                         th:each="board : ${stockMarketMoversPageInfo.rankingBoards}"
+                         th:attr="data-ranking-board=|${board.marketType}-${board.rankingType}|">
+                    <div class="ranking-board-header">
+                        <div class="ranking-board-title">
+                            <strong th:text="|${board.marketType} ${board.rankingType.displayName} TOP10|">KOSPI 거래대금 TOP10</strong>
+                            <span>
+                                갱신
+                                <span data-refreshed-at th:text="${board.displayRefreshedAt}">-</span>
+                            </span>
+                        </div>
+                        <span class="market-status"
+                              data-market-status
+                              th:classappend="${board.marketOpen} ? 'open' : ''"
+                              th:text="${board.marketOpen} ? '장중' : '장마감'">장중</span>
+                    </div>
+
+                    <div class="ranking-table-wrap" th:if="${board.hasItems()}">
+                        <table class="ranking-table">
+                            <thead>
+                            <tr>
+                                <th class="rank-cell">순위</th>
+                                <th>종목</th>
+                                <th class="numeric-cell">현재가</th>
+                                <th class="numeric-cell">등락률</th>
+                                <th class="numeric-cell">거래량</th>
+                                <th class="numeric-cell">거래대금</th>
+                            </tr>
+                            </thead>
+                            <tbody data-ranking-body>
+                            <tr th:each="item : ${board.items}">
+                                <td class="rank-cell" th:text="${item.rank}">1</td>
+                                <td class="stock-cell">
+                                    <a th:if="${item.hasStockId()}"
+                                       th:href="@{/investments/stocks/detail(stockId=${item.stockId})}"
+                                       th:text="${item.displayName}">삼성전자</a>
+                                    <strong th:unless="${item.hasStockId()}"
+                                            th:text="${item.displayName}">삼성전자</strong>
+                                    <span class="stock-symbol" th:text="${item.symbol}">005930</span>
+                                </td>
+                                <td class="numeric-cell" th:text="${item.displayCurrentPrice}">70,000</td>
+                                <td class="numeric-cell">
+                                    <span class="change-rate"
+                                          th:classappend="${item.changeRateClass}"
+                                          th:text="${item.displayChangeRate}">+1.23%</span>
+                                </td>
+                                <td class="numeric-cell" th:text="${item.displayAccumulatedVolume}">1,000,000</td>
+                                <td class="numeric-cell" th:text="${item.displayAccumulatedTradeAmount}">100,000,000원</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="empty-ranking" data-empty-ranking th:unless="${board.hasItems()}">
+                        아직 캐시된 순위 데이터가 없습니다.
+                    </div>
+                </article>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script th:inline="javascript">
+    <!-- 웹 브라우저에서 주기적으로 market-movers/data를 호출해서 데이터를 받는다-->
+    const rankingDataUrl = /*[[@{/investments/stocks/market-movers/data}]]*/ '/investments/stocks/market-movers/data';
+    const rankingRefreshIntervalMillis = 5000;
+
+    function escapeHtml(value) {
+        if (value === null || value === undefined) {
+            return '';
+        }
+
+        return String(value)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    function renderStockCell(item) {
+        const displayName = escapeHtml(item.displayName || item.symbol);
+        const symbol = escapeHtml(item.symbol);
+        const name = item.stockId
+            ? `<a href="/investments/stocks/detail?stockId=${encodeURIComponent(item.stockId)}">${displayName}</a>`
+            : `<strong>${displayName}</strong>`;
+
+        return `${name}<span class="stock-symbol">${symbol}</span>`;
+    }
+
+    function renderRankingRows(items) {
+        return items.map(item => `
+            <tr>
+                <td class="rank-cell">${escapeHtml(item.rank)}</td>
+                <td class="stock-cell">${renderStockCell(item)}</td>
+                <td class="numeric-cell">${escapeHtml(item.displayCurrentPrice)}</td>
+                <td class="numeric-cell">
+                    <span class="change-rate ${escapeHtml(item.changeRateClass)}">${escapeHtml(item.displayChangeRate)}</span>
+                </td>
+                <td class="numeric-cell">${escapeHtml(item.displayAccumulatedVolume)}</td>
+                <td class="numeric-cell">${escapeHtml(item.displayAccumulatedTradeAmount)}</td>
+            </tr>
+        `).join('');
+    }
+
+    function ensureTable(boardElement) {
+        let tableWrap = boardElement.querySelector('.ranking-table-wrap');
+        if (tableWrap) {
+            return tableWrap;
+        }
+
+        const emptyRanking = boardElement.querySelector('[data-empty-ranking]');
+        if (emptyRanking) {
+            emptyRanking.remove();
+        }
+
+        tableWrap = document.createElement('div');
+        tableWrap.className = 'ranking-table-wrap';
+        tableWrap.innerHTML = `
+            <table class="ranking-table">
+                <thead>
+                <tr>
+                    <th class="rank-cell">순위</th>
+                    <th>종목</th>
+                    <th class="numeric-cell">현재가</th>
+                    <th class="numeric-cell">등락률</th>
+                    <th class="numeric-cell">거래량</th>
+                    <th class="numeric-cell">거래대금</th>
+                </tr>
+                </thead>
+                <tbody data-ranking-body></tbody>
+            </table>
+        `;
+        boardElement.appendChild(tableWrap);
+        return tableWrap;
+    }
+
+    function renderEmpty(boardElement) {
+        const tableWrap = boardElement.querySelector('.ranking-table-wrap');
+        if (tableWrap) {
+            tableWrap.remove();
+        }
+
+        if (!boardElement.querySelector('[data-empty-ranking]')) {
+            const emptyRanking = document.createElement('div');
+            emptyRanking.className = 'empty-ranking';
+            emptyRanking.dataset.emptyRanking = '';
+            emptyRanking.textContent = '아직 캐시된 순위 데이터가 없습니다.';
+            boardElement.appendChild(emptyRanking);
+        }
+    }
+
+    function updateBoard(board) {
+        const boardElement = document.querySelector(`[data-ranking-board="${board.marketType}-${board.rankingType}"]`);
+        if (!boardElement) {
+            return;
+        }
+
+        const refreshedAt = boardElement.querySelector('[data-refreshed-at]');
+        if (refreshedAt) {
+            refreshedAt.textContent = board.displayRefreshedAt || '-';
+        }
+
+        const marketStatus = boardElement.querySelector('[data-market-status]');
+        if (marketStatus) {
+            marketStatus.textContent = board.marketOpen ? '장중' : '장마감';
+            marketStatus.classList.toggle('open', board.marketOpen);
+        }
+
+        if (!board.items || board.items.length === 0) {
+            renderEmpty(boardElement);
+            return;
+        }
+
+        const tableWrap = ensureTable(boardElement);
+        const tableBody = tableWrap.querySelector('[data-ranking-body]');
+        tableBody.innerHTML = renderRankingRows(board.items);
+    }
+
+    async function refreshRankings() {
+        try {
+            const response = await fetch(rankingDataUrl, {
+                headers: {'Accept': 'application/json'}
+            });
+            if (!response.ok) {
+                return;
+            }
+
+            const pageInfo = await response.json();
+            (pageInfo.rankingBoards || []).forEach(updateBoard);
+        } catch (error) {
+            console.warn('거래량/거래대금 순위 갱신에 실패했습니다.', error);
+        }
+    }
+
+    refreshRankings();
+    window.setInterval(refreshRankings, rankingRefreshIntervalMillis);
+</script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinMate</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+</head>
+<body>
+<div class="page">
+    <div th:replace="~{/layout/header :: header}"></div>
+
+    <main class="main">
+        <section class="content">
+            <h1>예수금 입출금 내역</h1>
+
+            <section>
+                <h2>증권계좌 선택</h2>
+                <p>
+                    <a th:href="@{/investments/securityCashTransaction(period=${securitiesCashTransactionPageInfo.period}, page=0)}">전체 증권계좌</a>
+                </p>
+
+                <p th:if="${#lists.isEmpty(securitiesCashTransactionPageInfo.investments)}">
+                    아직 개설된 증권 계좌가 없습니다.
+                </p>
+
+                <table th:unless="${#lists.isEmpty(securitiesCashTransactionPageInfo.investments)}">
+                    <thead>
+                    <tr>
+                        <th>번호</th>
+                        <th>증권사</th>
+                        <th>계좌번호</th>
+                        <th>예수금</th>
+                        <th>조회</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="investment, investmentStat : ${securitiesCashTransactionPageInfo.investments}">
+                        <td th:text="${investmentStat.count}">1</td>
+                        <td th:text="${investment.securitiesCompanyCode.displayName}">키움증권</td>
+                        <td th:text="${investment.accountNumber}">000000-00-000000</td>
+                        <td>
+                            <span th:text="${#numbers.formatDecimal(investment.depositBalance, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                        </td>
+                        <td>
+                            <a th:href="@{/investments/securityCashTransaction(investmentNumber=${investment.accountNumber}, securitiesCompanyCode=${investment.securitiesCompanyCode.name()}, period=${securitiesCashTransactionPageInfo.period}, page=0)}">
+                                예수금 내역 조회
+                            </a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section>
+                <h2>조회 조건</h2>
+                <p th:if="${securitiesCashTransactionPageInfo.selectedInvestment == null}">
+                    <strong>조회 계좌</strong>
+                    <span>전체 증권계좌</span>
+                </p>
+                <p th:if="${securitiesCashTransactionPageInfo.selectedInvestment != null}">
+                    <strong>조회 계좌</strong>
+                    <span th:text="${securitiesCashTransactionPageInfo.selectedInvestment.securitiesCompanyCode.displayName}">키움증권</span>
+                    <span th:text="${securitiesCashTransactionPageInfo.selectedInvestment.accountNumber}">000000-00-000000</span>
+                </p>
+
+                <form th:action="@{/investments/securityCashTransaction}" method="get">
+                    <input th:if="${securitiesCashTransactionPageInfo.selectedInvestment != null}"
+                           type="hidden"
+                           name="investmentNumber"
+                           th:value="${securitiesCashTransactionPageInfo.selectedInvestment.accountNumber}">
+                    <input th:if="${securitiesCashTransactionPageInfo.selectedInvestment != null}"
+                           type="hidden"
+                           name="securitiesCompanyCode"
+                           th:value="${securitiesCashTransactionPageInfo.selectedInvestment.securitiesCompanyCode.name()}">
+
+                    <label for="period">조회 기간</label>
+                    <select id="period" name="period">
+                        <option th:each="periodOption : ${securitiesCashTransactionPageInfo.periods}"
+                                th:value="${periodOption.name()}"
+                                th:text="${periodOption.displayName}"
+                                th:selected="${periodOption == securitiesCashTransactionPageInfo.period}">
+                            최근 1개월
+                        </option>
+                    </select>
+                    <input type="hidden" name="page" value="0">
+                    <button type="submit">조회</button>
+                </form>
+            </section>
+
+            <section th:if="${securitiesCashTransactionPageInfo.transactionSummary != null}">
+                <h2>거래 요약</h2>
+                <p>
+                    <strong>총 입금액</strong>
+                    <span th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.totalDepositAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                </p>
+                <p>
+                    <strong>총 출금액</strong>
+                    <span th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.totalWithdrawalAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                </p>
+                <p>
+                    <strong>순액</strong>
+                    <span th:if="${securitiesCashTransactionPageInfo.transactionSummary.netAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">+</span>
+                    <span th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.netAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                </p>
+            </section>
+
+            <section>
+                <h2>예수금 거래내역 목록</h2>
+
+                <p th:if="${#lists.isEmpty(securitiesCashTransactionPageInfo.transactions)}">
+                    조회 기간에 해당하는 예수금 거래내역이 없습니다.
+                </p>
+
+                <table th:unless="${#lists.isEmpty(securitiesCashTransactionPageInfo.transactions)}">
+                    <thead>
+                    <tr>
+                        <th>번호</th>
+                        <th>거래일시</th>
+                        <th>증권계좌</th>
+                        <th>거래유형</th>
+                        <th>거래금액</th>
+                        <th>거래 전 예수금</th>
+                        <th>거래 후 예수금</th>
+                        <th>상대 은행</th>
+                        <th>상대 계좌</th>
+                        <th>상대 이름</th>
+                        <th>설명</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="transaction, transactionStat : ${securitiesCashTransactionPageInfo.transactions}">
+                        <td th:text="${securitiesCashTransactionPageInfo.transactionPage.number * securitiesCashTransactionPageInfo.transactionPage.size + transactionStat.count}">1</td>
+                        <td th:text="${#temporals.format(transaction.createdAt, 'yyyy-MM-dd HH:mm:ss')}">
+                            2026-06-30 12:00:00
+                        </td>
+                        <td>
+                            <span th:text="${transaction.investment.securitiesCompanyCode.displayName}">키움증권</span>
+                            <span th:text="${transaction.investment.accountNumber}">000000-00-000000</span>
+                        </td>
+                        <td>
+                            <span th:if="${transaction.type.name() == 'DEPOSIT'}">예수금 입금</span>
+                            <span th:if="${transaction.type.name() == 'WITHDRAW'}">예수금 출금</span>
+                        </td>
+                        <td>
+                            <span th:if="${transaction.type.name() == 'WITHDRAW'}">-</span>
+                            <span th:if="${transaction.type.name() == 'DEPOSIT'}">+</span>
+                            <span th:text="${#numbers.formatDecimal(transaction.amount, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                        </td>
+                        <td>
+                            <span th:text="${#numbers.formatDecimal(transaction.balanceBeforeTransaction, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                        </td>
+                        <td>
+                            <span th:text="${#numbers.formatDecimal(transaction.balanceAfterTransaction, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                        </td>
+                        <td>
+                            <span th:if="${transaction.counterpartyBankCode != null}"
+                                  th:text="${transaction.counterpartyBankCode.displayName}">
+                                신한은행
+                            </span>
+                            <span th:if="${transaction.counterpartyBankCode == null}">-</span>
+                        </td>
+                        <td>
+                            <span th:if="${transaction.counterpartyAccountNumber != null}"
+                                  th:text="${transaction.counterpartyAccountNumber}">
+                                000000-00-000000
+                            </span>
+                            <span th:if="${transaction.counterpartyAccountNumber == null}">-</span>
+                        </td>
+                        <td>
+                            <span th:if="${transaction.counterpartyName != null}"
+                                  th:text="${transaction.counterpartyName}">
+                                홍길동
+                            </span>
+                            <span th:if="${transaction.counterpartyName == null}">-</span>
+                        </td>
+                        <td th:text="${transaction.description}">증권계좌 예수금 입금</td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <nav th:if="${securitiesCashTransactionPageInfo.transactionPage != null && securitiesCashTransactionPageInfo.transactionPage.totalPages > 1}"
+                     aria-label="예수금 거래내역 페이지">
+                    <p>
+                        <span th:text="${securitiesCashTransactionPageInfo.transactionPage.number + 1}">1</span>
+                        /
+                        <span th:text="${securitiesCashTransactionPageInfo.transactionPage.totalPages}">1</span>
+                        페이지
+                    </p>
+
+                    <a th:if="${!securitiesCashTransactionPageInfo.transactionPage.first && securitiesCashTransactionPageInfo.selectedInvestment == null}"
+                       th:href="@{/investments/securityCashTransaction(period=${securitiesCashTransactionPageInfo.period}, page=0)}">
+                        처음
+                    </a>
+                    <a th:if="${!securitiesCashTransactionPageInfo.transactionPage.first && securitiesCashTransactionPageInfo.selectedInvestment != null}"
+                       th:href="@{/investments/securityCashTransaction(investmentNumber=${securitiesCashTransactionPageInfo.selectedInvestment.accountNumber}, securitiesCompanyCode=${securitiesCashTransactionPageInfo.selectedInvestment.securitiesCompanyCode.name()}, period=${securitiesCashTransactionPageInfo.period}, page=0)}">
+                        처음
+                    </a>
+
+                    <a th:if="${securitiesCashTransactionPageInfo.transactionPage.hasPrevious() && securitiesCashTransactionPageInfo.selectedInvestment == null}"
+                       th:href="@{/investments/securityCashTransaction(period=${securitiesCashTransactionPageInfo.period}, page=${securitiesCashTransactionPageInfo.transactionPage.number - 1})}">
+                        이전
+                    </a>
+                    <a th:if="${securitiesCashTransactionPageInfo.transactionPage.hasPrevious() && securitiesCashTransactionPageInfo.selectedInvestment != null}"
+                       th:href="@{/investments/securityCashTransaction(investmentNumber=${securitiesCashTransactionPageInfo.selectedInvestment.accountNumber}, securitiesCompanyCode=${securitiesCashTransactionPageInfo.selectedInvestment.securitiesCompanyCode.name()}, period=${securitiesCashTransactionPageInfo.period}, page=${securitiesCashTransactionPageInfo.transactionPage.number - 1})}">
+                        이전
+                    </a>
+
+                    <span th:each="pageNumber : ${securitiesCashTransactionPageInfo.pagination.pageNumbers}">
+                        <strong th:if="${pageNumber == securitiesCashTransactionPageInfo.transactionPage.number}"
+                                th:text="${pageNumber + 1}">1</strong>
+                        <a th:if="${pageNumber != securitiesCashTransactionPageInfo.transactionPage.number && securitiesCashTransactionPageInfo.selectedInvestment == null}"
+                           th:href="@{/investments/securityCashTransaction(period=${securitiesCashTransactionPageInfo.period}, page=${pageNumber})}"
+                           th:text="${pageNumber + 1}">1</a>
+                        <a th:if="${pageNumber != securitiesCashTransactionPageInfo.transactionPage.number && securitiesCashTransactionPageInfo.selectedInvestment != null}"
+                           th:href="@{/investments/securityCashTransaction(investmentNumber=${securitiesCashTransactionPageInfo.selectedInvestment.accountNumber}, securitiesCompanyCode=${securitiesCashTransactionPageInfo.selectedInvestment.securitiesCompanyCode.name()}, period=${securitiesCashTransactionPageInfo.period}, page=${pageNumber})}"
+                           th:text="${pageNumber + 1}">1</a>
+                    </span>
+
+                    <a th:if="${securitiesCashTransactionPageInfo.transactionPage.hasNext() && securitiesCashTransactionPageInfo.selectedInvestment == null}"
+                       th:href="@{/investments/securityCashTransaction(period=${securitiesCashTransactionPageInfo.period}, page=${securitiesCashTransactionPageInfo.transactionPage.number + 1})}">
+                        다음
+                    </a>
+                    <a th:if="${securitiesCashTransactionPageInfo.transactionPage.hasNext() && securitiesCashTransactionPageInfo.selectedInvestment != null}"
+                       th:href="@{/investments/securityCashTransaction(investmentNumber=${securitiesCashTransactionPageInfo.selectedInvestment.accountNumber}, securitiesCompanyCode=${securitiesCashTransactionPageInfo.selectedInvestment.securitiesCompanyCode.name()}, period=${securitiesCashTransactionPageInfo.period}, page=${securitiesCashTransactionPageInfo.transactionPage.number + 1})}">
+                        다음
+                    </a>
+
+                    <a th:if="${!securitiesCashTransactionPageInfo.transactionPage.last && securitiesCashTransactionPageInfo.selectedInvestment == null}"
+                       th:href="@{/investments/securityCashTransaction(period=${securitiesCashTransactionPageInfo.period}, page=${securitiesCashTransactionPageInfo.transactionPage.totalPages - 1})}">
+                        끝
+                    </a>
+                    <a th:if="${!securitiesCashTransactionPageInfo.transactionPage.last && securitiesCashTransactionPageInfo.selectedInvestment != null}"
+                       th:href="@{/investments/securityCashTransaction(investmentNumber=${securitiesCashTransactionPageInfo.selectedInvestment.accountNumber}, securitiesCompanyCode=${securitiesCashTransactionPageInfo.selectedInvestment.securitiesCompanyCode.name()}, period=${securitiesCashTransactionPageInfo.period}, page=${securitiesCashTransactionPageInfo.transactionPage.totalPages - 1})}">
+                        끝
+                    </a>
+                </nav>
+            </section>
+
+            <p>
+                <a th:href="@{/investments}">투자 홈</a>
+                <a th:href="@{/investments/list}">내 증권 계좌 / 예수금</a>
+            </p>
+        </section>
+    </main>
+</div>
+</body>
+</html>

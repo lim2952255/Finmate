@@ -13,11 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountNumberRegistryService {
     private final AccountNumberRegistryRepository accountNumberRegistryRepository;
 
-    @Transactional(readOnly = true)
-    public boolean exists(String accountNumber) {
-        return accountNumberRegistryRepository.existsByAccountNumber(accountNumber);
-    }
-
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void register(String accountNumber, AccountType accountType) {
         accountNumberRegistryRepository.saveAndFlush(AccountNumberRegistry.create(accountNumber, accountType));

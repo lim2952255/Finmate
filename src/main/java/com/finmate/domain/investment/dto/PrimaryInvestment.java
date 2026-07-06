@@ -6,6 +6,7 @@ import lombok.Getter;
 
 import java.math.BigDecimal;
 
+// 대표 증권 계좌 설정용 dto
 @Getter
 public class PrimaryInvestment {
 

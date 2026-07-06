@@ -20,11 +20,11 @@
 
             <section>
                 <h2>계좌 선택</h2>
-                <p th:if="${#lists.isEmpty(accounts)}">
+                <p th:if="${#lists.isEmpty(transferLimitPageInfo.accounts)}">
                     아직 개설된 계좌가 없습니다.
                 </p>
 
-                <table th:unless="${#lists.isEmpty(accounts)}">
+                <table th:unless="${#lists.isEmpty(transferLimitPageInfo.accounts)}">
                     <thead>
                     <tr>
                         <th>은행</th>
@@ -34,7 +34,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="account : ${accounts}">
+                    <tr th:each="account : ${transferLimitPageInfo.accounts}">
                         <td th:text="${account.bankCode.displayName}">신한은행</td>
                         <td th:text="${account.accountNumber}">000000-00-000000</td>
                         <td>
@@ -53,34 +53,34 @@
                 </table>
             </section>
 
-            <section th:if="${selectedAccount != null}">
+            <section th:if="${transferLimitPageInfo.selectedAccount != null}">
                 <h2>현재 이체한도</h2>
                 <p>
                     <strong>선택 계좌</strong>
-                    <span th:text="${selectedAccount.bankCode.displayName}">신한은행</span>
-                    <span th:text="${selectedAccount.accountNumber}">000000-00-000000</span>
+                    <span th:text="${transferLimitPageInfo.selectedAccount.bankCode.displayName}">신한은행</span>
+                    <span th:text="${transferLimitPageInfo.selectedAccount.accountNumber}">000000-00-000000</span>
                 </p>
                 <p>
                     <strong>일일 이체한도</strong>
-                    <span th:text="${#numbers.formatDecimal(dailyTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(transferLimitPageInfo.transferLimitInfo.dailyTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
                 </p>
                 <p>
                     <strong>오늘 이체한 금액</strong>
-                    <span th:text="${#numbers.formatDecimal(todayUsedTransferAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(transferLimitPageInfo.transferLimitInfo.todayUsedTransferAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
                 </p>
                 <p>
                     <strong>남은 일일 이체한도</strong>
-                    <span th:text="${#numbers.formatDecimal(remainingDailyTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(transferLimitPageInfo.transferLimitInfo.remainingDailyTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
                 </p>
                 <p>
                     <strong>1회 이체한도</strong>
-                    <span th:text="${#numbers.formatDecimal(singleTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(transferLimitPageInfo.transferLimitInfo.singleTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
                 </p>
             </section>
 
-            <form th:if="${selectedAccount != null}" th:action="@{/accounts/transfer-limit}" method="post">
-                <input type="hidden" name="accountNumber" th:value="${selectedAccount.accountNumber}">
-                <input type="hidden" name="bankCode" th:value="${selectedAccount.bankCode}">
+            <form th:if="${transferLimitPageInfo.selectedAccount != null}" th:action="@{/accounts/transfer-limit}" method="post">
+                <input type="hidden" name="accountNumber" th:value="${transferLimitPageInfo.selectedAccount.accountNumber}">
+                <input type="hidden" name="bankCode" th:value="${transferLimitPageInfo.selectedAccount.bankCode}">
 
                 <div>
                     <label for="dailyTransferLimit">새 일일 이체한도</label>

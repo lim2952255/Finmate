@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
+// 계좌 개설용 dto
 @Getter
 @Setter
 public class OpenAccount {

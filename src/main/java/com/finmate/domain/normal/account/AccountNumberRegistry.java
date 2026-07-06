@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 // 고유한 계좌번호 생성용 엔티티(테이블)
+// 계좌번호 생성 후 발급시, 우선적으로 해당 테이블에 저장한 후에 계좌번호를 발급함으로서 계좌번호가 중복되는 문제를 방지한다.
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(
@@ -23,6 +24,7 @@ public class AccountNumberRegistry {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // 시스템에서 생성한 계좌번호
     @Column(name = "account_number", nullable = false, updatable = false)
     private String accountNumber;
 

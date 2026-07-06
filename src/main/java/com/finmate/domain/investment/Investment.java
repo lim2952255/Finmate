@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 * 보유종목 = 증권계좌별
 * 포트폴리오 = 기본적으로 증권계좌별, 화면에서는 사용자별 통합 조회 가능
 * */
+// 증권 계좌 엔티티
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(

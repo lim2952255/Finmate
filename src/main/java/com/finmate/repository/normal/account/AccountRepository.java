@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+// 계좌 관리 repository
 @Repository
 public interface AccountRepository extends JpaRepository<Account, Long> {
     Optional<Account> findByUser_IdAndPrimaryTrue(Long userId);
@@ -29,8 +30,6 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from Account a where a.user.id = :userId order by a.id")
     List<Account> findByUserIdForUpdate(@Param("userId") Long userId);
-
-    Optional<Account> findByUser_IdAndAccountNumber(Long userId, String accountNumber);
 
     Optional<Account> findByUser_IdAndAccountNumberAndBankCode(Long userId, String accountNumber, BankCode bankCode);
 

@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinMate</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <style>
+        .stock-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+        }
+
+        .summary-item {
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .summary-item span {
+            display: block;
+            margin-top: 4px;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .chart-control-form {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: end;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .chart-control-form label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .chart-panel {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 220px;
+            gap: 18px;
+        }
+
+        .chart-main-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .chart-price {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+
+        .chart-price strong {
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        .chart-price span {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 10px;
+            color: #475569;
+            font-size: 13px;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-color {
+            width: 18px;
+            height: 3px;
+            border-radius: 999px;
+            background: #94a3b8;
+        }
+
+        .legend-color.ma5 {
+            background: #f59e0b;
+        }
+
+        .legend-color.ma20 {
+            background: #10b981;
+        }
+
+        .legend-color.ma60 {
+            background: #7c3aed;
+        }
+
+        .chart-scroll {
+            position: relative;
+            overflow-x: auto;
+            border: 1px solid #dbe3ef;
+            border-radius: 8px;
+            background: #ffffff;
+        }
+
+        .stock-chart-svg {
+            display: block;
+            min-width: 100%;
+            background: #ffffff;
+        }
+
+        .chart-grid-line {
+            stroke: #e5e7eb;
+            stroke-width: 1;
+        }
+
+        .chart-axis-line {
+            stroke: #cbd5e1;
+            stroke-width: 1;
+        }
+
+        .chart-axis-label {
+            fill: #64748b;
+            font-size: 12px;
+        }
+
+        .chart-date-grid-line {
+            stroke: #eef2f7;
+            stroke-width: 1;
+        }
+
+        .chart-date-axis-label {
+            fill: #64748b;
+            font-size: 12px;
+        }
+
+        .chart-current-line {
+            stroke: #ef4444;
+            stroke-dasharray: 5 5;
+            stroke-width: 1;
+        }
+
+        .chart-current-label {
+            fill: #dc2626;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .svg-candle-wick {
+            stroke-width: 1.2;
+        }
+
+        .svg-candle-body {
+            rx: 1;
+        }
+
+        .svg-candle-wick.bullish,
+        .svg-candle-body.bullish {
+            stroke: #dc2626;
+        }
+
+        .svg-candle-body.bullish {
+            fill: #dc2626;
+        }
+
+        .svg-candle-wick.bearish,
+        .svg-candle-body.bearish {
+            stroke: #2563eb;
+        }
+
+        .svg-candle-body.bearish {
+            fill: #2563eb;
+        }
+
+        .svg-candle-wick.flat,
+        .svg-candle-body.flat {
+            stroke: #64748b;
+        }
+
+        .svg-candle-body.flat {
+            fill: #64748b;
+        }
+
+        .realtime-candle-layer .svg-candle-wick,
+        .realtime-candle-layer .svg-candle-body {
+            stroke-width: 1.8;
+        }
+
+        .realtime-candle-layer .svg-candle-body {
+            opacity: 0.9;
+        }
+
+        .chart-hover-target {
+            fill: transparent;
+            pointer-events: all;
+        }
+
+        .chart-tooltip {
+            position: absolute;
+            z-index: 5;
+            display: none;
+            min-width: 220px;
+            padding: 12px 14px;
+            border: 1px solid #2563eb;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+            pointer-events: none;
+        }
+
+        .chart-tooltip.visible {
+            display: block;
+        }
+
+        .chart-tooltip-title {
+            margin-bottom: 8px;
+            color: #0f172a;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .chart-tooltip-row {
+            display: grid;
+            grid-template-columns: 72px 1fr;
+            gap: 10px;
+            align-items: center;
+            min-height: 24px;
+            font-size: 14px;
+        }
+
+        .chart-tooltip-label {
+            color: #64748b;
+        }
+
+        .chart-tooltip-value {
+            color: #0f172a;
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .chart-tooltip-value.bullish {
+            color: #dc2626;
+        }
+
+        .chart-tooltip-value.bearish {
+            color: #2563eb;
+        }
+
+        .svg-volume-bar {
+            opacity: 0.45;
+        }
+
+        .svg-volume-bar.bullish {
+            fill: #dc2626;
+        }
+
+        .svg-volume-bar.bearish {
+            fill: #2563eb;
+        }
+
+        .svg-volume-bar.flat {
+            fill: #64748b;
+        }
+
+        .ma-line {
+            fill: none;
+            stroke-width: 1.4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .ma-line.ma5 {
+            stroke: #f59e0b;
+        }
+
+        .ma-line.ma20 {
+            stroke: #10b981;
+        }
+
+        .ma-line.ma60 {
+            stroke: #7c3aed;
+        }
+
+        .price-marker-line {
+            stroke-width: 1.1;
+            stroke-dasharray: 4 4;
+        }
+
+        .price-marker-dot {
+            stroke: #ffffff;
+            stroke-width: 1.5;
+        }
+
+        .price-marker-text {
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .price-marker.highest .price-marker-line,
+        .price-marker.highest .price-marker-dot {
+            stroke: #ef4444;
+        }
+
+        .price-marker.highest .price-marker-dot {
+            fill: #ef4444;
+        }
+
+        .price-marker.highest .price-marker-text {
+            fill: #ef4444;
+        }
+
+        .price-marker.lowest .price-marker-line,
+        .price-marker.lowest .price-marker-dot {
+            stroke: #2563eb;
+        }
+
+        .price-marker.lowest .price-marker-dot {
+            fill: #2563eb;
+        }
+
+        .price-marker.lowest .price-marker-text {
+            fill: #2563eb;
+        }
+
+        .chart-side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .chart-side-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .chart-side-item:last-child {
+            padding-bottom: 0;
+            border-bottom: 0;
+        }
+
+        .chart-side-item span {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .chart-side-item strong {
+            font-size: 16px;
+        }
+
+        .chart-side-item small {
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .chart-caption {
+            margin-top: 10px;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        @media (max-width: 900px) {
+            .chart-panel {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-main-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .chart-legend {
+                justify-content: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div th:replace="~{/layout/header :: header}"></div>
+
+    <main class="main">
+        <section class="content">
+            <h1>
+                <span th:text="${stockDetailPageInfo.stock.nameKo}">삼성전자</span>
+                <span th:if="${stockDetailPageInfo.stock.nameEn != null and !#strings.isEmpty(stockDetailPageInfo.stock.nameEn)}"
+                      th:text="|(${stockDetailPageInfo.stock.nameEn})|">(Samsung Electronics)</span>
+            </h1>
+
+            <section>
+                <h2>종목 정보</h2>
+
+                <div class="stock-summary">
+                    <div class="summary-item">
+                        <strong>종목코드</strong>
+                        <span th:text="${stockDetailPageInfo.stock.symbol}">005930</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>시장</strong>
+                        <span th:text="${stockDetailPageInfo.stock.marketType}">KOSPI</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>상품유형</strong>
+                        <span th:text="${stockDetailPageInfo.stock.securityType}">COMMON_STOCK</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>통화</strong>
+                        <span th:text="${stockDetailPageInfo.stock.currency}">KRW</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>최근 거래일</strong>
+                        <span th:if="${stockDetailPageInfo.latestTradeDate != null}"
+                              th:text="${#temporals.format(stockDetailPageInfo.latestTradeDate, 'yyyy-MM-dd')}">2026-07-02</span>
+                        <span th:unless="${stockDetailPageInfo.latestTradeDate != null}">데이터 없음</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>최근 종가</strong>
+                        <span th:if="${stockDetailPageInfo.latestClosePrice != null}"
+                              th:text="${stockDetailPageInfo.formatPrice(stockDetailPageInfo.latestClosePrice)}">70,500</span>
+                        <span th:unless="${stockDetailPageInfo.latestClosePrice != null}">데이터 없음</span>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2>일봉 차트</h2>
+
+                <form class="chart-control-form" th:action="@{/investments/stocks/detail}" method="get">
+                    <input type="hidden" name="stockId" th:value="${stockDetailPageInfo.stock.id}">
+                    <label for="period">
+                        기간
+                        <select id="period" name="period">
+                            <option th:each="chartPeriod : ${stockDetailPageInfo.chartPeriods}"
+                                    th:value="${chartPeriod}"
+                                    th:selected="${chartPeriod == stockDetailPageInfo.selectedPeriod}"
+                                    th:text="${chartPeriod.displayName}">
+                                1년
+                            </option>
+                        </select>
+                    </label>
+                    <button type="submit">조회</button>
+                </form>
+
+                <p th:if="${stockDetailPageInfo.savedDailyPriceCount > 0}">
+                    새 일봉 데이터
+                    <strong th:text="${stockDetailPageInfo.savedDailyPriceCount}">0</strong>건을 저장했습니다.
+                </p>
+
+                <p th:unless="${stockDetailPageInfo.hasDailyPrices()}">
+                    표시할 일봉 데이터가 없습니다.
+                </p>
+
+                <div class="chart-panel" th:if="${stockDetailPageInfo.hasDailyPrices()}">
+                    <div>
+                        <div class="chart-main-header">
+                            <div class="chart-price">
+                                <strong id="realtime-chart-price"
+                                        th:if="${stockDetailPageInfo.latestClosePrice != null}"
+                                        th:text="${stockDetailPageInfo.formatPrice(stockDetailPageInfo.latestClosePrice)}">70,500</strong>
+                                <strong id="realtime-chart-price"
+                                        th:unless="${stockDetailPageInfo.latestClosePrice != null}">-</strong>
+                                <span id="realtime-trade-time"
+                                      th:if="${stockDetailPageInfo.latestTradeDate != null}"
+                                      th:text="${#temporals.format(stockDetailPageInfo.latestTradeDate, 'yyyy-MM-dd')}">2026-07-02</span>
+                            </div>
+
+                            <div class="chart-legend" th:if="${stockDetailPageInfo.movingAverageLines != null and !#lists.isEmpty(stockDetailPageInfo.movingAverageLines)}">
+                                <span class="legend-item" th:each="line : ${stockDetailPageInfo.movingAverageLines}">
+                                    <span class="legend-color" th:classappend="${line.cssClass}"></span>
+                                    <span th:text="${line.label}">MA5</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="chart-scroll" aria-label="일봉 캔들 차트">
+                            <svg class="stock-chart-svg"
+                                 role="img"
+                                 th:attr="viewBox=|0 0 ${stockDetailPageInfo.chartWidth} ${stockDetailPageInfo.chartHeight}|,width=${stockDetailPageInfo.chartWidth},height=${stockDetailPageInfo.chartHeight}">
+                                <g>
+                                    <line class="chart-date-grid-line"
+                                          th:each="dateLabel : ${stockDetailPageInfo.dateAxisLabels}"
+                                          th:attr="x1=${dateLabel.x},y1=${stockDetailPageInfo.priceAreaTop},x2=${dateLabel.x},y2=${stockDetailPageInfo.dateAxisLineY}"></line>
+                                    <line class="chart-grid-line"
+                                          th:each="axisLabel : ${stockDetailPageInfo.priceAxisLabels}"
+                                          th:attr="x1=0,y1=${axisLabel.y},x2=${stockDetailPageInfo.priceAxisX},y2=${axisLabel.y}"></line>
+                                    <text class="chart-axis-label"
+                                          th:each="axisLabel : ${stockDetailPageInfo.priceAxisLabels}"
+                                          th:attr="x=${stockDetailPageInfo.priceAxisX + 8},y=${axisLabel.y}"
+                                          dominant-baseline="middle"
+                                          th:text="${axisLabel.displayValue}">70,000</text>
+                                    <line class="chart-axis-line"
+                                          th:attr="x1=0,y1=${stockDetailPageInfo.volumeAreaTop - 16},x2=${stockDetailPageInfo.priceAxisX},y2=${stockDetailPageInfo.volumeAreaTop - 16}"></line>
+                                    <line class="chart-axis-line"
+                                          th:attr="x1=${stockDetailPageInfo.priceAxisX},y1=${stockDetailPageInfo.priceAreaTop},x2=${stockDetailPageInfo.priceAxisX},y2=${stockDetailPageInfo.volumeAreaBottom}"></line>
+                                    <line class="chart-axis-line"
+                                          th:attr="x1=0,y1=${stockDetailPageInfo.dateAxisLineY},x2=${stockDetailPageInfo.priceAxisX},y2=${stockDetailPageInfo.dateAxisLineY}"></line>
+                                    <text class="chart-date-axis-label"
+                                          th:each="dateLabel : ${stockDetailPageInfo.dateAxisLabels}"
+                                          th:attr="x=${dateLabel.x},y=${stockDetailPageInfo.dateAxisLabelY},text-anchor=${dateLabel.textAnchor}"
+                                          th:text="${dateLabel.displayValue}">2026.07.02</text>
+                                </g>
+
+                                <g th:if="${stockDetailPageInfo.hasLatestPriceLine}">
+                                    <line id="realtime-current-line"
+                                          class="chart-current-line"
+                                          th:attr="x1=0,y1=${stockDetailPageInfo.latestPriceLineY},x2=${stockDetailPageInfo.priceAxisX},y2=${stockDetailPageInfo.latestPriceLineY}"></line>
+                                    <text id="realtime-current-label"
+                                          class="chart-current-label"
+                                          th:attr="x=${stockDetailPageInfo.priceAxisX + 8},y=${stockDetailPageInfo.latestPriceLineY}"
+                                          dominant-baseline="middle"
+                                          th:text="${stockDetailPageInfo.formatPrice(stockDetailPageInfo.latestClosePrice)}">70,500</text>
+                                </g>
+
+                                <g>
+                                    <rect class="svg-volume-bar"
+                                          th:each="candle : ${stockDetailPageInfo.candles}"
+                                          th:classappend="${candle.candleType}"
+                                          th:attr="x=${candle.volumeX},y=${candle.volumeY},width=${candle.volumeWidth},height=${candle.volumeHeight}">
+                                        <title th:text="${candle.title}">일봉 데이터</title>
+                                    </rect>
+                                </g>
+
+                                <g>
+                                    <polyline class="ma-line"
+                                              th:each="line : ${stockDetailPageInfo.movingAverageLines}"
+                                              th:classappend="${line.cssClass}"
+                                              th:attr="points=${line.points}"></polyline>
+                                </g>
+
+                                <g>
+                                    <line class="svg-candle-wick"
+                                          th:each="candle : ${stockDetailPageInfo.candles}"
+                                          th:classappend="${candle.candleType}"
+                                          th:attr="x1=${candle.x},y1=${candle.wickY1},x2=${candle.x},y2=${candle.wickY2}">
+                                        <title th:text="${candle.title}">일봉 데이터</title>
+                                    </line>
+                                    <rect class="svg-candle-body"
+                                          th:each="candle : ${stockDetailPageInfo.candles}"
+                                          th:classappend="${candle.candleType}"
+                                          th:attr="x=${candle.bodyX},y=${candle.bodyY},width=${candle.bodyWidth},height=${candle.bodyHeight}">
+                                        <title th:text="${candle.title}">일봉 데이터</title>
+                                    </rect>
+                                </g>
+
+                                <g id="realtime-candle-layer"
+                                   class="realtime-candle-layer"
+                                   th:attr="data-stock-id=${stockDetailPageInfo.stock.id},
+                                            data-chart-max-price=${stockDetailPageInfo.maxChartPrice},
+                                            data-chart-min-price=${stockDetailPageInfo.minChartPrice},
+                                            data-price-area-top=${stockDetailPageInfo.priceAreaTop},
+                                            data-price-area-bottom=${stockDetailPageInfo.priceAreaBottom},
+                                            data-price-axis-x=${stockDetailPageInfo.priceAxisX},
+                                            data-realtime-candle-x=${stockDetailPageInfo.realtimeCandleX},
+                                            data-realtime-candle-width=${stockDetailPageInfo.realtimeCandleWidth},
+                                            data-price-decimal-digits=${stockDetailPageInfo.priceDecimalDigits}">
+                                </g>
+
+                                <g class="chart-hover-layer">
+                                    <rect class="chart-hover-target"
+                                          th:each="candle : ${stockDetailPageInfo.candles}"
+                                          th:attr="x=${candle.hoverX},
+                                                   y=${stockDetailPageInfo.priceAreaTop},
+                                                   width=${candle.hoverWidth},
+                                                   height=${stockDetailPageInfo.volumeAreaBottom - stockDetailPageInfo.priceAreaTop},
+                                                   data-date=${#temporals.format(candle.dailyPrice.tradeDate, 'yyyy-MM-dd')},
+                                                   data-open=${stockDetailPageInfo.formatPrice(candle.dailyPrice.openPrice)},
+                                                   data-high=${stockDetailPageInfo.formatPrice(candle.dailyPrice.highPrice)},
+                                                   data-low=${stockDetailPageInfo.formatPrice(candle.dailyPrice.lowPrice)},
+                                                   data-close=${stockDetailPageInfo.formatPrice(candle.dailyPrice.closePrice)},
+                                                   data-volume=${stockDetailPageInfo.formatVolume(candle.dailyPrice.accumulatedVolume)},
+                                                   data-amount=${candle.dailyPrice.accumulatedTradeAmount != null ? stockDetailPageInfo.formatTradeAmount(candle.dailyPrice.accumulatedTradeAmount) : '-'},
+                                                   data-candle-type=${candle.candleType}">
+                                    </rect>
+                                </g>
+
+                                <g class="price-marker"
+                                   th:if="${stockDetailPageInfo.highestPriceMarker != null}"
+                                   th:classappend="${stockDetailPageInfo.highestPriceMarker.cssClass}">
+                                    <line class="price-marker-line"
+                                          th:attr="x1=${stockDetailPageInfo.highestPriceMarker.labelX},y1=${stockDetailPageInfo.highestPriceMarker.labelY},x2=${stockDetailPageInfo.highestPriceMarker.pointX},y2=${stockDetailPageInfo.highestPriceMarker.pointY}"></line>
+                                    <circle class="price-marker-dot"
+                                            r="3"
+                                            th:attr="cx=${stockDetailPageInfo.highestPriceMarker.pointX},cy=${stockDetailPageInfo.highestPriceMarker.pointY}"></circle>
+                                    <text class="price-marker-text"
+                                          dominant-baseline="middle"
+                                          th:attr="x=${stockDetailPageInfo.highestPriceMarker.labelX},y=${stockDetailPageInfo.highestPriceMarker.labelY},text-anchor=${stockDetailPageInfo.highestPriceMarker.textAnchor}"
+                                          th:text="${stockDetailPageInfo.highestPriceMarker.label}">최고 70,000 - 2026.07.02</text>
+                                </g>
+
+                                <g class="price-marker"
+                                   th:if="${stockDetailPageInfo.lowestPriceMarker != null}"
+                                   th:classappend="${stockDetailPageInfo.lowestPriceMarker.cssClass}">
+                                    <line class="price-marker-line"
+                                          th:attr="x1=${stockDetailPageInfo.lowestPriceMarker.labelX},y1=${stockDetailPageInfo.lowestPriceMarker.labelY},x2=${stockDetailPageInfo.lowestPriceMarker.pointX},y2=${stockDetailPageInfo.lowestPriceMarker.pointY}"></line>
+                                    <circle class="price-marker-dot"
+                                            r="3"
+                                            th:attr="cx=${stockDetailPageInfo.lowestPriceMarker.pointX},cy=${stockDetailPageInfo.lowestPriceMarker.pointY}"></circle>
+                                    <text class="price-marker-text"
+                                          dominant-baseline="middle"
+                                          th:attr="x=${stockDetailPageInfo.lowestPriceMarker.labelX},y=${stockDetailPageInfo.lowestPriceMarker.labelY},text-anchor=${stockDetailPageInfo.lowestPriceMarker.textAnchor}"
+                                          th:text="${stockDetailPageInfo.lowestPriceMarker.label}">최저 60,000 - 2026.07.02</text>
+                                </g>
+                            </svg>
+                            <div id="chart-candle-tooltip" class="chart-tooltip" aria-hidden="true"></div>
+                        </div>
+                        <p class="chart-caption">
+                            <span th:text="${#temporals.format(stockDetailPageInfo.chartStartDate, 'yyyy-MM-dd')}">2023-07-02</span>
+                            부터
+                            <span th:text="${#temporals.format(stockDetailPageInfo.chartEndDate, 'yyyy-MM-dd')}">2026-07-02</span>
+                            까지의 수정주가 기준
+                            <span th:text="${stockDetailPageInfo.selectedPeriod.displayName}">1년</span>
+                            일봉입니다.
+                        </p>
+                    </div>
+
+                    <aside class="chart-side-panel">
+                        <div class="chart-side-item">
+                            <span>종목</span>
+                            <strong th:text="${stockDetailPageInfo.stock.symbol}">005930</strong>
+                        </div>
+                        <div class="chart-side-item">
+                            <span>시장</span>
+                            <strong th:text="${stockDetailPageInfo.stock.marketType}">KOSPI</strong>
+                        </div>
+                        <div class="chart-side-item">
+                            <span>기간</span>
+                            <strong th:text="${stockDetailPageInfo.selectedPeriod.displayName}">1년</strong>
+                        </div>
+                        <div class="chart-side-item">
+                            <span>최근 거래일</span>
+                            <strong th:if="${stockDetailPageInfo.latestTradeDate != null}"
+                                    th:text="${#temporals.format(stockDetailPageInfo.latestTradeDate, 'yyyy-MM-dd')}">2026-07-02</strong>
+                            <strong th:unless="${stockDetailPageInfo.latestTradeDate != null}">-</strong>
+                        </div>
+                        <div class="chart-side-item">
+                            <span>표시 일수</span>
+                            <strong th:text="${#lists.size(stockDetailPageInfo.dailyPrices)}">250</strong>
+                        </div>
+                        <div class="chart-side-item" th:if="${stockDetailPageInfo.highestPriceMarker != null}">
+                            <span>기간 최고</span>
+                            <strong th:text="${stockDetailPageInfo.highestPriceMarker.price}">70,000</strong>
+                            <small th:text="${stockDetailPageInfo.highestPriceMarker.tradeDate}">2026.07.02</small>
+                        </div>
+                        <div class="chart-side-item" th:if="${stockDetailPageInfo.lowestPriceMarker != null}">
+                            <span>기간 최저</span>
+                            <strong th:text="${stockDetailPageInfo.lowestPriceMarker.price}">60,000</strong>
+                            <small th:text="${stockDetailPageInfo.lowestPriceMarker.tradeDate}">2026.07.02</small>
+                        </div>
+                    </aside>
+                </div>
+            </section>
+
+            <section>
+                <h2>최근 일봉 데이터</h2>
+
+                <div class="table-scroll" th:if="${stockDetailPageInfo.recentDailyPrices != null and !#lists.isEmpty(stockDetailPageInfo.recentDailyPrices)}">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>거래일</th>
+                            <th>시가</th>
+                            <th>고가</th>
+                            <th>저가</th>
+                            <th>종가</th>
+                            <th>거래량</th>
+                            <th>거래대금</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="dailyPrice : ${stockDetailPageInfo.recentDailyPrices}">
+                            <td th:text="${#temporals.format(dailyPrice.tradeDate, 'yyyy-MM-dd')}">2026-07-02</td>
+                            <td th:text="${stockDetailPageInfo.formatPrice(dailyPrice.openPrice)}">70,000</td>
+                            <td th:text="${stockDetailPageInfo.formatPrice(dailyPrice.highPrice)}">71,000</td>
+                            <td th:text="${stockDetailPageInfo.formatPrice(dailyPrice.lowPrice)}">69,500</td>
+                            <td th:text="${stockDetailPageInfo.formatPrice(dailyPrice.closePrice)}">70,500</td>
+                            <td th:text="${stockDetailPageInfo.formatVolume(dailyPrice.accumulatedVolume)}">12,345,678</td>
+                            <td th:if="${dailyPrice.accumulatedTradeAmount != null}"
+                                th:text="${stockDetailPageInfo.formatTradeAmount(dailyPrice.accumulatedTradeAmount)}">850,000,000,000</td>
+                            <td th:unless="${dailyPrice.accumulatedTradeAmount != null}">-</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p th:if="${stockDetailPageInfo.recentDailyPrices == null or #lists.isEmpty(stockDetailPageInfo.recentDailyPrices)}">
+                    최근 일봉 데이터가 없습니다.
+                </p>
+            </section>
+
+            <p>
+                <a th:href="@{/investments/stocks/search}">종목 검색</a>
+                <a th:href="@{/investments/stocks/watchlist}">관심 종목</a>
+                <a th:href="@{/investments}">투자 홈</a>
+            </p>
+        </section>
+    </main>
+</div>
+<script>
+    (() => {
+        const candleLayer = document.getElementById('realtime-candle-layer');
+        if (!candleLayer || !window.WebSocket) {
+            return;
+        }
+
+        const chartScroll = candleLayer.closest('.chart-scroll');
+        const tooltip = document.getElementById('chart-candle-tooltip');
+        const stockId = Number(candleLayer.dataset.stockId);
+        const chartMaxPrice = toNumber(candleLayer.dataset.chartMaxPrice);
+        const chartMinPrice = toNumber(candleLayer.dataset.chartMinPrice);
+        const priceAreaTop = toNumber(candleLayer.dataset.priceAreaTop);
+        const priceAreaBottom = toNumber(candleLayer.dataset.priceAreaBottom);
+        const priceAxisX = toNumber(candleLayer.dataset.priceAxisX);
+        const realtimeCandleX = toNumber(candleLayer.dataset.realtimeCandleX);
+        const realtimeCandleWidth = toNumber(candleLayer.dataset.realtimeCandleWidth);
+        const priceDecimalDigits = Number(candleLayer.dataset.priceDecimalDigits || 0);
+        const priceAreaHeight = priceAreaBottom - priceAreaTop;
+        const svgNamespace = 'http://www.w3.org/2000/svg';
+
+        if (!stockId || !isFinite(chartMaxPrice) || !isFinite(chartMinPrice) || chartMaxPrice <= chartMinPrice) {
+            return;
+        }
+
+        attachTooltipEvents();
+
+        <!--클라이언트가 종목 상세페이지에 처음 접속 시 WebSocket을 open한다-->
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const socket = new WebSocket(`${protocol}://${window.location.host}/ws/stocks`);
+
+        socket.addEventListener('open', () => {
+            socket.send(JSON.stringify({
+                type: 'SUBSCRIBE_STOCK',
+                stockId: stockId
+            }));
+        });
+
+        socket.addEventListener('message', (event) => {
+            const message = parseMessage(event.data);
+            if (!message || message.type !== 'STOCK_TRADE' || Number(message.stockId) !== stockId) {
+                return;
+            }
+
+            updateRealtimePrice(message);
+            updateRealtimeCandle(message);
+        });
+
+        socket.addEventListener('error', () => {
+            closeSocket();
+        });
+
+        window.addEventListener('pagehide', closeSocket);
+        <!-- 소켓을 닫는 메서드-->
+        function closeSocket() {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'UNSUBSCRIBE_STOCK',
+                    stockId: stockId
+                }));
+                socket.close();
+            }
+        }
+
+        function updateRealtimePrice(message) {
+            const currentPrice = toNumber(message.currentPrice);
+            if (!isFinite(currentPrice)) {
+                return;
+            }
+
+            const formattedPrice = formatPrice(currentPrice);
+            const chartPrice = document.getElementById('realtime-chart-price');
+            const currentLabel = document.getElementById('realtime-current-label');
+            const currentLine = document.getElementById('realtime-current-line');
+            const tradeTime = document.getElementById('realtime-trade-time');
+            const currentY = toPriceY(currentPrice);
+
+            if (chartPrice) {
+                chartPrice.textContent = formattedPrice;
+            }
+
+            if (currentLabel) {
+                currentLabel.textContent = formattedPrice;
+                currentLabel.setAttribute('y', currentY);
+            }
+
+            if (currentLine) {
+                currentLine.setAttribute('y1', currentY);
+                currentLine.setAttribute('y2', currentY);
+            }
+
+            if (tradeTime) {
+                tradeTime.textContent = formatTradeTime(message.tradeTime);
+            }
+        }
+
+        function updateRealtimeCandle(message) {
+            const currentPrice = toNumber(message.currentPrice);
+            const openPrice = fallbackNumber(message.openPrice, currentPrice);
+            const highPrice = Math.max(
+                fallbackNumber(message.highPrice, currentPrice),
+                openPrice,
+                currentPrice);
+            const lowPrice = Math.min(
+                fallbackNumber(message.lowPrice, currentPrice),
+                openPrice,
+                currentPrice);
+
+            if (![currentPrice, openPrice, highPrice, lowPrice].every(isFinite)) {
+                return;
+            }
+
+            const candleType = resolveCandleType(openPrice, currentPrice);
+            const highY = toPriceY(highPrice);
+            const lowY = toPriceY(lowPrice);
+            const openY = toPriceY(openPrice);
+            const closeY = toPriceY(currentPrice);
+            const bodyY = Math.min(openY, closeY);
+            const bodyHeight = Math.max(1.5, Math.abs(openY - closeY));
+            const bodyX = realtimeCandleX - realtimeCandleWidth / 2;
+
+            drawOrUpdateSvg('realtime-candle-wick', 'line', `svg-candle-wick ${candleType}`, {
+                x1: realtimeCandleX,
+                y1: highY,
+                x2: realtimeCandleX,
+                y2: lowY
+            });
+
+            drawOrUpdateSvg('realtime-candle-body', 'rect', `svg-candle-body ${candleType}`, {
+                x: bodyX,
+                y: bodyY,
+                width: realtimeCandleWidth,
+                height: bodyHeight,
+                rx: 1
+            });
+
+            updateLatestHoverTarget(message, openPrice, highPrice, lowPrice, currentPrice, candleType);
+        }
+
+        function attachTooltipEvents() {
+            if (!chartScroll || !tooltip) {
+                return;
+            }
+
+            chartScroll.addEventListener('mousemove', (event) => {
+                const target = event.target.closest('.chart-hover-target');
+                if (!target) {
+                    hideTooltip();
+                    return;
+                }
+
+                showTooltip(target, event);
+            });
+
+            chartScroll.addEventListener('mouseleave', hideTooltip);
+        }
+
+        function showTooltip(target, event) {
+            tooltip.innerHTML = `
+                <div class="chart-tooltip-title">${escapeHtml(target.dataset.date || '-')}</div>
+                ${tooltipRow('시가', target.dataset.open, target.dataset.candleType)}
+                ${tooltipRow('고가', target.dataset.high, target.dataset.candleType)}
+                ${tooltipRow('저가', target.dataset.low, target.dataset.candleType)}
+                ${tooltipRow('종가', target.dataset.close, target.dataset.candleType)}
+                ${tooltipRow('거래량', target.dataset.volume, '')}
+                ${tooltipRow('거래대금', target.dataset.amount, '')}
+            `;
+            tooltip.classList.add('visible');
+            tooltip.setAttribute('aria-hidden', 'false');
+            placeTooltip(event);
+        }
+
+        function tooltipRow(label, value, valueClass) {
+            return `
+                <div class="chart-tooltip-row">
+                    <span class="chart-tooltip-label">${label}</span>
+                    <span class="chart-tooltip-value ${valueClass || ''}">${escapeHtml(value || '-')}</span>
+                </div>
+            `;
+        }
+
+        function placeTooltip(event) {
+            const chartRect = chartScroll.getBoundingClientRect();
+            const cursorX = event.clientX - chartRect.left + chartScroll.scrollLeft;
+            const cursorY = event.clientY - chartRect.top + chartScroll.scrollTop;
+            const visibleLeft = chartScroll.scrollLeft;
+            const visibleRight = visibleLeft + chartScroll.clientWidth;
+            let left = cursorX + 16;
+            let top = cursorY + 16;
+
+            if (left + tooltip.offsetWidth > visibleRight - 12) {
+                left = cursorX - tooltip.offsetWidth - 16;
+            }
+
+            if (top + tooltip.offsetHeight > chartScroll.scrollTop + chartScroll.clientHeight - 12) {
+                top = cursorY - tooltip.offsetHeight - 16;
+            }
+
+            tooltip.style.left = `${Math.max(visibleLeft + 8, left)}px`;
+            tooltip.style.top = `${Math.max(chartScroll.scrollTop + 8, top)}px`;
+        }
+
+        function hideTooltip() {
+            if (!tooltip) {
+                return;
+            }
+
+            tooltip.classList.remove('visible');
+            tooltip.setAttribute('aria-hidden', 'true');
+        }
+
+        function updateLatestHoverTarget(message, openPrice, highPrice, lowPrice, currentPrice, candleType) {
+            const targets = chartScroll.querySelectorAll('.chart-hover-target');
+            const target = targets[targets.length - 1];
+            if (!target) {
+                return;
+            }
+
+            target.dataset.date = formatTradeDate(message.tradeDate) || target.dataset.date || '실시간';
+            target.dataset.open = formatPrice(openPrice);
+            target.dataset.high = formatPrice(highPrice);
+            target.dataset.low = formatPrice(lowPrice);
+            target.dataset.close = formatPrice(currentPrice);
+            target.dataset.volume = formatVolume(message.accumulatedVolume);
+            target.dataset.amount = formatAmount(message.accumulatedTradeAmount);
+            target.dataset.candleType = candleType;
+        }
+
+        function drawOrUpdateSvg(id, tagName, className, attrs) {
+            let element = document.getElementById(id);
+            if (!element) {
+                element = document.createElementNS(svgNamespace, tagName);
+                element.setAttribute('id', id);
+                candleLayer.appendChild(element);
+            }
+
+            element.setAttribute('class', className);
+            Object.entries(attrs).forEach(([name, value]) => {
+                element.setAttribute(name, formatCoordinate(value));
+            });
+        }
+
+        function toPriceY(price) {
+            const clampedPrice = Math.max(chartMinPrice, Math.min(chartMaxPrice, price));
+            return priceAreaTop + ((chartMaxPrice - clampedPrice) / (chartMaxPrice - chartMinPrice)) * priceAreaHeight;
+        }
+
+        function resolveCandleType(openPrice, currentPrice) {
+            if (currentPrice > openPrice) {
+                return 'bullish';
+            }
+
+            if (currentPrice < openPrice) {
+                return 'bearish';
+            }
+
+            return 'flat';
+        }
+
+        function parseMessage(payload) {
+            try {
+                return JSON.parse(payload);
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function fallbackNumber(value, fallback) {
+            const parsed = toNumber(value);
+            return isFinite(parsed) ? parsed : fallback;
+        }
+
+        function toNumber(value) {
+            if (value === null || value === undefined || value === '') {
+                return NaN;
+            }
+
+            return Number(String(value).replaceAll(',', ''));
+        }
+
+        function formatPrice(value) {
+            return new Intl.NumberFormat('ko-KR', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: priceDecimalDigits
+            }).format(value);
+        }
+
+        function formatAmount(value) {
+            const parsed = toNumber(value);
+            if (!isFinite(parsed)) {
+                return '-';
+            }
+
+            return new Intl.NumberFormat('ko-KR', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: priceDecimalDigits
+            }).format(parsed);
+        }
+
+        function formatVolume(value) {
+            const parsed = toNumber(value);
+            if (!isFinite(parsed)) {
+                return '-';
+            }
+
+            return new Intl.NumberFormat('ko-KR', {
+                maximumFractionDigits: 0
+            }).format(parsed);
+        }
+
+        function formatTradeTime(value) {
+            if (!value || value.length < 6) {
+                return '실시간';
+            }
+
+            return `${value.substring(0, 2)}:${value.substring(2, 4)}:${value.substring(4, 6)}`;
+        }
+
+        function formatTradeDate(value) {
+            if (!value) {
+                return '';
+            }
+
+            if (value.length === 8) {
+                return `${value.substring(0, 4)}-${value.substring(4, 6)}-${value.substring(6, 8)}`;
+            }
+
+            return value;
+        }
+
+        function formatCoordinate(value) {
+            return Number(value).toFixed(2);
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+    })();
+</script>
+</body>
+</html>
