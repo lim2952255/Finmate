@@ -40,7 +40,12 @@
                         <td th:text="${investment.securitiesCompanyCode.displayName}">키움증권</td>
                         <td th:text="${investment.accountNumber}">000000-00-000000</td>
                         <td>
-                            <span th:text="${#numbers.formatDecimal(investment.depositBalance, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                            <ul>
+                                <li th:each="cashBalance : ${investment.cashBalances}">
+                                    <span th:text="${#numbers.formatDecimal(cashBalance.availableBalance, 0, 'COMMA', cashBalance.currencyCode.fractionDigits, 'POINT')}">0</span>
+                                    <span th:text="${cashBalance.currencyCode.name()}">KRW</span>
+                                </li>
+                            </ul>
                         </td>
                         <td>
                             <a th:href="@{/investments/securityCashTransaction(investmentNumber=${investment.accountNumber}, securitiesCompanyCode=${investment.securitiesCompanyCode.name()}, period=${securitiesCashTransactionPageInfo.period}, page=0)}">
@@ -92,16 +97,16 @@
                 <h2>거래 요약</h2>
                 <p>
                     <strong>총 입금액</strong>
-                    <span th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.totalDepositAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.totalDepositAmount, 0, 'COMMA', 0, 'POINT')}">0</span>
                 </p>
                 <p>
                     <strong>총 출금액</strong>
-                    <span th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.totalWithdrawalAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.totalWithdrawalAmount, 0, 'COMMA', 0, 'POINT')}">0</span>
                 </p>
                 <p>
                     <strong>순액</strong>
                     <span th:if="${securitiesCashTransactionPageInfo.transactionSummary.netAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">+</span>
-                    <span th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.netAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.netAmount, 0, 'COMMA', 0, 'POINT')}">0</span>
                 </p>
             </section>
 
@@ -145,13 +150,16 @@
                         <td>
                             <span th:if="${transaction.type.name() == 'WITHDRAW'}">-</span>
                             <span th:if="${transaction.type.name() == 'DEPOSIT'}">+</span>
-                            <span th:text="${#numbers.formatDecimal(transaction.amount, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                            <span th:text="${#numbers.formatDecimal(transaction.amount, 0, 'COMMA', transaction.transfer.currencyCode.fractionDigits, 'POINT')}">0</span>
+                            <span th:text="${transaction.transfer.currencyCode.name()}">KRW</span>
                         </td>
                         <td>
-                            <span th:text="${#numbers.formatDecimal(transaction.balanceBeforeTransaction, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                            <span th:text="${#numbers.formatDecimal(transaction.balanceBeforeTransaction, 0, 'COMMA', transaction.transfer.currencyCode.fractionDigits, 'POINT')}">0</span>
+                            <span th:text="${transaction.transfer.currencyCode.name()}">KRW</span>
                         </td>
                         <td>
-                            <span th:text="${#numbers.formatDecimal(transaction.balanceAfterTransaction, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                            <span th:text="${#numbers.formatDecimal(transaction.balanceAfterTransaction, 0, 'COMMA', transaction.transfer.currencyCode.fractionDigits, 'POINT')}">0</span>
+                            <span th:text="${transaction.transfer.currencyCode.name()}">KRW</span>
                         </td>
                         <td>
                             <span th:if="${transaction.counterpartyBankCode != null}"

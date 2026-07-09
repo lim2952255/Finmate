@@ -1,11 +1,14 @@
 package com.finmate.domain.normal.transfer;
 
+import com.finmate.domain.investment.CurrencyCode;
 import com.finmate.domain.investment.Investment;
 import com.finmate.domain.normal.account.Account;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -42,6 +45,11 @@ public class Transfer {
     @JoinColumn(name = "to_investment_id")
     private Investment toInvestment;
 
+    // 거래 통화
+    @Enumerated(EnumType.STRING)
+    @Column(name = "currency_code", nullable = false, length = 3)
+    private CurrencyCode currencyCode;
+
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
@@ -61,11 +69,13 @@ public class Transfer {
     public static Transfer createCompleted(String transferGroupId,
                                            Account fromAccount,
                                            Account toAccount,
+                                           CurrencyCode currencyCode,
                                            BigDecimal amount) {
         Transfer transfer = new Transfer();
         transfer.transferGroupId = transferGroupId;
         transfer.fromAccount = fromAccount;
         transfer.toAccount = toAccount;
+        transfer.currencyCode = currencyCode;
         transfer.amount = amount;
         transfer.status = TransferStatus.COMPLETED;
         return transfer;
@@ -75,11 +85,13 @@ public class Transfer {
     public static Transfer createInvestmentDeposit(String transferGroupId,
                                                    Account fromAccount,
                                                    Investment toInvestment,
+                                                   CurrencyCode currencyCode,
                                                    BigDecimal amount) {
         Transfer transfer = new Transfer();
         transfer.transferGroupId = transferGroupId;
         transfer.fromAccount = fromAccount;
         transfer.toInvestment = toInvestment;
+        transfer.currencyCode = currencyCode;
         transfer.amount = amount;
         transfer.status = TransferStatus.COMPLETED;
         return transfer;
@@ -89,11 +101,13 @@ public class Transfer {
     public static Transfer createInvestmentWithdrawal(String transferGroupId,
                                                       Investment fromInvestment,
                                                       Account toAccount,
+                                                      CurrencyCode currencyCode,
                                                       BigDecimal amount) {
         Transfer transfer = new Transfer();
         transfer.transferGroupId = transferGroupId;
         transfer.fromInvestment = fromInvestment;
         transfer.toAccount = toAccount;
+        transfer.currencyCode = currencyCode;
         transfer.amount = amount;
         transfer.status = TransferStatus.COMPLETED;
         return transfer;

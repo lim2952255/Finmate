@@ -46,6 +46,9 @@ public class StockDetailPageInfo {
     private final LocalDate expectedLatestTradeDate;
     private final LocalDate latestTradeDate;
     private final BigDecimal latestClosePrice;
+    private final BigDecimal latestChangeAmount;
+    private final BigDecimal latestChangeRate;
+    private final String latestPriceChangeClass;
     private final BigDecimal maxChartPrice;
     private final BigDecimal minChartPrice;
     private final int priceDecimalDigits;
@@ -64,6 +67,9 @@ public class StockDetailPageInfo {
     private final int dateAxisLabelY;
     private final boolean hasLatestPriceLine;
     private final String latestPriceLineY;
+    private final String latestPriceBadgeY;
+    private final String latestPriceBadgePriceY;
+    private final String latestPriceBadgeRateY;
     private final String realtimeCandleX;
     private final String realtimeCandleWidth;
     private final List<StockPriceAxisLabel> priceAxisLabels;
@@ -93,6 +99,9 @@ public class StockDetailPageInfo {
         this.recentDailyPrices = recentDailyPrices(this.dailyPrices);
         this.latestTradeDate = latestTradeDate(this.dailyPrices);
         this.latestClosePrice = latestClosePrice(this.dailyPrices);
+        this.latestChangeAmount = latestChangeAmount(this.dailyPrices);
+        this.latestChangeRate = latestChangeRate(this.latestChangeAmount, previousClosePrice(this.dailyPrices));
+        this.latestPriceChangeClass = priceChangeClass(this.latestChangeAmount);
         this.chartWidth = chartWidth(this.dailyPrices.size());
         this.chartHeight = CHART_HEIGHT;
         this.priceAxisX = chartWidth - CHART_RIGHT_AXIS_WIDTH;
@@ -109,12 +118,24 @@ public class StockDetailPageInfo {
         this.minChartPrice = minPrice;
         this.candles = createCandles(this.dailyPrices, maxPrice, minPrice);
         this.hasLatestPriceLine = this.latestClosePrice != null;
-        this.latestPriceLineY = this.latestClosePrice == null
+        Double latestPriceLinePosition = this.latestClosePrice == null
                 ? null
-                : formatCoordinate(toPriceY(this.latestClosePrice, maxPrice, minPrice));
+                : toPriceY(this.latestClosePrice, maxPrice, minPrice);
+        this.latestPriceLineY = latestPriceLinePosition == null
+                ? null
+                : formatCoordinate(latestPriceLinePosition);
+        this.latestPriceBadgeY = latestPriceLinePosition == null
+                ? null
+                : formatCoordinate(latestPriceLinePosition - 18);
+        this.latestPriceBadgePriceY = latestPriceLinePosition == null
+                ? null
+                : formatCoordinate(latestPriceLinePosition - 4);
+        this.latestPriceBadgeRateY = latestPriceLinePosition == null
+                ? null
+                : formatCoordinate(latestPriceLinePosition + 11);
         this.realtimeCandleX = this.dailyPrices.isEmpty()
                 ? null
-                : formatCoordinate(xByIndex(this.dailyPrices.size() - 1, this.dailyPrices.size()));
+                : formatCoordinate(realtimeCandleX(this.dailyPrices.size()));
         this.realtimeCandleWidth = this.dailyPrices.isEmpty()
                 ? null
                 : formatCoordinate(candleWidth(this.dailyPrices.size()));
@@ -146,6 +167,14 @@ public class StockDetailPageInfo {
         return numberFormat.format(value);
     }
 
+    public String formatLatestChangeAmount() {
+        return formatSignedPrice(latestChangeAmount);
+    }
+
+    public String formatLatestChangeRate() {
+        return formatSignedRate(latestChangeRate);
+    }
+
     private List<StockDailyPrice> recentDailyPrices(List<StockDailyPrice> dailyPrices) {
         int fromIndex = Math.max(0, dailyPrices.size() - RECENT_DAILY_PRICE_SIZE);
         return dailyPrices.subList(fromIndex, dailyPrices.size());
@@ -165,6 +194,34 @@ public class StockDetailPageInfo {
         }
 
         return dailyPrices.get(dailyPrices.size() - 1).getClosePrice();
+    }
+
+    private BigDecimal previousClosePrice(List<StockDailyPrice> dailyPrices) {
+        if (dailyPrices.size() < 2) {
+            return null;
+        }
+
+        return dailyPrices.get(dailyPrices.size() - 2).getClosePrice();
+    }
+
+    private BigDecimal latestChangeAmount(List<StockDailyPrice> dailyPrices) {
+        BigDecimal latestClose = latestClosePrice(dailyPrices);
+        BigDecimal previousClose = previousClosePrice(dailyPrices);
+        if (latestClose == null || previousClose == null) {
+            return null;
+        }
+
+        return latestClose.subtract(previousClose);
+    }
+
+    private BigDecimal latestChangeRate(BigDecimal changeAmount, BigDecimal previousClosePrice) {
+        if (changeAmount == null || previousClosePrice == null || previousClosePrice.signum() == 0) {
+            return null;
+        }
+
+        return changeAmount
+                .divide(previousClosePrice, 6, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100));
     }
 
     private List<StockDailyPriceCandle> createCandles(List<StockDailyPrice> dailyPrices,
@@ -320,8 +377,24 @@ public class StockDetailPageInfo {
                                       String cssClass) {
         String points = movingAveragePoints(dailyPrices, maxPrice, minPrice, period);
         if (!points.isBlank()) {
-            movingAverageLines.add(new StockMovingAverageLine(label, cssClass, points));
+            movingAverageLines.add(new StockMovingAverageLine(label, cssClass, movingAverageColor(cssClass), points));
         }
+    }
+
+    private String movingAverageColor(String cssClass) {
+        if ("ma5".equals(cssClass)) {
+            return "#f59e0b";
+        }
+
+        if ("ma20".equals(cssClass)) {
+            return "#10b981";
+        }
+
+        if ("ma60".equals(cssClass)) {
+            return "#7c3aed";
+        }
+
+        return "#64748b";
     }
 
     private String movingAveragePoints(List<StockDailyPrice> dailyPrices,
@@ -368,6 +441,12 @@ public class StockDetailPageInfo {
 
         double plotWidth = priceAxisX - CHART_LEFT_PADDING - CHART_END_PADDING;
         return CHART_LEFT_PADDING + (plotWidth * index / (dailyPriceCount - 1));
+    }
+
+    private double realtimeCandleX(int dailyPriceCount) {
+        double latestCandleX = xByIndex(dailyPriceCount - 1, dailyPriceCount);
+        double gap = Math.max(10, candleWidth(dailyPriceCount) * 2);
+        return Math.min(priceAxisX - 8, latestCandleX + gap);
     }
 
     private double candleWidth(int dailyPriceCount) {
@@ -425,6 +504,39 @@ public class StockDetailPageInfo {
         numberFormat.setMaximumFractionDigits(decimalDigits);
 
         return numberFormat.format(value);
+    }
+
+    private String formatSignedPrice(BigDecimal value) {
+        if (value == null) {
+            return "-";
+        }
+
+        String sign = value.signum() > 0 ? "+" : value.signum() < 0 ? "-" : "";
+        return sign + formatPrice(value.abs());
+    }
+
+    private String formatSignedRate(BigDecimal value) {
+        if (value == null) {
+            return "-";
+        }
+
+        NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.KOREA);
+        numberFormat.setMinimumFractionDigits(2);
+        numberFormat.setMaximumFractionDigits(2);
+        String sign = value.signum() > 0 ? "+" : value.signum() < 0 ? "-" : "";
+        return sign + numberFormat.format(value.abs()) + "%";
+    }
+
+    private String priceChangeClass(BigDecimal changeAmount) {
+        if (changeAmount == null || changeAmount.signum() == 0) {
+            return "flat";
+        }
+
+        if (changeAmount.signum() > 0) {
+            return "bullish";
+        }
+
+        return "bearish";
     }
 
     private int resolvePriceDecimalDigits(Stock stock) {

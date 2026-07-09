@@ -1,5 +1,6 @@
 package com.finmate.controller.normal.account;
 
+import com.finmate.domain.investment.CurrencyCode;
 import com.finmate.domain.investment.dto.cash.InvestmentDepositPageInfo;
 import com.finmate.domain.investment.dto.cash.InvestmentDepositRequest;
 import com.finmate.domain.normal.account.Account;
@@ -12,7 +13,7 @@ import com.finmate.domain.normal.account.transaction.dto.AccountTransactionPageI
 import com.finmate.domain.user.User;
 import com.finmate.domain.user.dto.SessionUser;
 import com.finmate.exception.DuplicatedId;
-import com.finmate.global.Const;
+import com.finmate.global.constant.Const;
 import com.finmate.service.investment.InvestmentService;
 import com.finmate.service.normal.account.AccountService;
 import com.finmate.service.user.UserService;
@@ -52,6 +53,7 @@ public class AccountController {
         model.addAttribute(new OpenAccount());
         // 은행 종류를 담기 위해 BankCode 리스트를 모델에 담아서 전달
         model.addAttribute("bankCodes", BankCode.values());
+        model.addAttribute("currencyCodes", CurrencyCode.values());
         return "accounts/open";
     }
 
@@ -60,6 +62,7 @@ public class AccountController {
             ,@SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser
             ,Model model){
         model.addAttribute("bankCodes", BankCode.values());
+        model.addAttribute("currencyCodes", CurrencyCode.values());
 
         if(bindingResult.hasErrors()){
             return "accounts/open";

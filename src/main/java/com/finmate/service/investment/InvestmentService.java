@@ -1,7 +1,9 @@
 package com.finmate.service.investment;
 
 
+import com.finmate.domain.investment.CurrencyCode;
 import com.finmate.domain.investment.Investment;
+import com.finmate.domain.investment.InvestmentCashBalance;
 import com.finmate.domain.investment.SecuritiesCompanyCode;
 import com.finmate.domain.investment.dto.InvestmentHomeInfo;
 import com.finmate.domain.investment.dto.OpenInvestment;
@@ -23,14 +25,15 @@ import com.finmate.domain.normal.account.transaction.dto.TransactionSummary;
 import com.finmate.domain.normal.transfer.Transfer;
 import com.finmate.domain.user.User;
 import com.finmate.global.pagination.PaginationInfo;
+import com.finmate.repository.investment.InvestmentCashBalanceRepository;
 import com.finmate.repository.investment.InvestmentRepository;
 import com.finmate.repository.investment.cash.transaction.SecuritiesCashTransactionRepository;
 import com.finmate.repository.normal.account.AccountRepository;
 import com.finmate.repository.normal.account.transaction.AccountTransactionRepository;
 import com.finmate.repository.normal.transfer.TransferRepository;
 import com.finmate.service.normal.account.AccountNumberRegistryService;
+import com.finmate.service.normal.transfer.TransferLimitUsageService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -39,24 +42,26 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
 public class InvestmentService {
     private static final int MAX_INVESTMENT_ACCOUNT_COUNT = 10;
-    private static final int MAX_ACCOUNT_NUMBER_GENERATION_ATTEMPTS = 100;
     private static final int TRANSACTION_PAGE_SIZE = 20;
     private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul");
 
     private final InvestmentRepository investmentRepository;
     private final AccountNumberRegistryService accountNumberRegistryService;
     private final AccountRepository accountRepository;
+    private final InvestmentCashBalanceRepository investmentCashBalanceRepository;
     private final TransferRepository transferRepository;
     private final AccountTransactionRepository accountTransactionRepository;
     private final SecuritiesCashTransactionRepository securitiesCashTransactionRepository;
+    private final TransferLimitUsageService transferLimitUsageService;
 
     private static final List<SecuritiesCashTransactionType> DEPOSIT_TYPES = List.of(
             SecuritiesCashTransactionType.DEPOSIT);
@@ -66,16 +71,15 @@ public class InvestmentService {
     // user의 모든 증권 계좌 리턴
     @Transactional(readOnly = true)
     public List<Investment> findInvestments(Long userId) {
-        return investmentRepository.findByUser_Id(userId);
+        return investmentRepository.findByUserIdWithCashBalances(userId);
     }
 
     // 증권 홈페이지에 총 금액, 대표계좌, 계좌수 정보를 dto에 담아서 리턴
     @Transactional(readOnly = true)
     public InvestmentHomeInfo getInvestmentHomeInfo(Long userId) {
-        List<Investment> investments = investmentRepository.findByUser_Id(userId);
-        BigDecimal totalDepositBalance = investments.stream()
-                .map(Investment::getDepositBalance)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        List<Investment> investments = findInvestments(userId);
+        Map<CurrencyCode, BigDecimal> totalDepositBalancesByCurrency =
+                summarizeInvestmentCashBalancesByCurrency(investments);
         PrimaryInvestment primaryInvestment = investments.stream()
                 .filter(Investment::isPrimary)
                 .findFirst()
@@ -85,7 +89,7 @@ public class InvestmentService {
         return new InvestmentHomeInfo(
                 investments,
                 primaryInvestment,
-                totalDepositBalance,
+                totalDepositBalancesByCurrency,
                 investments.size());
     }
 
@@ -98,11 +102,7 @@ public class InvestmentService {
             return investmentDepositRequest;
         }
 
-        Account fromAccount = accountRepository.findByUser_IdAndAccountNumberAndBankCode(
-                        userId,
-                        fromAccountNumber,
-                        fromBankCode)
-                .orElseThrow(() -> new RuntimeException("현재 사용자의 계좌가 아닙니다."));
+        Account fromAccount = findOwnedAccount(userId, fromAccountNumber, fromBankCode);
 
         investmentDepositRequest.setFromAccountId(fromAccount.getId());
         investmentDepositRequest.setFromBankCode(fromAccount.getBankCode());
@@ -114,7 +114,7 @@ public class InvestmentService {
     @Transactional(readOnly = true)
     public InvestmentDepositPageInfo getInvestmentDepositPageInfo(Long userId,
                                                                   InvestmentDepositRequest investmentDepositRequest) {
-        List<Investment> investments = investmentRepository.findByUser_Id(userId);
+        List<Investment> investments = findInvestments(userId);
         List<Account> accounts = accountRepository.findByUser_Id(userId);
         Account fromAccount = null;
 
@@ -144,12 +144,7 @@ public class InvestmentService {
             return investmentWithdrawalRequest;
         }
 
-        Investment fromInvestment = investmentRepository
-                .findByUser_IdAndAccountNumberAndSecuritiesCompanyCode(
-                        userId,
-                        fromInvestmentNumber,
-                        fromSecuritiesCompanyCode)
-                .orElseThrow(() -> new RuntimeException("현재 사용자의 증권 계좌가 아닙니다."));
+        Investment fromInvestment = findOwnedInvestment(userId, fromInvestmentNumber, fromSecuritiesCompanyCode);
 
         investmentWithdrawalRequest.setFromInvestmentId(fromInvestment.getId());
         investmentWithdrawalRequest.setFromSecuritiesCompanyCode(fromInvestment.getSecuritiesCompanyCode());
@@ -160,7 +155,7 @@ public class InvestmentService {
     @Transactional(readOnly = true)
     public InvestmentWithdrawalPageInfo getInvestmentWithdrawalPageInfo(Long userId,
                                                                         InvestmentWithdrawalRequest investmentWithdrawalRequest) {
-        List<Investment> investments = investmentRepository.findByUser_Id(userId);
+        List<Investment> investments = findInvestments(userId);
         List<Account> accounts = accountRepository.findByUser_Id(userId);
         Investment fromInvestment = null;
 
@@ -183,11 +178,16 @@ public class InvestmentService {
                 .orElseThrow(() -> new RuntimeException("현재 사용자의 증권 계좌가 아닙니다."));
     }
 
+    private Account findOwnedAccount(Long userId, String accountNumber, BankCode bankCode) {
+        return accountRepository.findByUser_IdAndAccountNumberAndBankCode(userId, accountNumber, bankCode)
+                .orElseThrow(() -> new RuntimeException("현재 사용자의 계좌가 아닙니다."));
+    }
+
     // 특정 기간동안의 사용자의 모든 예수금 이체 내역을 Page단위로 리턴
     private Page<SecuritiesCashTransaction> findSecuritiesCashTransactions(Long userId,
                                                                            TransactionPeriod period,
                                                                            int page) {
-        TransactionPeriod safePeriod = getSafePeriod(period);
+        TransactionPeriod safePeriod = TransactionPeriod.defaultIfNull(period);
         LocalDateTime endDateTime = LocalDateTime.now(SERVICE_ZONE);
         LocalDateTime startDateTime = safePeriod.getStartDateTime(endDateTime);
 
@@ -200,7 +200,7 @@ public class InvestmentService {
 
     // 사용자의 전체 계좌를 기준으로 총 예수금 입금액 / 총 예수금 출금액 계산
     private TransactionSummary summarizeSecuritiesCashTransactions(Long userId, TransactionPeriod period) {
-        TransactionPeriod safePeriod = getSafePeriod(period);
+        TransactionPeriod safePeriod = TransactionPeriod.defaultIfNull(period);
         LocalDateTime endDateTime = LocalDateTime.now(SERVICE_ZONE);
         LocalDateTime startDateTime = safePeriod.getStartDateTime(endDateTime);
 
@@ -225,8 +225,8 @@ public class InvestmentService {
                                                                                   SecuritiesCompanyCode securitiesCompanyCode,
                                                                                   TransactionPeriod period,
                                                                                   int page) {
-        List<Investment> investments = investmentRepository.findByUser_Id(userId);
-        TransactionPeriod safePeriod = getSafePeriod(period);
+        List<Investment> investments = findInvestments(userId);
+        TransactionPeriod safePeriod = TransactionPeriod.defaultIfNull(period);
         int safePage = PaginationInfo.safePage(page);
 
         Investment selectedInvestment = null;
@@ -267,7 +267,7 @@ public class InvestmentService {
                                                                            TransactionPeriod period,
                                                                            int page) {
         Investment investment = findOwnedInvestment(userId, investmentNumber, securitiesCompanyCode);
-        TransactionPeriod safePeriod = getSafePeriod(period);
+        TransactionPeriod safePeriod = TransactionPeriod.defaultIfNull(period);
         LocalDateTime endDateTime = LocalDateTime.now(SERVICE_ZONE);
         LocalDateTime startDateTime = safePeriod.getStartDateTime(endDateTime);
 
@@ -284,7 +284,7 @@ public class InvestmentService {
                                                                    SecuritiesCompanyCode securitiesCompanyCode,
                                                                    TransactionPeriod period) {
         Investment investment = findOwnedInvestment(userId, investmentNumber, securitiesCompanyCode);
-        TransactionPeriod safePeriod = getSafePeriod(period);
+        TransactionPeriod safePeriod = TransactionPeriod.defaultIfNull(period);
         LocalDateTime endDateTime = LocalDateTime.now(SERVICE_ZONE);
         LocalDateTime startDateTime = safePeriod.getStartDateTime(endDateTime);
 
@@ -310,7 +310,7 @@ public class InvestmentService {
             throw new RuntimeException("증권 계좌는 최대 10개까지만 개설할 수 있습니다.");
         }
 
-        String accountNumber = registerUniqueAccountNumber();
+        String accountNumber = accountNumberRegistryService.issueUniqueAccountNumber(AccountType.INVESTMENT);
         Investment investment = Investment.create(
                 user,
                 accountNumber,
@@ -318,28 +318,6 @@ public class InvestmentService {
 
         Investment savedInvestment = investmentRepository.save(investment);
         return savedInvestment.getId();
-    }
-    private String registerUniqueAccountNumber() {
-        for (int i = 0; i < MAX_ACCOUNT_NUMBER_GENERATION_ATTEMPTS; i++) {
-            String accountNumber = generateAccountNumber();
-            try {
-                accountNumberRegistryService.register(accountNumber, AccountType.INVESTMENT);
-                return accountNumber;
-            } catch (DataIntegrityViolationException e) {
-                // 동시 요청에서 같은 번호가 먼저 등록된 경우 다른 번호로 재시도한다.
-            }
-        }
-
-        throw new RuntimeException("증권 계좌번호 생성에 실패했습니다. 다시 시도해주세요.");
-    }
-
-    private String generateAccountNumber() {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        return String.format(
-                "%06d-%02d-%06d",
-                random.nextInt(1_000_000),
-                random.nextInt(100),
-                random.nextInt(1_000_000));
     }
 
     @Transactional
@@ -364,7 +342,7 @@ public class InvestmentService {
 
         return investmentId;
     }
-
+    // 일반 계좌 -> 증권 계좌로 예수금 입금
     @Transactional
     public void depositToInvestment(InvestmentDepositRequest investmentDepositRequest, Long userId) {
         BigDecimal amount = investmentDepositRequest.getAmount();
@@ -386,11 +364,16 @@ public class InvestmentService {
 
         validateInvestmentDepositCode(investmentDepositRequest, fromAccount, toInvestment);
 
-        BigDecimal accountBalanceBeforeTransaction = fromAccount.getBalance();
-        BigDecimal investmentBalanceBeforeTransaction = toInvestment.getDepositBalance();
+        // 일반 계좌가 사용하는 통화 정보를 얻고, 증권 계좌의 해당 통화 잔고를 업데이트한다.
+        CurrencyCode currencyCode = fromAccount.getCurrencyCode();
+        InvestmentCashBalance cashBalance = findOrCreateCashBalanceForUpdate(toInvestment, currencyCode);
+        transferLimitUsageService.use(fromAccount, amount);
 
-        fromAccount.withdraw(amount);
-        toInvestment.depositCash(amount);
+        BigDecimal accountBalanceBeforeTransaction = fromAccount.getBalance();
+        BigDecimal investmentBalanceBeforeTransaction = cashBalance.getAvailableBalance();
+
+        fromAccount.withdraw(amount); // 일반 계좌에서 해당 금액만큼을 출금
+        cashBalance.deposit(amount); // 증권 계좌의 해당 통화 잔고에서 해당 금액 만큼을 입금
 
         // UUID를 사용하면 사실상 중복 x + 유니크 제약조건이 있어서 괜찮다.
         // 오류가 발생해도 트랜잭션이 롤백되기 때문에 문제가 발생하지 않는다.
@@ -398,6 +381,7 @@ public class InvestmentService {
                 UUID.randomUUID().toString(),
                 fromAccount,
                 toInvestment,
+                currencyCode,
                 amount);
         transferRepository.save(transfer);
 
@@ -419,7 +403,7 @@ public class InvestmentService {
                 SecuritiesCashTransactionType.DEPOSIT,
                 amount,
                 investmentBalanceBeforeTransaction,
-                toInvestment.getDepositBalance(),
+                cashBalance.getAvailableBalance(),
                 fromAccount.getBankCode(),
                 fromAccount.getAccountNumber(),
                 fromAccount.getUser().getUsername(),
@@ -429,10 +413,12 @@ public class InvestmentService {
         securitiesCashTransactionRepository.save(depositTransaction);
     }
 
+    // 증권 계좌 -> 일반 계좌 예수금 출금
     @Transactional
     public void withdrawFromInvestment(InvestmentWithdrawalRequest investmentWithdrawalRequest, Long userId) {
         BigDecimal amount = investmentWithdrawalRequest.getAmount();
 
+        // 계좌에 lock을 획득할때 데드락 방지를 위해 항상 일반계좌 먼저 lock을 획득하도록 한다.
         LockedAccountAndInvestment lockedAccountAndInvestment = lockAccountAndInvestmentAvoidingDeadlock(
                 investmentWithdrawalRequest.getToAccountId(),
                 investmentWithdrawalRequest.getFromInvestmentId());
@@ -449,16 +435,21 @@ public class InvestmentService {
 
         validateInvestmentWithdrawalCode(investmentWithdrawalRequest, fromInvestment, toAccount);
 
-        BigDecimal accountBalanceBeforeTransaction = toAccount.getBalance();
-        BigDecimal investmentBalanceBeforeTransaction = fromInvestment.getDepositBalance();
+        // 일반 계좌가 사용하는 통화 정보를 얻고, 증권 계좌에서 해당 통화의 잔고 정보를 얻는다.
+        CurrencyCode currencyCode = toAccount.getCurrencyCode();
+        InvestmentCashBalance cashBalance = findOrCreateCashBalanceForUpdate(fromInvestment, currencyCode);
 
-        fromInvestment.withdrawCash(amount);
-        toAccount.deposit(amount);
+        BigDecimal accountBalanceBeforeTransaction = toAccount.getBalance();
+        BigDecimal investmentBalanceBeforeTransaction = cashBalance.getAvailableBalance();
+
+        cashBalance.withdraw(amount); // 증권 계좌에서 해당 통화의 잔고에서 해당 금액 만큼을 출금
+        toAccount.deposit(amount); // 일반 계좌에 해당 금액 만큼을 입금
 
         Transfer transfer = Transfer.createInvestmentWithdrawal(
                 UUID.randomUUID().toString(),
                 fromInvestment,
                 toAccount,
+                currencyCode,
                 amount);
         transferRepository.save(transfer);
 
@@ -480,7 +471,7 @@ public class InvestmentService {
                 SecuritiesCashTransactionType.WITHDRAW,
                 amount,
                 investmentBalanceBeforeTransaction,
-                fromInvestment.getDepositBalance(),
+                cashBalance.getAvailableBalance(),
                 toAccount.getBankCode(),
                 toAccount.getAccountNumber(),
                 toAccount.getUser().getUsername(),
@@ -527,12 +518,23 @@ public class InvestmentService {
         }
     }
 
-    private TransactionPeriod getSafePeriod(TransactionPeriod period) {
-        if (period == null) {
-            return TransactionPeriod.ONE_MONTH;
-        }
+    private InvestmentCashBalance findOrCreateCashBalanceForUpdate(Investment investment, CurrencyCode currencyCode) {
+        return investmentCashBalanceRepository
+                .findByInvestmentIdAndCurrencyCodeForUpdate(investment.getId(), currencyCode)
+                .orElseGet(() -> investmentCashBalanceRepository.save(investment.addCashBalance(currencyCode)));
+    }
 
-        return period;
+    private Map<CurrencyCode, BigDecimal> summarizeInvestmentCashBalancesByCurrency(List<Investment> investments) {
+        Map<CurrencyCode, BigDecimal> totalBalancesByCurrency = new EnumMap<>(CurrencyCode.class);
+        for (Investment investment : investments) {
+            for (InvestmentCashBalance cashBalance : investment.getCashBalances()) {
+                totalBalancesByCurrency.merge(
+                        cashBalance.getCurrencyCode(),
+                        cashBalance.getAvailableBalance(),
+                        BigDecimal::add);
+            }
+        }
+        return totalBalancesByCurrency;
     }
 
     private record LockedAccountAndInvestment(Account account, Investment investment) {

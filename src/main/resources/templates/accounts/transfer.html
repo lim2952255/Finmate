@@ -30,6 +30,7 @@
                     <tr>
                         <th>은행</th>
                         <th>계좌번호</th>
+                        <th>통화</th>
                         <th>잔액</th>
                         <th>이체</th>
                     </tr>
@@ -38,8 +39,10 @@
                     <tr th:each="account : ${accounts}">
                         <td th:text="${account.bankCode.displayName}">신한은행</td>
                         <td th:text="${account.accountNumber}">000000-00-000000</td>
+                        <td th:text="${account.currencyCode.name()}">KRW</td>
                         <td>
-                            <span th:text="${#numbers.formatDecimal(account.balance, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                            <span th:text="${#numbers.formatDecimal(account.balance, 0, 'COMMA', account.currencyCode.fractionDigits, 'POINT')}">0</span>
+                            <span th:text="${account.currencyCode.name()}">KRW</span>
                         </td>
                         <td>
                             <a th:href="@{/accounts/transfer(from=${account.accountNumber}, fromBankCode=${account.bankCode})}">이체</a>

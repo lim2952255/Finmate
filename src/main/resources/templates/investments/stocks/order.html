@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinMate</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <style>
+        .order-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 18px;
+        }
+
+        .order-panel {
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #ffffff;
+        }
+
+        .market-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .summary-item {
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .summary-item span {
+            display: block;
+            margin-top: 4px;
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .form-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .form-stack label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-stack input:disabled {
+            background: #f1f5f9;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .field-hint {
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .account-position-summary {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid #dbeafe;
+            border-radius: 8px;
+            background: #eff6ff;
+        }
+
+        .account-position-item {
+            display: grid;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .account-position-item span {
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .account-position-item strong {
+            overflow-wrap: anywhere;
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 850;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div th:replace="~{/layout/header :: header}"></div>
+
+    <main class="main">
+        <section class="content">
+            <h1>
+                <span th:text="${stockOrderPageInfo.stock.nameKo}">종목명</span>
+                주문
+            </h1>
+
+            <p th:if="${errorMessage}" th:text="${errorMessage}" style="color:#dc2626;">오류</p>
+
+            <div class="market-summary">
+                <div class="summary-item">
+                    <strong>종목코드</strong>
+                    <span th:text="${stockOrderPageInfo.stock.symbol}">005930</span>
+                </div>
+                <div class="summary-item">
+                    <strong>시장</strong>
+                    <span th:text="${stockOrderPageInfo.stock.marketType}">KOSPI</span>
+                </div>
+                <div class="summary-item">
+                    <strong>통화</strong>
+                    <span th:text="${stockOrderPageInfo.currencyCode.name()}">KRW</span>
+                </div>
+                <div class="summary-item">
+                    <strong>현재가</strong>
+                    <span th:text="${stockOrderPageInfo.formatPrice(stockOrderPageInfo.tradePrice)}">-</span>
+                </div>
+                <div class="summary-item">
+                    <strong>매수 기준가</strong>
+                    <span th:text="${stockOrderPageInfo.formatPrice(stockOrderPageInfo.buyExecutablePrice)}">-</span>
+                </div>
+                <div class="summary-item">
+                    <strong>매도 기준가</strong>
+                    <span th:text="${stockOrderPageInfo.formatPrice(stockOrderPageInfo.sellExecutablePrice)}">-</span>
+                </div>
+            </div>
+
+            <p th:if="${#lists.isEmpty(stockOrderPageInfo.investments)}">
+                증권 계좌가 없습니다.
+                <a th:href="@{/investments/open}">증권 계좌 개설</a>
+            </p>
+
+            <div class="order-grid" th:unless="${#lists.isEmpty(stockOrderPageInfo.investments)}">
+                <section class="order-panel">
+                    <h2>주문</h2>
+                    <form class="form-stack" th:action="@{/investments/stocks/order}" method="post" th:object="${stockOrderRequest}" data-order-form data-expiry-mode="limit-only">
+                        <input type="hidden" th:field="*{stockId}">
+
+                        <label>
+                            증권 계좌
+                            <select th:field="*{investmentId}" data-investment-select>
+                                <option th:each="investment : ${stockOrderPageInfo.investments}"
+                                        th:with="summary=${stockOrderPageInfo.getAccountSummary(investment.id)}"
+                                        th:value="${investment.id}"
+                                        th:attr="data-available-cash-text=|${stockOrderPageInfo.formatPrice(summary.availableCashBalance)} ${stockOrderPageInfo.currencyCode.name()}|,
+                                                 data-total-cash-text=|${stockOrderPageInfo.formatPrice(summary.totalCashBalance)} ${stockOrderPageInfo.currencyCode.name()}|,
+                                                 data-holding-quantity-text=|${stockOrderPageInfo.formatQuantity(summary.holdingQuantity)} 주|,
+                                                 data-available-quantity-text=|${stockOrderPageInfo.formatQuantity(summary.availableQuantity)} 주|"
+                                        th:text="|${investment.securitiesCompanyCode.displayName} ${investment.accountNumber}|">
+                                    계좌
+                                </option>
+                            </select>
+                        </label>
+
+                        <div class="account-position-summary" data-account-summary>
+                            <div class="account-position-item">
+                                <span>주문 가능 예수금</span>
+                                <strong data-account-available-cash>-</strong>
+                            </div>
+                            <div class="account-position-item">
+                                <span>총 예수금</span>
+                                <strong data-account-total-cash>-</strong>
+                            </div>
+                            <div class="account-position-item">
+                                <span>총 보유수량</span>
+                                <strong data-account-holding-quantity>-</strong>
+                            </div>
+                            <div class="account-position-item">
+                                <span>매도 가능수량</span>
+                                <strong data-account-available-quantity>-</strong>
+                            </div>
+                        </div>
+
+                        <label>
+                            매수/매도
+                            <select th:field="*{side}">
+                                <option th:each="side : ${stockOrderPageInfo.sides}"
+                                        th:value="${side}"
+                                        th:text="${side.name()}">BUY</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            주문 유형
+                            <select th:field="*{orderType}" data-order-type-select>
+                                <option th:each="orderType : ${stockOrderPageInfo.orderTypes}"
+                                        th:value="${orderType}"
+                                        th:text="${orderType.name()}">MARKET</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            수량
+                            <input type="number" th:field="*{quantity}" min="0" step="0.000001" required>
+                        </label>
+
+                        <label data-limit-price-field>
+                            지정가
+                            <input type="number"
+                                   th:field="*{orderPrice}"
+                                   min="0"
+                                   th:step="${stockOrderPageInfo.currencyCode.inputStep}"
+                                   data-limit-price-input>
+                            <span class="field-hint">시장가 주문에서는 사용하지 않습니다.</span>
+                        </label>
+
+                        <label data-limit-expiry-field>
+                            지정가 만료 시각
+                            <input type="datetime-local" th:field="*{expiresAt}" data-limit-expiry-input>
+                            <span class="field-hint">지정가 주문은 만료 시각이 필요합니다.</span>
+                        </label>
+
+                        <div class="actions">
+                            <button type="submit">주문 접수</button>
+                            <a th:href="@{/investments/stocks/detail(stockId=${stockOrderPageInfo.stock.id})}">상세</a>
+                            <a th:href="@{/investments/orders(investmentId=${stockOrderRequest.investmentId})}">주문 내역</a>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="order-panel">
+                    <h2>예약 주문</h2>
+                    <form class="form-stack"
+                          th:action="@{/investments/stocks/order/reservations}"
+                          method="post"
+                          th:object="${stockOrderReservationRequest}"
+                          data-order-form
+                          data-expiry-mode="optional">
+                        <input type="hidden" th:field="*{stockId}">
+
+                        <label>
+                            증권 계좌
+                            <select th:field="*{investmentId}" data-investment-select>
+                                <option th:each="investment : ${stockOrderPageInfo.investments}"
+                                        th:with="summary=${stockOrderPageInfo.getAccountSummary(investment.id)}"
+                                        th:value="${investment.id}"
+                                        th:attr="data-available-cash-text=|${stockOrderPageInfo.formatPrice(summary.availableCashBalance)} ${stockOrderPageInfo.currencyCode.name()}|,
+                                                 data-total-cash-text=|${stockOrderPageInfo.formatPrice(summary.totalCashBalance)} ${stockOrderPageInfo.currencyCode.name()}|,
+                                                 data-holding-quantity-text=|${stockOrderPageInfo.formatQuantity(summary.holdingQuantity)} 주|,
+                                                 data-available-quantity-text=|${stockOrderPageInfo.formatQuantity(summary.availableQuantity)} 주|"
+                                        th:text="|${investment.securitiesCompanyCode.displayName} ${investment.accountNumber}|">
+                                    계좌
+                                </option>
+                            </select>
+                        </label>
+
+                        <div class="account-position-summary" data-account-summary>
+                            <div class="account-position-item">
+                                <span>주문 가능 예수금</span>
+                                <strong data-account-available-cash>-</strong>
+                            </div>
+                            <div class="account-position-item">
+                                <span>총 예수금</span>
+                                <strong data-account-total-cash>-</strong>
+                            </div>
+                            <div class="account-position-item">
+                                <span>총 보유수량</span>
+                                <strong data-account-holding-quantity>-</strong>
+                            </div>
+                            <div class="account-position-item">
+                                <span>매도 가능수량</span>
+                                <strong data-account-available-quantity>-</strong>
+                            </div>
+                        </div>
+
+                        <label>
+                            매수/매도
+                            <select th:field="*{side}">
+                                <option th:each="side : ${stockOrderPageInfo.sides}"
+                                        th:value="${side}"
+                                        th:text="${side.name()}">BUY</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            실행 주문 유형
+                            <select th:field="*{orderType}" data-order-type-select>
+                                <option th:each="orderType : ${stockOrderPageInfo.orderTypes}"
+                                        th:value="${orderType}"
+                                        th:text="${orderType.name()}">MARKET</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            조건
+                            <select th:field="*{triggerCondition}">
+                                <option th:each="condition : ${stockOrderPageInfo.triggerConditions}"
+                                        th:value="${condition}"
+                                        th:text="${condition.name()}">PRICE_AT_OR_BELOW</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            수량
+                            <input type="number" th:field="*{quantity}" min="0" step="0.000001" required>
+                        </label>
+
+                        <label>
+                            기준 가격
+                            <input type="number"
+                                   th:field="*{triggerPrice}"
+                                   min="0"
+                                   th:step="${stockOrderPageInfo.currencyCode.inputStep}"
+                                   required>
+                        </label>
+
+                        <label data-limit-price-field>
+                            실행 지정가
+                            <input type="number"
+                                   th:field="*{orderPrice}"
+                                   min="0"
+                                   th:step="${stockOrderPageInfo.currencyCode.inputStep}"
+                                   data-limit-price-input>
+                            <span class="field-hint">시장가 실행 예약에서는 사용하지 않습니다.</span>
+                        </label>
+
+                        <label data-limit-expiry-field>
+                            만료 시각
+                            <input type="datetime-local" th:field="*{expiresAt}" data-limit-expiry-input>
+                            <span class="field-hint">실행 주문 유형이 지정가이면 필수입니다.</span>
+                        </label>
+
+                        <button type="submit">예약 접수</button>
+                    </form>
+                </section>
+            </div>
+        </section>
+    </main>
+</div>
+<script>
+    (() => {
+        const forms = document.querySelectorAll('[data-order-form]');
+        forms.forEach((form) => {
+            const orderTypeSelect = form.querySelector('[data-order-type-select]');
+            const priceInput = form.querySelector('[data-limit-price-input]');
+            const expiryInput = form.querySelector('[data-limit-expiry-input]');
+            const investmentSelect = form.querySelector('[data-investment-select]');
+            if (!orderTypeSelect) {
+                return;
+            }
+
+            const syncAccountSummary = () => {
+                const selectedOption = investmentSelect?.selectedOptions?.[0];
+                if (!selectedOption) {
+                    return;
+                }
+
+                setAccountSummaryText(form, '[data-account-available-cash]', selectedOption.dataset.availableCashText);
+                setAccountSummaryText(form, '[data-account-total-cash]', selectedOption.dataset.totalCashText);
+                setAccountSummaryText(form, '[data-account-holding-quantity]', selectedOption.dataset.holdingQuantityText);
+                setAccountSummaryText(form, '[data-account-available-quantity]', selectedOption.dataset.availableQuantityText);
+            };
+
+            const syncFields = () => {
+                const isMarket = orderTypeSelect.value === 'MARKET';
+                if (priceInput) {
+                    priceInput.disabled = isMarket;
+                    priceInput.required = !isMarket;
+                    if (isMarket) {
+                        priceInput.value = '';
+                    }
+                }
+
+                if (expiryInput) {
+                    const limitOnlyExpiry = form.dataset.expiryMode === 'limit-only';
+                    expiryInput.disabled = limitOnlyExpiry && isMarket;
+                    expiryInput.required = !isMarket;
+                    if (limitOnlyExpiry && isMarket) {
+                        expiryInput.value = '';
+                    }
+                }
+            };
+
+            if (investmentSelect) {
+                investmentSelect.addEventListener('change', syncAccountSummary);
+                syncAccountSummary();
+            }
+
+            orderTypeSelect.addEventListener('change', syncFields);
+            syncFields();
+        });
+
+        function setAccountSummaryText(form, selector, value) {
+            const element = form.querySelector(selector);
+            if (element) {
+                element.textContent = value || '-';
+            }
+        }
+    })();
+</script>
+</body>
+</html>

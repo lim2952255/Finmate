@@ -26,10 +26,15 @@
                 </div>
 
                 <div th:unless="${#lists.isEmpty(investmentHomeInfo.investments)}">
-                    <p>
+                    <div>
                         <strong>총 예수금</strong>
-                        <span th:text="${#numbers.formatDecimal(investmentHomeInfo.totalDepositBalance, 0, 'COMMA', 0, 'POINT')}">0</span>원
-                    </p>
+                        <ul th:unless="${#maps.isEmpty(investmentHomeInfo.totalDepositBalancesByCurrency)}">
+                            <li th:each="entry : ${investmentHomeInfo.totalDepositBalancesByCurrency}">
+                                <span th:text="${#numbers.formatDecimal(entry.value, 0, 'COMMA', entry.key.fractionDigits, 'POINT')}">0</span>
+                                <span th:text="${entry.key.name()}">KRW</span>
+                            </li>
+                        </ul>
+                    </div>
                     <p>
                         <strong>증권 계좌 수</strong>
                         <span th:text="${investmentHomeInfo.investmentAccountCount}">0</span>개
@@ -49,10 +54,15 @@
                         <strong>계좌번호</strong>
                         <span th:text="${investmentHomeInfo.primaryInvestment.accountNumber}">000000-00-000000</span>
                     </p>
-                    <p>
+                    <div>
                         <strong>예수금</strong>
-                        <span th:text="${#numbers.formatDecimal(investmentHomeInfo.primaryInvestment.depositBalance, 0, 'COMMA', 0, 'POINT')}">0</span>원
-                    </p>
+                        <ul>
+                            <li th:each="cashBalance : ${investmentHomeInfo.primaryInvestment.cashBalances}">
+                                <span th:text="${#numbers.formatDecimal(cashBalance.availableBalance, 0, 'COMMA', cashBalance.currencyCode.fractionDigits, 'POINT')}">0</span>
+                                <span th:text="${cashBalance.currencyCode.name()}">KRW</span>
+                            </li>
+                        </ul>
+                    </div>
 
                     <p>
                         <a th:href="@{/investments/transfer(from=${investmentHomeInfo.primaryInvestment.accountNumber}, fromSecuritiesCompanyCode=${investmentHomeInfo.primaryInvestment.securitiesCompanyCode})}">투자금 이체</a>

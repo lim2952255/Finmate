@@ -17,10 +17,16 @@
 
             <section>
                 <h2>계좌 요약</h2>
-                <p>
+                <div>
                     <strong>총 보유금액</strong>
-                    <span th:text="${#numbers.formatDecimal(accountHomeInfo.totalBalance, 0, 'COMMA', 0, 'POINT')}">0</span>원
-                </p>
+                    <p th:if="${#maps.isEmpty(accountHomeInfo.totalBalancesByCurrency)}">0 KRW</p>
+                    <ul th:unless="${#maps.isEmpty(accountHomeInfo.totalBalancesByCurrency)}">
+                        <li th:each="entry : ${accountHomeInfo.totalBalancesByCurrency}">
+                            <span th:text="${#numbers.formatDecimal(entry.value, 0, 'COMMA', entry.key.fractionDigits, 'POINT')}">0</span>
+                            <span th:text="${entry.key.name()}">KRW</span>
+                        </li>
+                    </ul>
+                </div>
                 <p>
                     <strong>보유계좌 수</strong>
                     <span th:text="${accountHomeInfo.accountCount}">0</span>개
@@ -41,7 +47,8 @@
                     </p>
                     <p>
                         <strong>금액</strong>
-                        <span th:text="${#numbers.formatDecimal(accountHomeInfo.primaryAccount.balance, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                        <span th:text="${#numbers.formatDecimal(accountHomeInfo.primaryAccount.balance, 0, 'COMMA', accountHomeInfo.primaryAccount.currencyCode.fractionDigits, 'POINT')}">0</span>
+                        <span th:text="${accountHomeInfo.primaryAccount.currencyCode.name()}">KRW</span>
                     </p>
                     <p>
                         <a th:href="@{/accounts/transfer(from=${accountHomeInfo.primaryAccount.accountNumber}, fromBankCode=${accountHomeInfo.primaryAccount.bankCode})}">이체</a>

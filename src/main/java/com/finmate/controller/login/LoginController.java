@@ -6,7 +6,7 @@ import com.finmate.domain.user.dto.SessionUser;
 import com.finmate.domain.user.dto.SignupRequest;
 import com.finmate.exception.DuplicatedId;
 import com.finmate.exception.LoginException;
-import com.finmate.global.Const;
+import com.finmate.global.constant.Const;
 import com.finmate.service.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;

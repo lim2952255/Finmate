@@ -7,11 +7,13 @@ import lombok.Getter;
 public class StockMovingAverageLine {
     private final String label;
     private final String cssClass;
+    private final String color;
     private final String points;
 
-    public StockMovingAverageLine(String label, String cssClass, String points) {
+    public StockMovingAverageLine(String label, String cssClass, String color, String points) {
         this.label = label;
         this.cssClass = cssClass;
+        this.color = color;
         this.points = points;
     }
 }

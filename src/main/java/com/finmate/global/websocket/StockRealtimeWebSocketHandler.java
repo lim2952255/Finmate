@@ -2,6 +2,7 @@ package com.finmate.global.websocket;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.finmate.service.stock.realtime.StockRealtimeSubscriptionPurpose;
 import com.finmate.service.stock.realtime.StockRealtimeClientSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +12,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-// 실제 웹소켓 연결을 담당하는 핸들러
+// 실제 웹소켓 연결을 담당하는 핸들러 (스프링 웹서버 <-> 클라이언트)
 // TextWebSocketHandler Spring에서 제공하는 WebSocket 핸들이며, 텍스트메세지 기반 WebSocket을 처리한다.
 // 클라이언트 JSON 문자열과 같은 텍스트 메세지를 보내면, 해당 클래스의 handleTextMessage가 호출된다.
 @Slf4j
@@ -19,8 +20,10 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 @RequiredArgsConstructor
 public class StockRealtimeWebSocketHandler extends TextWebSocketHandler {
     // 클래스가 보낼 메세지 타입 상수로 정의
-    private static final String SUBSCRIBE_STOCK = "SUBSCRIBE_STOCK"; // 종목의 실시간 시세를 구독하는 메세지
-    private static final String UNSUBSCRIBE_STOCK = "UNSUBSCRIBE_STOCK"; // 종목의 실시간 시세 구독을 해제하는 메세지
+    private static final String SUBSCRIBE_STOCK = "SUBSCRIBE_STOCK"; // 상세페이지에서 종목의 실시간 시세를 구독하는 메세지
+    private static final String UNSUBSCRIBE_STOCK = "UNSUBSCRIBE_STOCK"; // 상세페이지에서 벗어나서 종목의 실시간 시세 구독을 해제하는 메세지
+    private static final String SUBSCRIBE_PORTFOLIO_STOCK = "SUBSCRIBE_PORTFOLIO_STOCK"; // 포트폴리오 페이지에서 시세를 구독하는 메세지
+    private static final String UNSUBSCRIBE_PORTFOLIO_STOCK = "UNSUBSCRIBE_PORTFOLIO_STOCK"; // 포트폴리오 페이지에서 나가서 시세 구독을 해제하ㅡㄴㄴ 메세지
 
     private final ObjectMapper objectMapper; // Json 문자열을 자바 객체로 변환하는 객체
     private final StockRealtimeClientSessionService clientSessionService; // WebSocket 세션과 구독상태를 관리
@@ -33,20 +36,33 @@ public class StockRealtimeWebSocketHandler extends TextWebSocketHandler {
     }
 
     // 클라이언트가 웹소켓을 통해 텍스트메세지를 전송하면 실행되는 메서드
+    // 클라이언트가 웹소켓을 통해 텍스트메세지를 전송하는 작업은, 웹페이지에 접근했을때 js가 수행한다.
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         // 클라이언트가 전송한 Json 문자열을 StockRealtimeRequest 객체로 변환한다.
         StockRealtimeRequest request = objectMapper.readValue(message.getPayload(), StockRealtimeRequest.class);
 
-        // 만약 클라이언트가 전송한 메세지가 종목 구독이였다면, 종목을 구독하는 로직 호출
+        // 만약 클라이언트가 전송한 메세지가 상세페이지 종목 구독이였다면, 종목을 구독하는 로직 호출
         if (SUBSCRIBE_STOCK.equals(request.type())) {
-            clientSessionService.subscribeStock(session, request.stockId());
+            clientSessionService.subscribeStock(session, request.stockId(), StockRealtimeSubscriptionPurpose.DETAIL_PAGE);
             return;
         }
 
-        // 만약 클라이언트가 전송한 메세지가 종목 구독해제였다면, 종목 구독을 해제하는 로직 호출
+        // 만약 클라이언트가 전송한 메세지가 포트폴리오 페이지 종목 구독이였다면, 종목을 구독하면서, 구독목적을 PORTFOLIO_PAGE로 설정
+        if (SUBSCRIBE_PORTFOLIO_STOCK.equals(request.type())) {
+            clientSessionService.subscribeStock(session, request.stockId(), StockRealtimeSubscriptionPurpose.PORTFOLIO_PAGE);
+            return;
+        }
+
+        // 만약 클라이언트가 전송한 메세지가 상세페이지 종목 구독해제였다면, 종목 구독을 해제하는 로직 호출
         if (UNSUBSCRIBE_STOCK.equals(request.type())) {
-            clientSessionService.unsubscribeStock(session, request.stockId());
+            clientSessionService.unsubscribeStock(session, request.stockId(), StockRealtimeSubscriptionPurpose.DETAIL_PAGE);
+            return;
+        }
+
+        // 만약 클라이언트가 전송한 메세지가 포트폴리오 페이지 종목 구독해제였다면, PORTFOLIO_PAGE 구독을 해제하는 로직 호출
+        if (UNSUBSCRIBE_PORTFOLIO_STOCK.equals(request.type())) {
+            clientSessionService.unsubscribeStock(session, request.stockId(), StockRealtimeSubscriptionPurpose.PORTFOLIO_PAGE);
             return;
         }
 

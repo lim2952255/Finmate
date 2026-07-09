@@ -3,7 +3,7 @@ package com.finmate.infra.kis.stock.realtime;
 import java.time.LocalDateTime;
 import java.util.Map;
 
-// 파싱된 실시간 메세지를 담는 DTO
+// 파싱된 실시간 데이터를 담는 DTO
 public record KisRealtimePayload(
         KisRealtimeApi api, // 어떤 API에서 온 데이터인지(DOMESTIC_STOCK_TRADE, OVERSEAS_STOCK_TRADE ..)
         String trId, // 종목별 trId

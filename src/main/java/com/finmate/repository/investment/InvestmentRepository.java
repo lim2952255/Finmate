@@ -18,6 +18,14 @@ public interface InvestmentRepository extends JpaRepository<Investment, Long> {
 
     List<Investment> findByUser_Id(Long userId);
 
+    @Query("""
+            select distinct i
+            from Investment i
+            left join fetch i.cashBalances
+            where i.user.id = :userId
+            """)
+    List<Investment> findByUserIdWithCashBalances(@Param("userId") Long userId);
+
     Optional<Investment> findByUser_IdAndAccountNumberAndSecuritiesCompanyCode(
             Long userId,
             String accountNumber,

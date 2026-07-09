@@ -1,13 +1,16 @@
 package com.finmate.domain.normal.account;
 
+import com.finmate.domain.investment.CurrencyCode;
+import com.finmate.domain.normal.transfer.TransferLimitPolicy;
 import com.finmate.domain.user.User;
-import com.finmate.global.Const;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 
@@ -37,9 +40,15 @@ public class Account {
     @Column(name = "account_number", nullable = false)
     private String accountNumber;
 
-    // 가상계좌 개설시 계좌 머니
+    // 계좌 통화
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "currency_code", nullable = false, length = 3, columnDefinition = "varchar(3) default 'KRW'")
+    private CurrencyCode currencyCode;
+
+    // 가상계좌 개설시 계좌 머니 (해당 계좌의 통화 기준)
     @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal balance = Const.INITIAL_BALANCE;
+    private BigDecimal balance;
 
     @Column(nullable = true, name="is_primary")
     private boolean primary;
@@ -51,13 +60,13 @@ public class Account {
 
     // 계좌별로 일회 이체한도와 일일 이체한도를 저장하고 관리한다.
     @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal dailyTransferLimit = Const.DAILY_TRANSFER_LIMIT;
+    private BigDecimal dailyTransferLimit;
 
     @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal singleTransferLimit = Const.SINGLE_TRANSFER_LIMIT;
+    private BigDecimal singleTransferLimit;
 
     // Account 엔티티는 외부에서 함부로 수정하면 안되기 때문에 setter를 제거하고 별도의 메서드를 추가
-    public static Account create(String accountNumber, BankCode bankCode) {
+    public static Account create(String accountNumber, BankCode bankCode, CurrencyCode currencyCode) {
         if (accountNumber == null || accountNumber.isBlank()) {
             throw new RuntimeException("계좌번호는 필수입니다.");
         }
@@ -66,10 +75,16 @@ public class Account {
             throw new RuntimeException("은행은 필수입니다.");
         }
 
+        CurrencyCode accountCurrencyCode = currencyCode == null ? CurrencyCode.DEFAULT : currencyCode;
+
         Account account = new Account();
         account.accountNumber = accountNumber;
         account.bankCode = bankCode;
-        account.balance = Const.INITIAL_BALANCE;
+        account.currencyCode = accountCurrencyCode;
+        account.balance = AccountBalancePolicy.initialBalanceOf(accountCurrencyCode);
+        TransferLimitPolicy policy = TransferLimitPolicy.from(accountCurrencyCode); // 통화 종류에 따른 이체한도 설정
+        account.dailyTransferLimit = policy.getDailyTransferLimit();
+        account.singleTransferLimit = policy.getSingleTransferLimit();
         return account;
     }
 
@@ -92,6 +107,8 @@ public class Account {
 
     // 계좌 출금 메서드
     public void withdraw(BigDecimal amount) {
+        validateCurrencyAmountScale(amount);
+
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("출금 금액은 0보다 커야 합니다.");
         }
@@ -105,6 +122,8 @@ public class Account {
 
     // 계좌 입금 메서드
     public void deposit(BigDecimal amount) {
+        validateCurrencyAmountScale(amount);
+
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("입금 금액은 0보다 커야 합니다.");
         }
@@ -118,8 +137,11 @@ public class Account {
             throw new RuntimeException("이체한도를 입력해주세요.");
         }
 
+        validateCurrencyAmountScale(dailyTransferLimit);
+        validateCurrencyAmountScale(singleTransferLimit);
+
         if (dailyTransferLimit.compareTo(BigDecimal.ZERO) <= 0 || singleTransferLimit.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("이체한도는 1원 이상이어야 합니다.");
+            throw new RuntimeException("이체한도는 0보다 커야 합니다.");
         }
 
         if (singleTransferLimit.compareTo(dailyTransferLimit) > 0) {
@@ -128,5 +150,9 @@ public class Account {
 
         this.dailyTransferLimit = dailyTransferLimit;
         this.singleTransferLimit = singleTransferLimit;
+    }
+
+    private void validateCurrencyAmountScale(BigDecimal amount) {
+        this.currencyCode.validateAmountScale(amount);
     }
 }

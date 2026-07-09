@@ -41,7 +41,12 @@
                         <td th:text="${investment.securitiesCompanyCode.displayName}">키움증권</td>
                         <td th:text="${investment.accountNumber}">000000-00-000000</td>
                         <td>
-                            <span th:text="${#numbers.formatDecimal(investment.depositBalance, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                            <ul>
+                                <li th:each="cashBalance : ${investment.cashBalances}">
+                                    <span th:text="${#numbers.formatDecimal(cashBalance.availableBalance, 0, 'COMMA', cashBalance.currencyCode.fractionDigits, 'POINT')}">0</span>
+                                    <span th:text="${cashBalance.currencyCode.name()}">KRW</span>
+                                </li>
+                            </ul>
                         </td>
                         <td>
                             <span th:if="${investment.primary}">대표계좌</span>

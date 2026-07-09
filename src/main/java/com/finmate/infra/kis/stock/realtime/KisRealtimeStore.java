@@ -11,9 +11,10 @@ import java.util.concurrent.ConcurrentMap;
 // Kis WebSocket로 받은 실시간 시세의 최신값을 DB가 아니라, 서버 메모리에 저장하는 저장소 역할을 하는 클래스
 @Service
 public class KisRealtimeStore {
+    // 여러 클라이언트(thread)에 의해 동시성문제가 발생할 수 있기 때문에 ConcurrentMap을 사용한다.
     private final ConcurrentMap<String, KisRealtimePayload> latestPayloads = new ConcurrentHashMap<>();
 
-    // Kis WebSocket을 통해 방든 Payload를 메모리에 저장한다.
+    // Kis WebSocket을 통해 받은 Payload를 메모리에 저장한다.
     public void put(KisRealtimePayload payload) {
         if (payload == null || payload.trKey() == null || payload.trKey().isBlank()) {
             return;
@@ -22,7 +23,7 @@ public class KisRealtimeStore {
         latestPayloads.put(key(payload.api(), payload.trKey()), payload);
     }
 
-    // 메모리에서 특저 종목의 실시간 데이터를 받아오는 메서드
+    // 메모리에서 특정 종목의 실시간 데이터를 받아오는 메서드
     public Optional<KisRealtimePayload> get(KisRealtimeApi api, String trKey) {
         if (api == null || trKey == null || trKey.isBlank()) {
             return Optional.empty();

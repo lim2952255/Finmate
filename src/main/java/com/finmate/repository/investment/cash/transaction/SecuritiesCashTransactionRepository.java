@@ -22,6 +22,7 @@ public interface SecuritiesCashTransactionRepository extends JpaRepository<Secur
             from SecuritiesCashTransaction t
             join fetch t.investment i
             join fetch i.user u
+            join fetch t.transfer tr
             where i.user.id = :userId
               and t.createdAt between :startDateTime and :endDateTime
             order by t.createdAt desc
@@ -42,6 +43,7 @@ public interface SecuritiesCashTransactionRepository extends JpaRepository<Secur
             from SecuritiesCashTransaction t
             join fetch t.investment i
             join fetch i.user u
+            join fetch t.transfer tr
             where i.id = :investmentId
               and t.createdAt between :startDateTime and :endDateTime
             order by t.createdAt desc

@@ -1,6 +1,6 @@
 package com.finmate.global.interceptor;
 
-import com.finmate.global.Const;
+import com.finmate.global.constant.Const;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;

@@ -18,6 +18,7 @@ public record StockRealtimeClientMessage(
         BigDecimal lowPrice,
         BigDecimal change,
         BigDecimal changeRate,
+        String changeSign,
         Long accumulatedVolume,
         BigDecimal accumulatedTradeAmount,
         String tradeDate,

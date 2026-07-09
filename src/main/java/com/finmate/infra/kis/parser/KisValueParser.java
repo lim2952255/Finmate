@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.Optional;
 
 import static com.finmate.global.validation.RequiredValidator.validateRequired;
 
@@ -40,6 +41,23 @@ public final class KisValueParser {
         }
 
         return new BigDecimal(normalizeNumber(value));
+    }
+
+    public static BigDecimal parseNullableBigDecimalOrNull(String value) {
+        try {
+            return parseNullableBigDecimal(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public static Optional<BigDecimal> parsePositiveBigDecimal(String value) {
+        BigDecimal parsedValue = parseNullableBigDecimalOrNull(value);
+        if (parsedValue == null || parsedValue.compareTo(BigDecimal.ZERO) <= 0) {
+            return Optional.empty();
+        }
+
+        return Optional.of(parsedValue);
     }
 
     public static Long parseRequiredLong(String value, String message) {

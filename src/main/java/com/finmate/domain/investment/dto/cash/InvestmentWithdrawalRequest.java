@@ -26,6 +26,6 @@ public class InvestmentWithdrawalRequest {
     private BankCode toBankCode;
 
     @NotNull(message = "출금 금액은 필수입니다.")
-    @Positive(message = "출금 금액은 1원 이상이어야 합니다.")
+    @Positive(message = "출금 금액은 0보다 커야 합니다.")
     private BigDecimal amount;
 }

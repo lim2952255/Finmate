@@ -17,13 +17,14 @@ import com.finmate.domain.normal.account.transaction.dto.TransactionSummary;
 import com.finmate.domain.normal.transfer.DailyTransferUsage;
 import com.finmate.domain.normal.transfer.Transfer;
 import com.finmate.domain.user.User;
+import com.finmate.domain.investment.CurrencyCode;
 import com.finmate.global.pagination.PaginationInfo;
 import com.finmate.repository.normal.account.AccountRepository;
 import com.finmate.repository.normal.account.transaction.AccountTransactionRepository;
 import com.finmate.repository.normal.transfer.DailyTransferUsageRepository;
 import com.finmate.repository.normal.transfer.TransferRepository;
+import com.finmate.service.normal.transfer.TransferLimitUsageService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -33,15 +34,15 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.EnumMap;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class AccountService {
     private static final int MAX_ACCOUNT_COUNT = 10;
-    private static final int MAX_ACCOUNT_NUMBER_GENERATION_ATTEMPTS = 100;
     private static final int TRANSACTION_PAGE_SIZE = 20;
     private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul");
 
@@ -50,6 +51,7 @@ public class AccountService {
     private final TransferRepository transferRepository;
     private final AccountTransactionRepository accountTransactionRepository;
     private final DailyTransferUsageRepository dailyTransferUsageRepository;
+    private final TransferLimitUsageService transferLimitUsageService;
 
     // 입금액 계산 타입
     private static final List<AccountTransactionType> DEPOSIT_TYPES = List.of(
@@ -64,16 +66,14 @@ public class AccountService {
     public AccountHomeInfo getAccountHomeInfo(Long userId) {
         // 총 금액 + 대표계좌 + 총 계좌 수 정보를 dto에 담는다.
         List<Account> accounts = accountRepository.findByUser_Id(userId);
-        BigDecimal totalBalance = accounts.stream()
-                .map(Account::getBalance)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        Map<CurrencyCode, BigDecimal> totalBalancesByCurrency = summarizeBalancesByCurrency(accounts);
         PrimaryAccount primaryAccount = accounts.stream()
                 .filter(Account::isPrimary)
                 .findFirst()
                 .map(PrimaryAccount::new)
                 .orElse(null);
 
-        return new AccountHomeInfo(primaryAccount, totalBalance, accounts.size());
+        return new AccountHomeInfo(primaryAccount, totalBalancesByCurrency, accounts.size());
     }
 
     // 계좌 개설
@@ -85,42 +85,19 @@ public class AccountService {
         }
 
         // Registry에 새로운 계좌번호를 등록한 후 계좌를 개설한다.
-        String accountNumber = registerUniqueAccountNumber(AccountType.NORMAL);
-        Account account = Account.create(accountNumber, openAccount.getBankCode());
+        String accountNumber = accountNumberRegistryService.issueUniqueAccountNumber(AccountType.NORMAL);
+        Account account = Account.create(
+                accountNumber,
+                openAccount.getBankCode(),
+                openAccount.getCurrencyCode()); // 계좌 개설 시에 해당 계좌의 통화를 설정해야 한다.
 
         // 이때 user는 준영속상태이다.
         // 하지만 연관관계의 주인은 Account이기 때문에, user가 준영속상태라고 해도, 양방향 연관관계를 설정한다면,
         // Account에 user정보가 업데이트되기 때문에 상관없다.
         user.addAccount(account);
 
-        Account savedAccount = accountRepository.save(account);
+        Account savedAccount = accountRepository.save(account); // 계좌 개설
         return savedAccount.getId();
-    }
-
-    // 고유한 계좌번호 생성 후 계좌 생성 전에 Registry에 먼저 등록한다.
-    private String registerUniqueAccountNumber(AccountType accountType) {
-        for (int i = 0; i < MAX_ACCOUNT_NUMBER_GENERATION_ATTEMPTS; i++) {
-            String accountNumber = generateAccountNumber();
-            try {
-                accountNumberRegistryService.register(accountNumber, accountType);
-                return accountNumber;
-                // DB수준에서 unique제약조건을 설정했기 때문 최종적으로는 동시성 문제가 발생하지 않는다.
-            } catch (DataIntegrityViolationException e) {
-                // 동시 요청에서 같은 번호가 먼저 등록된 경우 다른 번호로 재시도한다.
-            }
-        }
-
-        throw new RuntimeException("계좌번호 생성에 실패했습니다. 다시 시도해주세요.");
-    }
-
-    // 고유한 계좌 번호 생성기
-    private String generateAccountNumber() {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        return String.format(
-                "%06d-%02d-%06d",
-                random.nextInt(1_000_000),
-                random.nextInt(100),
-                random.nextInt(1_000_000));
     }
 
     @Transactional
@@ -163,23 +140,19 @@ public class AccountService {
 
     // 일일 이체한도 / 일회 이체한도 정보를 dto에 담아서 반환
     private TransferLimitInfo getTransferLimitInfo(Long userId, String accountNumber, BankCode bankCode) {
-        Account account = accountRepository.findByUser_IdAndAccountNumberAndBankCode(userId, accountNumber, bankCode)
-                .orElseThrow(() -> new RuntimeException("현재 사용자의 계좌가 아닙니다."));
-        return createTransferLimitInfo(account);
+        Account account = findOwnedAccount(userId, accountNumber, bankCode);
+        return createTransferLimitInfo(account); // 계좌의 일일 이체한도 / 일회 이체한도 정보를 dto에 담아서 리턴
     }
 
     // TransferRequest에는 입금은행 정보 / 출금은행 정보가 담겨있으며, 이를 통해 입출금계좌정보를 설정
     @Transactional(readOnly = true)
     public TransferRequest prepareTransfer(Long userId, String fromAccountNumber, BankCode fromBankCode) {
-        Account fromAccount = accountRepository.findByUser_IdAndAccountNumberAndBankCode(
-                        userId,
-                        fromAccountNumber,
-                        fromBankCode)
-                .orElseThrow(() -> new RuntimeException("현재 사용자의 계좌가 아닙니다."));
+        Account fromAccount = findOwnedAccount(userId, fromAccountNumber, fromBankCode); // 출금 계좌 설정
 
         TransferRequest transferRequest = new TransferRequest();
         transferRequest.setFromAccountNumber(fromAccount.getAccountNumber());
         transferRequest.setFromBankCode(fromAccount.getBankCode());
+        transferRequest.setCurrencyCode(fromAccount.getCurrencyCode());
         transferRequest.setTransferLimitInfo(createTransferLimitInfo(fromAccount));
 
         return transferRequest;
@@ -201,8 +174,14 @@ public class AccountService {
                     transferRequest.getFromAccountNumber(),
                     transferRequest.getFromBankCode());
             transferRequest.setTransferLimitInfo(transferLimitInfo);
+            Account fromAccount = findOwnedAccount(
+                    userId,
+                    transferRequest.getFromAccountNumber(),
+                    transferRequest.getFromBankCode());
+            transferRequest.setCurrencyCode(fromAccount.getCurrencyCode());
         } catch (Exception e) {
             transferRequest.setTransferLimitInfo(TransferLimitInfo.zero());
+            transferRequest.setCurrencyCode(null);
         }
     }
 
@@ -214,8 +193,7 @@ public class AccountService {
             return new TransferLimitPageInfo(accounts, null, TransferLimitInfo.zero());
         }
 
-        Account selectedAccount = accountRepository.findByUser_IdAndAccountNumberAndBankCode(userId, accountNumber, bankCode)
-                .orElseThrow(() -> new RuntimeException("현재 사용자의 계좌가 아닙니다."));
+        Account selectedAccount = findOwnedAccount(userId, accountNumber, bankCode);
 
         return new TransferLimitPageInfo(accounts, selectedAccount, createTransferLimitInfo(selectedAccount));
     }
@@ -241,7 +219,7 @@ public class AccountService {
                                                                     TransactionPeriod period,
                                                                     int page) {
         List<Account> accounts = accountRepository.findByUser_Id(userId);
-        TransactionPeriod safePeriod = getSafePeriod(period);
+        TransactionPeriod safePeriod = TransactionPeriod.defaultIfNull(period);
         int safePage = PaginationInfo.safePage(page);
         TransactionDateRange dateRange = getTransactionDateRange(safePeriod);
 
@@ -324,15 +302,6 @@ public class AccountService {
         return new TransactionSummary(totalDepositAmount, totalWithdrawalAmount);
     }
 
-    // 조회 기간 설정
-    private TransactionPeriod getSafePeriod(TransactionPeriod period) {
-        if (period == null) {
-            return TransactionPeriod.ONE_MONTH;
-        }
-
-        return period;
-    }
-
     // 이체한도 업데이트
     @Transactional
     public void updateTransferLimit(Long userId,
@@ -340,8 +309,7 @@ public class AccountService {
                                     BankCode bankCode,
                                     BigDecimal dailyTransferLimit,
                                     BigDecimal singleTransferLimit) {
-        Account account = accountRepository.findByUser_IdAndAccountNumberAndBankCode(userId, accountNumber, bankCode)
-                .orElseThrow(() -> new RuntimeException("현재 사용자의 계좌가 아닙니다."));
+        Account account = findOwnedAccount(userId, accountNumber, bankCode);
 
         account.updateTransferLimit(dailyTransferLimit, singleTransferLimit);
     }
@@ -355,6 +323,7 @@ public class AccountService {
     // 조회 시점부터 SELECT FOR UPDATE 기반의 비관적 락을 잡아야 잔고 정합성을 지킬 수 있다.
     @Transactional
     public void transfer(TransferRequest transferRequest, User user) {
+        // TransferRequest에서 출금 계좌, 입금 계좌, 출금(입금액) 정보를 꺼낸다.
         String fromAccountNumber = transferRequest.getFromAccountNumber();
         String toAccountNumber = transferRequest.getToAccountNumber();
         BigDecimal transferAmount = transferRequest.getAmount();
@@ -373,7 +342,8 @@ public class AccountService {
             throw new RuntimeException("같은 계좌로는 이체할 수 없습니다.");
 
         // 계좌이체의 경우 입금 계좌와 출금 계좌 모두에 대해서 lock을 획득해야 한다.
-        // 이때 lock을 획득하는 순서를 지정하지 않으면 deadlock이 발생할 수 있기 때문에 AccountId가 작은 순서대로 lock을 획득하도록 강제한다
+        // 이때 lock을 획득하는 순서를 지정하지 않으면 deadlock이 발생할 수 있기 때문에 AccountId가 작은 순서대로 lock을 획득하도록 강제한다.
+        // lockAccountsForTransferAvoidingDeadlock 메서드는 AccountId가 작은 순서로 걔좌에 lock을 획득한 채 조회하고, 계좌정보를 record에 담아서 return한다.
         LockedTransferAccounts lockedAccounts = lockAccountsForTransferAvoidingDeadlock(fromAccountId, toAccountId);
         Account fromAccount = lockedAccounts.fromAccount();
         Account toAccount = lockedAccounts.toAccount();
@@ -381,10 +351,12 @@ public class AccountService {
         if(!fromAccount.getUser().getId().equals(user.getId()))
             throw new RuntimeException("출금 계좌가 현재 사용자의 계좌가 아닙니다.");
 
-        useDailyTransferLimit(fromAccount, transferAmount);
+        validateSameCurrency(fromAccount, toAccount); // 입금 계좌와 출금 계좌의 통화가 동일해야 한다.
+        transferLimitUsageService.use(fromAccount, transferAmount); // 일일 or 일회 이체한도 초과여부 검사
 
         BigDecimal fromBalanceBefore = fromAccount.getBalance();
         BigDecimal toBalanceBefore = toAccount.getBalance();
+        CurrencyCode currencyCode = fromAccount.getCurrencyCode();
 
         fromAccount.withdraw(transferAmount);
         toAccount.deposit(transferAmount);
@@ -394,6 +366,7 @@ public class AccountService {
                 UUID.randomUUID().toString(),
                 fromAccount,
                 toAccount,
+                currencyCode,
                 transferAmount);
 
         // 출금 계좌 거래내역 추가
@@ -427,19 +400,21 @@ public class AccountService {
         accountTransactionRepository.save(depositTransaction);
 
     }
+    // 통화별 금액 정보를 종합
+    private Map<CurrencyCode, BigDecimal> summarizeBalancesByCurrency(List<Account> accounts) {
+        Map<CurrencyCode, BigDecimal> balancesByCurrency = new EnumMap<>(CurrencyCode.class);
+        for (Account account : accounts) {
+            balancesByCurrency.merge(account.getCurrencyCode(), account.getBalance(), BigDecimal::add);
+        }
+        return balancesByCurrency;
+    }
 
-    // 일일 or 일회 이체한도 초과여부 검사
-    private void useDailyTransferLimit(Account fromAccount, BigDecimal transferAmount) {
-        if(transferAmount.compareTo(fromAccount.getSingleTransferLimit()) > 0)
-            throw new RuntimeException("일회 이체한도를 초과했습니다.");
-
-        LocalDate today = LocalDate.now(SERVICE_ZONE);
-        DailyTransferUsage dailyTransferUsage = dailyTransferUsageRepository
-                .findByAccountIdAndUsageDateForUpdate(fromAccount.getId(), today)
-                .orElseGet(() -> dailyTransferUsageRepository.save(DailyTransferUsage.create(fromAccount, today)));
-
-        // 일일 이체한도 검사 + 오늘 사용금액 증가
-        dailyTransferUsage.use(transferAmount, fromAccount.getDailyTransferLimit());
+    // 계좌이체할 계좌 간의 통화가 일치하는지를 검사
+    // 현재는 통화가 일치하지 않으면 예외를 발생시키지만, 추후에는 통화가 일치하지 않는 경우, 환전 기능을 추가
+    private void validateSameCurrency(Account fromAccount, Account toAccount) {
+        if (fromAccount.getCurrencyCode() != toAccount.getCurrencyCode()) {
+            throw new RuntimeException("서로 다른 통화 계좌 간 이체는 환전 기능이 필요합니다.");
+        }
     }
 
     // 데드락 방지를 위해 id가 작은 계좌부터 lock을 얻는다.

@@ -24,10 +24,15 @@
                     <strong>계좌번호</strong>
                     <span th:text="${investmentWithdrawalPageInfo.fromInvestment.accountNumber}">000000-00-000000</span>
                 </p>
-                <p>
+                <div>
                     <strong>예수금</strong>
-                    <span th:text="${#numbers.formatDecimal(investmentWithdrawalPageInfo.fromInvestment.depositBalance, 0, 'COMMA', 0, 'POINT')}">0</span>원
-                </p>
+                    <ul>
+                        <li th:each="cashBalance : ${investmentWithdrawalPageInfo.fromInvestment.cashBalances}">
+                            <span th:text="${#numbers.formatDecimal(cashBalance.availableBalance, 0, 'COMMA', cashBalance.currencyCode.fractionDigits, 'POINT')}">0</span>
+                            <span th:text="${cashBalance.currencyCode.name()}">KRW</span>
+                        </li>
+                    </ul>
+                </div>
                 <p>
                     <a th:href="@{/investments/transfer}">출금 증권계좌 다시 선택</a>
                 </p>
@@ -67,6 +72,7 @@
                             <th>선택</th>
                             <th>은행</th>
                             <th>계좌번호</th>
+                            <th>통화</th>
                             <th>잔액</th>
                             <th>대표계좌</th>
                         </tr>
@@ -77,12 +83,14 @@
                                 <input type="radio"
                                        th:field="*{toAccountId}"
                                        th:value="${account.id}"
-                                       th:attr="data-bank-code=${account.bankCode}">
+                                       th:attr="data-bank-code=${account.bankCode},data-minimum-amount=${account.currencyCode.minimumAmount},data-input-step=${account.currencyCode.inputStep}">
                             </td>
                             <td th:text="${account.bankCode.displayName}">신한은행</td>
                             <td th:text="${account.accountNumber}">000000-00-000000</td>
+                            <td th:text="${account.currencyCode.name()}">KRW</td>
                             <td>
-                                <span th:text="${#numbers.formatDecimal(account.balance, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                                <span th:text="${#numbers.formatDecimal(account.balance, 0, 'COMMA', account.currencyCode.fractionDigits, 'POINT')}">0</span>
+                                <span th:text="${account.currencyCode.name()}">KRW</span>
                             </td>
                             <td>
                                 <span th:if="${account.primary}">대표계좌</span>
@@ -118,6 +126,7 @@
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const hidden = document.getElementById("toBankCode");
+        const amountInput = document.getElementById("amount");
         const radios = document.querySelectorAll("input[name='toAccountId']");
 
         if (!hidden || radios.length === 0) {
@@ -127,6 +136,10 @@
         const syncBankCode = function () {
             const checked = document.querySelector("input[name='toAccountId']:checked");
             hidden.value = checked ? (checked.dataset.bankCode || "") : "";
+            if (amountInput && checked) {
+                amountInput.min = checked.dataset.minimumAmount || "1";
+                amountInput.step = checked.dataset.inputStep || "1";
+            }
         };
 
         radios.forEach(function (radio) {

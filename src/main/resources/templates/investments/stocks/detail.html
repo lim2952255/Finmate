@@ -43,7 +43,7 @@
 
         .chart-panel {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 220px;
+            grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
             gap: 18px;
         }
 
@@ -58,17 +58,51 @@
         .chart-price {
             display: flex;
             align-items: baseline;
-            gap: 10px;
+            flex-wrap: wrap;
+            gap: 8px 12px;
         }
 
         .chart-price strong {
-            font-size: 28px;
+            color: #0f172a;
+            font-size: 36px;
+            font-weight: 800;
             line-height: 1;
         }
 
         .chart-price span {
             color: #64748b;
             font-size: 13px;
+        }
+
+        .chart-price-change {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 6px;
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .chart-price-change span {
+            color: inherit;
+            font-size: inherit;
+        }
+
+        .chart-price-change.bullish {
+            color: #dc2626;
+        }
+
+        .chart-price-change.bearish {
+            color: #2563eb;
+        }
+
+        .chart-price-change.flat {
+            color: #64748b;
+        }
+
+        .chart-price-time {
+            color: #64748b;
+            font-size: 15px;
+            font-weight: 600;
         }
 
         .chart-legend {
@@ -150,10 +184,47 @@
             stroke-width: 1;
         }
 
+        .chart-current-line.bullish {
+            stroke: #dc2626;
+        }
+
+        .chart-current-line.bearish {
+            stroke: #2563eb;
+        }
+
+        .chart-current-line.flat {
+            stroke: #64748b;
+        }
+
         .chart-current-label {
             fill: #dc2626;
             font-size: 12px;
             font-weight: 700;
+            opacity: 0;
+        }
+
+        .chart-current-badge {
+            fill: #64748b;
+            rx: 4;
+        }
+
+        .chart-current-badge.bullish {
+            fill: #dc2626;
+        }
+
+        .chart-current-badge.bearish {
+            fill: #2563eb;
+        }
+
+        .chart-current-badge.flat {
+            fill: #64748b;
+        }
+
+        .chart-current-badge-text {
+            fill: #ffffff;
+            font-size: 11px;
+            font-weight: 800;
+            pointer-events: none;
         }
 
         .svg-candle-wick {
@@ -203,6 +274,35 @@
         .chart-hover-target {
             fill: transparent;
             pointer-events: all;
+        }
+
+        .chart-crosshair {
+            display: none;
+            pointer-events: none;
+        }
+
+        .chart-crosshair.visible {
+            display: block;
+        }
+
+        .chart-crosshair-line {
+            stroke: #334155;
+            stroke-dasharray: 4 4;
+            stroke-width: 1;
+            opacity: 0.74;
+        }
+
+        .chart-crosshair-badge {
+            fill: #0f172a;
+            opacity: 0.94;
+            rx: 4;
+        }
+
+        .chart-crosshair-text {
+            fill: #ffffff;
+            font-size: 11px;
+            font-weight: 800;
+            pointer-events: none;
         }
 
         .chart-tooltip {
@@ -369,6 +469,72 @@
             font-size: 12px;
         }
 
+        .orderbook-section {
+            padding-top: 12px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .orderbook-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .orderbook-header strong {
+            color: #0f172a;
+            font-size: 15px;
+        }
+
+        .orderbook-header small {
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .orderbook-table {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .orderbook-table th,
+        .orderbook-table td {
+            overflow: hidden;
+            padding: 6px 4px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: right;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .orderbook-table th {
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        .orderbook-table tfoot th,
+        .orderbook-table tfoot td {
+            border-bottom: 0;
+            font-weight: 800;
+        }
+
+        .orderbook-price.ask {
+            color: #dc2626;
+            font-weight: 800;
+        }
+
+        .orderbook-price.bid {
+            color: #2563eb;
+            font-weight: 800;
+        }
+
+        .orderbook-empty {
+            color: #64748b;
+            text-align: center;
+        }
+
         .chart-caption {
             margin-top: 10px;
             color: #64748b;
@@ -377,6 +543,41 @@
 
         .table-scroll {
             overflow-x: auto;
+        }
+
+        .stock-action-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 18px 0 0;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .stock-action-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .stock-action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 42px;
+            padding: 0 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #0f172a;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .stock-action-button.primary {
+            border-color: #2563eb;
+            background: #2563eb;
+            color: #ffffff;
         }
 
         @media (max-width: 900px) {
@@ -391,6 +592,15 @@
 
             .chart-legend {
                 justify-content: flex-start;
+            }
+
+            .stock-action-section {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .stock-action-button {
+                width: 100%;
             }
         }
     </style>
@@ -479,7 +689,16 @@
                                         th:text="${stockDetailPageInfo.formatPrice(stockDetailPageInfo.latestClosePrice)}">70,500</strong>
                                 <strong id="realtime-chart-price"
                                         th:unless="${stockDetailPageInfo.latestClosePrice != null}">-</strong>
+                                <span id="realtime-price-change"
+                                      class="chart-price-change"
+                                      th:classappend="${stockDetailPageInfo.latestPriceChangeClass}">
+                                    <span id="realtime-change-amount"
+                                          th:text="${stockDetailPageInfo.formatLatestChangeAmount()}">-</span>
+                                    <span id="realtime-change-rate"
+                                          th:text="${stockDetailPageInfo.formatLatestChangeRate()}">-</span>
+                                </span>
                                 <span id="realtime-trade-time"
+                                      class="chart-price-time"
                                       th:if="${stockDetailPageInfo.latestTradeDate != null}"
                                       th:text="${#temporals.format(stockDetailPageInfo.latestTradeDate, 'yyyy-MM-dd')}">2026-07-02</span>
                             </div>
@@ -523,19 +742,39 @@
                                 <g th:if="${stockDetailPageInfo.hasLatestPriceLine}">
                                     <line id="realtime-current-line"
                                           class="chart-current-line"
+                                          th:classappend="${stockDetailPageInfo.latestPriceChangeClass}"
                                           th:attr="x1=0,y1=${stockDetailPageInfo.latestPriceLineY},x2=${stockDetailPageInfo.priceAxisX},y2=${stockDetailPageInfo.latestPriceLineY}"></line>
                                     <text id="realtime-current-label"
                                           class="chart-current-label"
                                           th:attr="x=${stockDetailPageInfo.priceAxisX + 8},y=${stockDetailPageInfo.latestPriceLineY}"
                                           dominant-baseline="middle"
                                           th:text="${stockDetailPageInfo.formatPrice(stockDetailPageInfo.latestClosePrice)}">70,500</text>
+                                    <rect id="realtime-current-badge"
+                                          class="chart-current-badge"
+                                          th:classappend="${stockDetailPageInfo.latestPriceChangeClass}"
+                                          th:attr="x=${stockDetailPageInfo.priceAxisX + 2},y=${stockDetailPageInfo.latestPriceBadgeY},width=74,height=34"></rect>
+                                    <text id="realtime-current-badge-price"
+                                          class="chart-current-badge-text"
+                                          text-anchor="middle"
+                                          th:attr="x=${stockDetailPageInfo.priceAxisX + 39},y=${stockDetailPageInfo.latestPriceBadgePriceY}"
+                                          th:text="${stockDetailPageInfo.formatPrice(stockDetailPageInfo.latestClosePrice)}">70,500</text>
+                                    <text id="realtime-current-badge-rate"
+                                          class="chart-current-badge-text"
+                                          text-anchor="middle"
+                                          th:attr="x=${stockDetailPageInfo.priceAxisX + 39},y=${stockDetailPageInfo.latestPriceBadgeRateY}"
+                                          th:text="${stockDetailPageInfo.formatLatestChangeRate()}">-</text>
                                 </g>
 
                                 <g>
                                     <rect class="svg-volume-bar"
                                           th:each="candle : ${stockDetailPageInfo.candles}"
                                           th:classappend="${candle.candleType}"
-                                          th:attr="x=${candle.volumeX},y=${candle.volumeY},width=${candle.volumeWidth},height=${candle.volumeHeight}">
+                                          th:attr="x=${candle.volumeX},
+                                                   y=${candle.volumeY},
+                                                   width=${candle.volumeWidth},
+                                                   height=${candle.volumeHeight},
+                                                   fill=${candle.color},
+                                                   opacity=0.45">
                                         <title th:text="${candle.title}">일봉 데이터</title>
                                     </rect>
                                 </g>
@@ -544,20 +783,30 @@
                                     <polyline class="ma-line"
                                               th:each="line : ${stockDetailPageInfo.movingAverageLines}"
                                               th:classappend="${line.cssClass}"
-                                              th:attr="points=${line.points}"></polyline>
+                                              th:attr="points=${line.points},stroke=${line.color}"></polyline>
                                 </g>
 
                                 <g>
                                     <line class="svg-candle-wick"
                                           th:each="candle : ${stockDetailPageInfo.candles}"
                                           th:classappend="${candle.candleType}"
-                                          th:attr="x1=${candle.x},y1=${candle.wickY1},x2=${candle.x},y2=${candle.wickY2}">
+                                          th:attr="x1=${candle.x},
+                                                   y1=${candle.wickY1},
+                                                   x2=${candle.x},
+                                                   y2=${candle.wickY2},
+                                                   stroke=${candle.color},
+                                                   stroke-width=1.2">
                                         <title th:text="${candle.title}">일봉 데이터</title>
                                     </line>
                                     <rect class="svg-candle-body"
                                           th:each="candle : ${stockDetailPageInfo.candles}"
                                           th:classappend="${candle.candleType}"
-                                          th:attr="x=${candle.bodyX},y=${candle.bodyY},width=${candle.bodyWidth},height=${candle.bodyHeight}">
+                                          th:attr="x=${candle.bodyX},
+                                                   y=${candle.bodyY},
+                                                   width=${candle.bodyWidth},
+                                                   height=${candle.bodyHeight},
+                                                   fill=${candle.color},
+                                                   stroke=${candle.color}">
                                         <title th:text="${candle.title}">일봉 데이터</title>
                                     </rect>
                                 </g>
@@ -569,6 +818,8 @@
                                             data-chart-min-price=${stockDetailPageInfo.minChartPrice},
                                             data-price-area-top=${stockDetailPageInfo.priceAreaTop},
                                             data-price-area-bottom=${stockDetailPageInfo.priceAreaBottom},
+                                            data-volume-area-bottom=${stockDetailPageInfo.volumeAreaBottom},
+                                            data-date-axis-line-y=${stockDetailPageInfo.dateAxisLineY},
                                             data-price-axis-x=${stockDetailPageInfo.priceAxisX},
                                             data-realtime-candle-x=${stockDetailPageInfo.realtimeCandleX},
                                             data-realtime-candle-width=${stockDetailPageInfo.realtimeCandleWidth},
@@ -620,6 +871,33 @@
                                           th:attr="x=${stockDetailPageInfo.lowestPriceMarker.labelX},y=${stockDetailPageInfo.lowestPriceMarker.labelY},text-anchor=${stockDetailPageInfo.lowestPriceMarker.textAnchor}"
                                           th:text="${stockDetailPageInfo.lowestPriceMarker.label}">최저 60,000 - 2026.07.02</text>
                                 </g>
+
+                                <g id="chart-crosshair" class="chart-crosshair" aria-hidden="true">
+                                    <line id="chart-crosshair-vertical"
+                                          class="chart-crosshair-line"
+                                          th:attr="y1=${stockDetailPageInfo.priceAreaTop},y2=${stockDetailPageInfo.volumeAreaBottom}"></line>
+                                    <line id="chart-crosshair-horizontal"
+                                          class="chart-crosshair-line"
+                                          th:attr="x1=0,x2=${stockDetailPageInfo.priceAxisX}"></line>
+                                    <rect id="chart-crosshair-price-badge"
+                                          class="chart-crosshair-badge"
+                                          rx="4"
+                                          th:attr="x=${stockDetailPageInfo.priceAxisX + 2},width=74,height=22"></rect>
+                                    <text id="chart-crosshair-price-text"
+                                          class="chart-crosshair-text"
+                                          text-anchor="middle"
+                                          dominant-baseline="middle"
+                                          th:attr="x=${stockDetailPageInfo.priceAxisX + 39}">0</text>
+                                    <rect id="chart-crosshair-date-badge"
+                                          class="chart-crosshair-badge"
+                                          width="82"
+                                          height="22"
+                                          rx="4"></rect>
+                                    <text id="chart-crosshair-date-text"
+                                          class="chart-crosshair-text"
+                                          text-anchor="middle"
+                                          dominant-baseline="middle">0000-00-00</text>
+                                </g>
                             </svg>
                             <div id="chart-candle-tooltip" class="chart-tooltip" aria-hidden="true"></div>
                         </div>
@@ -666,52 +944,50 @@
                             <strong th:text="${stockDetailPageInfo.lowestPriceMarker.price}">60,000</strong>
                             <small th:text="${stockDetailPageInfo.lowestPriceMarker.tradeDate}">2026.07.02</small>
                         </div>
+                        <div class="orderbook-section" id="realtime-orderbook">
+                            <div class="orderbook-header">
+                                <strong>실시간 호가</strong>
+                                <small id="realtime-orderbook-time">수신 대기</small>
+                            </div>
+                            <table class="orderbook-table">
+                                <thead>
+                                <tr>
+                                    <th>매도가</th>
+                                    <th>잔량</th>
+                                    <th>매수가</th>
+                                    <th>잔량</th>
+                                </tr>
+                                </thead>
+                                <tbody id="realtime-orderbook-body">
+                                <tr>
+                                    <td class="orderbook-empty" colspan="4">수신 대기 중</td>
+                                </tr>
+                                </tbody>
+                                <tfoot>
+                                <tr>
+                                    <th>매도합</th>
+                                    <td id="realtime-total-ask-quantity">-</td>
+                                    <th>매수합</th>
+                                    <td id="realtime-total-bid-quantity">-</td>
+                                </tr>
+                                </tfoot>
+                            </table>
+                        </div>
                     </aside>
                 </div>
             </section>
 
-            <section>
-                <h2>최근 일봉 데이터</h2>
-
-                <div class="table-scroll" th:if="${stockDetailPageInfo.recentDailyPrices != null and !#lists.isEmpty(stockDetailPageInfo.recentDailyPrices)}">
-                    <table>
-                        <thead>
-                        <tr>
-                            <th>거래일</th>
-                            <th>시가</th>
-                            <th>고가</th>
-                            <th>저가</th>
-                            <th>종가</th>
-                            <th>거래량</th>
-                            <th>거래대금</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr th:each="dailyPrice : ${stockDetailPageInfo.recentDailyPrices}">
-                            <td th:text="${#temporals.format(dailyPrice.tradeDate, 'yyyy-MM-dd')}">2026-07-02</td>
-                            <td th:text="${stockDetailPageInfo.formatPrice(dailyPrice.openPrice)}">70,000</td>
-                            <td th:text="${stockDetailPageInfo.formatPrice(dailyPrice.highPrice)}">71,000</td>
-                            <td th:text="${stockDetailPageInfo.formatPrice(dailyPrice.lowPrice)}">69,500</td>
-                            <td th:text="${stockDetailPageInfo.formatPrice(dailyPrice.closePrice)}">70,500</td>
-                            <td th:text="${stockDetailPageInfo.formatVolume(dailyPrice.accumulatedVolume)}">12,345,678</td>
-                            <td th:if="${dailyPrice.accumulatedTradeAmount != null}"
-                                th:text="${stockDetailPageInfo.formatTradeAmount(dailyPrice.accumulatedTradeAmount)}">850,000,000,000</td>
-                            <td th:unless="${dailyPrice.accumulatedTradeAmount != null}">-</td>
-                        </tr>
-                        </tbody>
-                    </table>
+            <section class="stock-action-section">
+                <a class="stock-action-button primary"
+                   th:href="@{/investments/stocks/order/{stockId}(stockId=${stockDetailPageInfo.stock.id})}">
+                    주식 매수 / 매도
+                </a>
+                <div class="stock-action-links">
+                    <a class="stock-action-button" th:href="@{/investments/stocks/search}">종목 검색</a>
+                    <a class="stock-action-button" th:href="@{/investments/stocks/watchlist}">관심 종목</a>
+                    <a class="stock-action-button" th:href="@{/investments}">투자 홈</a>
                 </div>
-
-                <p th:if="${stockDetailPageInfo.recentDailyPrices == null or #lists.isEmpty(stockDetailPageInfo.recentDailyPrices)}">
-                    최근 일봉 데이터가 없습니다.
-                </p>
             </section>
-
-            <p>
-                <a th:href="@{/investments/stocks/search}">종목 검색</a>
-                <a th:href="@{/investments/stocks/watchlist}">관심 종목</a>
-                <a th:href="@{/investments}">투자 홈</a>
-            </p>
         </section>
     </main>
 </div>
@@ -729,12 +1005,27 @@
         const chartMinPrice = toNumber(candleLayer.dataset.chartMinPrice);
         const priceAreaTop = toNumber(candleLayer.dataset.priceAreaTop);
         const priceAreaBottom = toNumber(candleLayer.dataset.priceAreaBottom);
+        const volumeAreaBottom = toNumber(candleLayer.dataset.volumeAreaBottom);
+        const dateAxisLineY = toNumber(candleLayer.dataset.dateAxisLineY);
         const priceAxisX = toNumber(candleLayer.dataset.priceAxisX);
         const realtimeCandleX = toNumber(candleLayer.dataset.realtimeCandleX);
         const realtimeCandleWidth = toNumber(candleLayer.dataset.realtimeCandleWidth);
         const priceDecimalDigits = Number(candleLayer.dataset.priceDecimalDigits || 0);
+        const orderbookBody = document.getElementById('realtime-orderbook-body');
+        const orderbookTime = document.getElementById('realtime-orderbook-time');
+        const totalAskQuantity = document.getElementById('realtime-total-ask-quantity');
+        const totalBidQuantity = document.getElementById('realtime-total-bid-quantity');
         const priceAreaHeight = priceAreaBottom - priceAreaTop;
         const svgNamespace = 'http://www.w3.org/2000/svg';
+        const chartSvg = chartScroll ? chartScroll.querySelector('.stock-chart-svg') : null;
+        const crosshair = document.getElementById('chart-crosshair');
+        const crosshairVertical = document.getElementById('chart-crosshair-vertical');
+        const crosshairHorizontal = document.getElementById('chart-crosshair-horizontal');
+        const crosshairPriceBadge = document.getElementById('chart-crosshair-price-badge');
+        const crosshairPriceText = document.getElementById('chart-crosshair-price-text');
+        const crosshairDateBadge = document.getElementById('chart-crosshair-date-badge');
+        const crosshairDateText = document.getElementById('chart-crosshair-date-text');
+        let hoverTargets = [];
 
         if (!stockId || !isFinite(chartMaxPrice) || !isFinite(chartMinPrice) || chartMaxPrice <= chartMinPrice) {
             return;
@@ -742,7 +1033,7 @@
 
         attachTooltipEvents();
 
-        <!--클라이언트가 종목 상세페이지에 처음 접속 시 WebSocket을 open한다-->
+        // 클라이언트가 종목 상세페이지에 처음 접속 시 WebSocket을 open한다.
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const socket = new WebSocket(`${protocol}://${window.location.host}/ws/stocks`);
 
@@ -755,12 +1046,19 @@
 
         socket.addEventListener('message', (event) => {
             const message = parseMessage(event.data);
-            if (!message || message.type !== 'STOCK_TRADE' || Number(message.stockId) !== stockId) {
+            if (!message || Number(message.stockId) !== stockId) {
                 return;
             }
 
-            updateRealtimePrice(message);
-            updateRealtimeCandle(message);
+            if (message.type === 'STOCK_TRADE') {
+                updateRealtimePrice(message);
+                updateRealtimeCandle(message);
+                return;
+            }
+
+            if (message.type === 'STOCK_ORDERBOOK') {
+                updateRealtimeOrderbook(message);
+            }
         });
 
         socket.addEventListener('error', () => {
@@ -768,7 +1066,7 @@
         });
 
         window.addEventListener('pagehide', closeSocket);
-        <!-- 소켓을 닫는 메서드-->
+
         function closeSocket() {
             if (socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify({
@@ -786,14 +1084,35 @@
             }
 
             const formattedPrice = formatPrice(currentPrice);
+            const changeAmount = toNumber(message.change);
+            const changeRate = toNumber(message.changeRate);
+            const priceDirection = resolvePriceDirection(changeAmount, changeRate, message.changeSign);
             const chartPrice = document.getElementById('realtime-chart-price');
+            const priceChange = document.getElementById('realtime-price-change');
+            const changeAmountElement = document.getElementById('realtime-change-amount');
+            const changeRateElement = document.getElementById('realtime-change-rate');
             const currentLabel = document.getElementById('realtime-current-label');
             const currentLine = document.getElementById('realtime-current-line');
+            const currentBadge = document.getElementById('realtime-current-badge');
+            const currentBadgePrice = document.getElementById('realtime-current-badge-price');
+            const currentBadgeRate = document.getElementById('realtime-current-badge-rate');
             const tradeTime = document.getElementById('realtime-trade-time');
             const currentY = toPriceY(currentPrice);
 
             if (chartPrice) {
                 chartPrice.textContent = formattedPrice;
+            }
+
+            if (priceChange) {
+                setDirectionalClass(priceChange, priceDirection, 'chart-price-change');
+            }
+
+            if (changeAmountElement) {
+                changeAmountElement.textContent = formatSignedPrice(changeAmount, priceDirection);
+            }
+
+            if (changeRateElement) {
+                changeRateElement.textContent = formatSignedRate(changeRate, priceDirection);
             }
 
             if (currentLabel) {
@@ -802,8 +1121,24 @@
             }
 
             if (currentLine) {
+                setDirectionalClass(currentLine, priceDirection, 'chart-current-line');
                 currentLine.setAttribute('y1', currentY);
                 currentLine.setAttribute('y2', currentY);
+            }
+
+            if (currentBadge) {
+                setDirectionalClass(currentBadge, priceDirection, 'chart-current-badge');
+                currentBadge.setAttribute('y', formatCoordinate(currentY - 18));
+            }
+
+            if (currentBadgePrice) {
+                currentBadgePrice.textContent = formattedPrice;
+                currentBadgePrice.setAttribute('y', formatCoordinate(currentY - 4));
+            }
+
+            if (currentBadgeRate) {
+                currentBadgeRate.textContent = formatSignedRate(changeRate, priceDirection);
+                currentBadgeRate.setAttribute('y', formatCoordinate(currentY + 11));
             }
 
             if (tradeTime) {
@@ -854,27 +1189,81 @@
             updateLatestHoverTarget(message, openPrice, highPrice, lowPrice, currentPrice, candleType);
         }
 
-        function attachTooltipEvents() {
-            if (!chartScroll || !tooltip) {
+        function updateRealtimeOrderbook(message) {
+            if (!orderbookBody) {
                 return;
             }
 
+            const askLevels = Array.isArray(message.askLevels) ? message.askLevels : [];
+            const bidLevels = Array.isArray(message.bidLevels) ? message.bidLevels : [];
+            const maxLevel = Math.max(askLevels.length, bidLevels.length);
+
+            if (maxLevel === 0) {
+                orderbookBody.innerHTML = '<tr><td class="orderbook-empty" colspan="4">호가 없음</td></tr>';
+                return;
+            }
+
+            const rows = [];
+            for (let index = 0; index < maxLevel; index += 1) {
+                const ask = askLevels[index] || {};
+                const bid = bidLevels[index] || {};
+                rows.push(`
+                    <tr>
+                        <td class="orderbook-price ask">${escapeHtml(formatOptionalPrice(ask.price))}</td>
+                        <td>${escapeHtml(formatOptionalQuantity(ask.quantity))}</td>
+                        <td class="orderbook-price bid">${escapeHtml(formatOptionalPrice(bid.price))}</td>
+                        <td>${escapeHtml(formatOptionalQuantity(bid.quantity))}</td>
+                    </tr>
+                `);
+            }
+
+            orderbookBody.innerHTML = rows.join('');
+
+            if (orderbookTime) {
+                orderbookTime.textContent = formatTradeTime(message.quoteTime);
+            }
+
+            if (totalAskQuantity) {
+                totalAskQuantity.textContent = formatOptionalQuantity(message.totalAskQuantity);
+            }
+
+            if (totalBidQuantity) {
+                totalBidQuantity.textContent = formatOptionalQuantity(message.totalBidQuantity);
+            }
+        }
+
+        function attachTooltipEvents() {
+            if (!chartScroll || !tooltip || !chartSvg) {
+                return;
+            }
+
+            refreshHoverTargets();
+
             chartScroll.addEventListener('mousemove', (event) => {
-                const target = event.target.closest('.chart-hover-target');
-                if (!target) {
-                    hideTooltip();
+                const point = toSvgPoint(event);
+                if (!isInsideInteractiveChart(point)) {
+                    hideChartPointer();
                     return;
                 }
 
-                showTooltip(target, event);
+                const target = findNearestHoverTarget(point.x);
+                if (!target) {
+                    hideChartPointer();
+                    return;
+                }
+
+                const cursorPrice = toCursorPrice(point.y);
+                showCrosshair(point, cursorPrice, target);
+                showTooltip(target, event, cursorPrice);
             });
 
-            chartScroll.addEventListener('mouseleave', hideTooltip);
+            chartScroll.addEventListener('mouseleave', hideChartPointer);
         }
 
-        function showTooltip(target, event) {
+        function showTooltip(target, event, cursorPrice) {
             tooltip.innerHTML = `
                 <div class="chart-tooltip-title">${escapeHtml(target.dataset.date || '-')}</div>
+                ${tooltipRow('커서 가격', formatPrice(cursorPrice), '')}
                 ${tooltipRow('시가', target.dataset.open, target.dataset.candleType)}
                 ${tooltipRow('고가', target.dataset.high, target.dataset.candleType)}
                 ${tooltipRow('저가', target.dataset.low, target.dataset.candleType)}
@@ -885,6 +1274,105 @@
             tooltip.classList.add('visible');
             tooltip.setAttribute('aria-hidden', 'false');
             placeTooltip(event);
+        }
+
+        function showCrosshair(point, cursorPrice, target) {
+            if (!crosshair || !crosshairVertical || !crosshairHorizontal) {
+                return;
+            }
+
+            const x = clamp(point.x, 0, priceAxisX);
+            const y = clamp(point.y, priceAreaTop, priceAreaBottom);
+            const dateLabel = target.dataset.date || '-';
+            const priceLabel = formatPrice(cursorPrice);
+            crosshair.classList.add('visible');
+            crosshair.setAttribute('aria-hidden', 'false');
+            crosshairVertical.setAttribute('x1', formatCoordinate(x));
+            crosshairVertical.setAttribute('x2', formatCoordinate(x));
+            crosshairVertical.setAttribute('y1', formatCoordinate(priceAreaTop));
+            crosshairVertical.setAttribute('y2', formatCoordinate(volumeAreaBottom));
+            crosshairHorizontal.setAttribute('x1', '0');
+            crosshairHorizontal.setAttribute('x2', formatCoordinate(priceAxisX));
+            crosshairHorizontal.setAttribute('y1', formatCoordinate(y));
+            crosshairHorizontal.setAttribute('y2', formatCoordinate(y));
+
+            if (crosshairPriceBadge && crosshairPriceText) {
+                crosshairPriceBadge.setAttribute('y', formatCoordinate(y - 11));
+                crosshairPriceText.setAttribute('y', formatCoordinate(y));
+                crosshairPriceText.textContent = priceLabel;
+            }
+
+            if (crosshairDateBadge && crosshairDateText) {
+                const dateBadgeWidth = Math.max(82, dateLabel.length * 7 + 18);
+                const dateBadgeX = clamp(x - dateBadgeWidth / 2, 0, priceAxisX - dateBadgeWidth);
+                const dateBadgeY = dateAxisLineY + 4;
+                crosshairDateBadge.setAttribute('x', formatCoordinate(dateBadgeX));
+                crosshairDateBadge.setAttribute('y', formatCoordinate(dateBadgeY));
+                crosshairDateBadge.setAttribute('width', formatCoordinate(dateBadgeWidth));
+                crosshairDateText.setAttribute('x', formatCoordinate(dateBadgeX + dateBadgeWidth / 2));
+                crosshairDateText.setAttribute('y', formatCoordinate(dateBadgeY + 11));
+                crosshairDateText.textContent = dateLabel;
+            }
+        }
+
+        function refreshHoverTargets() {
+            hoverTargets = Array.from(chartScroll.querySelectorAll('.chart-hover-target'))
+                .map((target) => {
+                    const x = toNumber(target.getAttribute('x'));
+                    const width = toNumber(target.getAttribute('width'));
+                    return {
+                        target,
+                        centerX: x + width / 2
+                    };
+                })
+                .filter((item) => isFinite(item.centerX));
+        }
+
+        function findNearestHoverTarget(x) {
+            if (hoverTargets.length === 0) {
+                return null;
+            }
+
+            return hoverTargets.reduce((nearest, item) => {
+                const distance = Math.abs(item.centerX - x);
+                if (distance < nearest.distance) {
+                    return {
+                        target: item.target,
+                        distance
+                    };
+                }
+
+                return nearest;
+            }, {
+                target: null,
+                distance: Number.POSITIVE_INFINITY
+            }).target;
+        }
+
+        function toSvgPoint(event) {
+            const screenMatrix = chartSvg.getScreenCTM();
+            if (!screenMatrix) {
+                return null;
+            }
+
+            const point = chartSvg.createSVGPoint();
+            point.x = event.clientX;
+            point.y = event.clientY;
+            return point.matrixTransform(screenMatrix.inverse());
+        }
+
+        function isInsideInteractiveChart(point) {
+            return point
+                && point.x >= 0
+                && point.x <= priceAxisX
+                && point.y >= priceAreaTop
+                && point.y <= priceAreaBottom;
+        }
+
+        function toCursorPrice(y) {
+            const clampedY = clamp(y, priceAreaTop, priceAreaBottom);
+            const rate = (clampedY - priceAreaTop) / priceAreaHeight;
+            return chartMaxPrice - (chartMaxPrice - chartMinPrice) * rate;
         }
 
         function tooltipRow(label, value, valueClass) {
@@ -917,6 +1405,14 @@
             tooltip.style.top = `${Math.max(chartScroll.scrollTop + 8, top)}px`;
         }
 
+        function hideChartPointer() {
+            hideTooltip();
+            if (crosshair) {
+                crosshair.classList.remove('visible');
+                crosshair.setAttribute('aria-hidden', 'true');
+            }
+        }
+
         function hideTooltip() {
             if (!tooltip) {
                 return;
@@ -927,8 +1423,7 @@
         }
 
         function updateLatestHoverTarget(message, openPrice, highPrice, lowPrice, currentPrice, candleType) {
-            const targets = chartScroll.querySelectorAll('.chart-hover-target');
-            const target = targets[targets.length - 1];
+            const target = document.getElementById('realtime-hover-target');
             if (!target) {
                 return;
             }
@@ -941,6 +1436,7 @@
             target.dataset.volume = formatVolume(message.accumulatedVolume);
             target.dataset.amount = formatAmount(message.accumulatedTradeAmount);
             target.dataset.candleType = candleType;
+            refreshHoverTargets();
         }
 
         function drawOrUpdateSvg(id, tagName, className, attrs) {
@@ -974,6 +1470,49 @@
             return 'flat';
         }
 
+        function resolvePriceDirection(changeAmount, changeRate, changeSign) {
+            const signDirection = directionFromSign(changeSign);
+            if (signDirection) {
+                return signDirection;
+            }
+
+            const basis = isFinite(changeAmount) ? changeAmount : changeRate;
+            if (!isFinite(basis)) {
+                return 'flat';
+            }
+
+            if (basis > 0) {
+                return 'bullish';
+            }
+
+            if (basis < 0) {
+                return 'bearish';
+            }
+
+            return 'flat';
+        }
+
+        function directionFromSign(changeSign) {
+            const sign = String(changeSign || '').trim();
+            if (sign === '1' || sign === '2') {
+                return 'bullish';
+            }
+
+            if (sign === '4' || sign === '5') {
+                return 'bearish';
+            }
+
+            if (sign === '3') {
+                return 'flat';
+            }
+
+            return null;
+        }
+
+        function setDirectionalClass(element, direction, baseClass) {
+            element.setAttribute('class', `${baseClass} ${direction}`);
+        }
+
         function parseMessage(payload) {
             try {
                 return JSON.parse(payload);
@@ -1002,6 +1541,34 @@
             }).format(value);
         }
 
+        function formatSignedPrice(value, direction) {
+            if (!isFinite(value)) {
+                return '-';
+            }
+
+            return `${directionSign(direction)}${formatPrice(Math.abs(value))}`;
+        }
+
+        function formatSignedRate(value, direction) {
+            if (!isFinite(value)) {
+                return '-';
+            }
+
+            return `${directionSign(direction)}${Math.abs(value).toFixed(2)}%`;
+        }
+
+        function directionSign(direction) {
+            if (direction === 'bullish') {
+                return '+';
+            }
+
+            if (direction === 'bearish') {
+                return '-';
+            }
+
+            return '';
+        }
+
         function formatAmount(value) {
             const parsed = toNumber(value);
             if (!isFinite(parsed)) {
@@ -1015,6 +1582,26 @@
         }
 
         function formatVolume(value) {
+            const parsed = toNumber(value);
+            if (!isFinite(parsed)) {
+                return '-';
+            }
+
+            return new Intl.NumberFormat('ko-KR', {
+                maximumFractionDigits: 0
+            }).format(parsed);
+        }
+
+        function formatOptionalPrice(value) {
+            const parsed = toNumber(value);
+            if (!isFinite(parsed)) {
+                return '-';
+            }
+
+            return formatPrice(parsed);
+        }
+
+        function formatOptionalQuantity(value) {
             const parsed = toNumber(value);
             if (!isFinite(parsed)) {
                 return '-';
@@ -1043,6 +1630,10 @@
             }
 
             return value;
+        }
+
+        function clamp(value, min, max) {
+            return Math.max(min, Math.min(max, value));
         }
 
         function formatCoordinate(value) {

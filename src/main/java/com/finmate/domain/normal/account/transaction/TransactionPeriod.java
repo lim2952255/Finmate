@@ -15,6 +15,10 @@ public enum TransactionPeriod {
 
     private final String displayName;
 
+    public static TransactionPeriod defaultIfNull(TransactionPeriod period) {
+        return period == null ? ONE_MONTH : period;
+    }
+
     public LocalDateTime getStartDateTime(LocalDateTime endDateTime) {
         return switch (this) {
             case TWO_WEEKS -> endDateTime.minusWeeks(2);

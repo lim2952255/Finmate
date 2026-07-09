@@ -216,7 +216,6 @@ public class StockMarketMoverService {
         if (parsedValue == null) {
             return 0;
         }
-
         return parsedValue.intValue();
     }
 }

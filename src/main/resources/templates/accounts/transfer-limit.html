@@ -29,6 +29,7 @@
                     <tr>
                         <th>은행</th>
                         <th>계좌번호</th>
+                        <th>통화</th>
                         <th>현재 한도</th>
                         <th>선택</th>
                     </tr>
@@ -37,11 +38,14 @@
                     <tr th:each="account : ${transferLimitPageInfo.accounts}">
                         <td th:text="${account.bankCode.displayName}">신한은행</td>
                         <td th:text="${account.accountNumber}">000000-00-000000</td>
+                        <td th:text="${account.currencyCode.name()}">KRW</td>
                         <td>
                             일일
-                            <span th:text="${#numbers.formatDecimal(account.dailyTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원 /
+                            <span th:text="${#numbers.formatDecimal(account.dailyTransferLimit, 0, 'COMMA', account.currencyCode.fractionDigits, 'POINT')}">0</span>
+                            <span th:text="${account.currencyCode.name()}">KRW</span> /
                             1회
-                            <span th:text="${#numbers.formatDecimal(account.singleTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                            <span th:text="${#numbers.formatDecimal(account.singleTransferLimit, 0, 'COMMA', account.currencyCode.fractionDigits, 'POINT')}">0</span>
+                            <span th:text="${account.currencyCode.name()}">KRW</span>
                         </td>
                         <td>
                             <a th:href="@{/accounts/transfer-limit(accountNumber=${account.accountNumber}, bankCode=${account.bankCode})}">
@@ -59,22 +63,27 @@
                     <strong>선택 계좌</strong>
                     <span th:text="${transferLimitPageInfo.selectedAccount.bankCode.displayName}">신한은행</span>
                     <span th:text="${transferLimitPageInfo.selectedAccount.accountNumber}">000000-00-000000</span>
+                    <span th:text="${transferLimitPageInfo.selectedAccount.currencyCode.name()}">KRW</span>
                 </p>
                 <p>
                     <strong>일일 이체한도</strong>
-                    <span th:text="${#numbers.formatDecimal(transferLimitPageInfo.transferLimitInfo.dailyTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(transferLimitPageInfo.transferLimitInfo.dailyTransferLimit, 0, 'COMMA', transferLimitPageInfo.selectedAccount.currencyCode.fractionDigits, 'POINT')}">0</span>
+                    <span th:text="${transferLimitPageInfo.selectedAccount.currencyCode.name()}">KRW</span>
                 </p>
                 <p>
                     <strong>오늘 이체한 금액</strong>
-                    <span th:text="${#numbers.formatDecimal(transferLimitPageInfo.transferLimitInfo.todayUsedTransferAmount, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(transferLimitPageInfo.transferLimitInfo.todayUsedTransferAmount, 0, 'COMMA', transferLimitPageInfo.selectedAccount.currencyCode.fractionDigits, 'POINT')}">0</span>
+                    <span th:text="${transferLimitPageInfo.selectedAccount.currencyCode.name()}">KRW</span>
                 </p>
                 <p>
                     <strong>남은 일일 이체한도</strong>
-                    <span th:text="${#numbers.formatDecimal(transferLimitPageInfo.transferLimitInfo.remainingDailyTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(transferLimitPageInfo.transferLimitInfo.remainingDailyTransferLimit, 0, 'COMMA', transferLimitPageInfo.selectedAccount.currencyCode.fractionDigits, 'POINT')}">0</span>
+                    <span th:text="${transferLimitPageInfo.selectedAccount.currencyCode.name()}">KRW</span>
                 </p>
                 <p>
                     <strong>1회 이체한도</strong>
-                    <span th:text="${#numbers.formatDecimal(transferLimitPageInfo.transferLimitInfo.singleTransferLimit, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(transferLimitPageInfo.transferLimitInfo.singleTransferLimit, 0, 'COMMA', transferLimitPageInfo.selectedAccount.currencyCode.fractionDigits, 'POINT')}">0</span>
+                    <span th:text="${transferLimitPageInfo.selectedAccount.currencyCode.name()}">KRW</span>
                 </p>
             </section>
 
@@ -87,8 +96,8 @@
                     <input id="dailyTransferLimit"
                            name="dailyTransferLimit"
                            type="number"
-                           min="1"
-                           step="1">
+                           th:min="${transferLimitPageInfo.selectedAccount.currencyCode.minimumAmount}"
+                           th:step="${transferLimitPageInfo.selectedAccount.currencyCode.inputStep}">
                 </div>
 
                 <div>
@@ -96,8 +105,8 @@
                     <input id="singleTransferLimit"
                            name="singleTransferLimit"
                            type="number"
-                           min="1"
-                           step="1">
+                           th:min="${transferLimitPageInfo.selectedAccount.currencyCode.minimumAmount}"
+                           th:step="${transferLimitPageInfo.selectedAccount.currencyCode.inputStep}">
                 </div>
 
                 <button type="submit">이체한도 변경</button>

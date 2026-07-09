@@ -16,7 +16,7 @@ import java.util.Optional;
 public class KisRealtimeMessageParser {
     private final ObjectMapper objectMapper; // Json 문자열 -> 객체 / 객체 -> Json 문자열로 변환
 
-    // Kis Websocket의 원본 문자열 KisRealtimePayload 객체로 변환
+    // Kis Websocket의 원본 문자열을 KisRealtimePayload 객체로 변환
     public Optional<KisRealtimePayload> parsePayload(String rawMessage) {
         if (rawMessage == null || rawMessage.isBlank()) {
             return Optional.empty();

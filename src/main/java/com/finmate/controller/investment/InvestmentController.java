@@ -8,10 +8,13 @@ import com.finmate.domain.investment.dto.cash.InvestmentWithdrawalPageInfo;
 import com.finmate.domain.investment.dto.cash.SecuritiesCashTransactionPageInfo;
 import com.finmate.domain.investment.Investment;
 import com.finmate.domain.normal.account.transaction.TransactionPeriod;
+import com.finmate.domain.stock.dto.trading.StockPortfolioPageInfo;
+import com.finmate.domain.stock.dto.trading.StockTradingHistoryPageInfo;
 import com.finmate.domain.user.User;
 import com.finmate.domain.user.dto.SessionUser;
-import com.finmate.global.Const;
+import com.finmate.global.constant.Const;
 import com.finmate.service.investment.InvestmentService;
+import com.finmate.service.stock.trading.StockTradingQueryService;
 import com.finmate.service.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,7 @@ import java.util.List;
 public class InvestmentController {
     private final InvestmentService investmentService;
     private final UserService userService;
+    private final StockTradingQueryService stockTradingQueryService;
 
     @GetMapping
     public String investmentHome(Model model,
@@ -169,5 +173,23 @@ public class InvestmentController {
                 page);
         model.addAttribute("securitiesCashTransactionPageInfo", pageInfo);
         return "investments/cash/transactions";
+    }
+
+    @GetMapping("/portfolio")
+    public String portfolio(@RequestParam(required = false) Long investmentId,
+                            Model model,
+                            @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+        StockPortfolioPageInfo pageInfo = stockTradingQueryService.getPortfolioPageInfo(sessionUser.getId(), investmentId);
+        model.addAttribute("stockPortfolioPageInfo", pageInfo);
+        return "investments/portfolio";
+    }
+
+    @GetMapping("/orders")
+    public String orders(@RequestParam(required = false) Long investmentId,
+                         Model model,
+                         @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+        StockTradingHistoryPageInfo pageInfo = stockTradingQueryService.getTradingHistoryPageInfo(sessionUser.getId(), investmentId);
+        model.addAttribute("stockTradingHistoryPageInfo", pageInfo);
+        return "investments/orders";
     }
 }

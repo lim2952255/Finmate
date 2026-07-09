@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinMate</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <style>
+        .portfolio-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: end;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .portfolio-toolbar label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .portfolio-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .portfolio-summary-card {
+            display: grid;
+            gap: 12px;
+            padding: 18px;
+            background: #ffffff;
+            border: 1px solid #dbe3ef;
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+        }
+
+        .portfolio-summary-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            color: #475569;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .portfolio-summary-currency {
+            padding: 3px 8px;
+            color: #0f172a;
+            background: #eef2ff;
+            border-radius: 999px;
+            font-size: 12px;
+        }
+
+        .portfolio-summary-value {
+            display: block;
+            font-size: 26px;
+            line-height: 1.15;
+            color: #0f172a;
+        }
+
+        .portfolio-summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .portfolio-summary-item {
+            display: grid;
+            gap: 4px;
+        }
+
+        .portfolio-summary-label {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .portfolio-summary-status {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .portfolio-account {
+            min-width: 160px;
+        }
+
+        .portfolio-account small,
+        .portfolio-stock small,
+        .money-cell small {
+            display: block;
+            margin-top: 2px;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 400;
+        }
+
+        .money-cell {
+            white-space: nowrap;
+        }
+
+        .positive {
+            color: #dc2626;
+            font-weight: 800;
+        }
+
+        .negative {
+            color: #2563eb;
+            font-weight: 800;
+        }
+
+        .flat {
+            color: #64748b;
+            font-weight: 800;
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div th:replace="~{/layout/header :: header}"></div>
+
+    <main class="main">
+        <section class="content">
+            <h1>포트폴리오</h1>
+
+            <form class="portfolio-toolbar" th:action="@{/investments/portfolio}" method="get"
+                  th:if="${!#lists.isEmpty(stockPortfolioPageInfo.investments)}">
+                <label>
+                    증권 계좌
+                    <select name="investmentId">
+                        <option value="" th:selected="${stockPortfolioPageInfo.allAccounts}">전체 증권계좌</option>
+                        <option th:each="investment : ${stockPortfolioPageInfo.investments}"
+                                th:value="${investment.id}"
+                                th:selected="${stockPortfolioPageInfo.selectedInvestment != null and investment.id == stockPortfolioPageInfo.selectedInvestment.id}"
+                                th:text="|${investment.securitiesCompanyCode.displayName} ${investment.accountNumber}|">
+                            계좌
+                        </option>
+                    </select>
+                </label>
+                <button type="submit">조회</button>
+                <a th:if="${stockPortfolioPageInfo.selectedInvestment != null}"
+                   th:href="@{/investments/orders(investmentId=${stockPortfolioPageInfo.selectedInvestment.id})}">주문 내역</a>
+                <a th:unless="${stockPortfolioPageInfo.selectedInvestment != null}"
+                   th:href="@{/investments/orders}">주문 내역</a>
+            </form>
+
+            <p th:if="${#lists.isEmpty(stockPortfolioPageInfo.investments)}">
+                증권 계좌가 없습니다.
+                <a th:href="@{/investments/open}">증권 계좌 개설</a>
+            </p>
+
+            <p th:if="${!#lists.isEmpty(stockPortfolioPageInfo.investments) and #lists.isEmpty(stockPortfolioPageInfo.holdings)}">
+                보유 종목이 없습니다.
+            </p>
+
+            <div class="portfolio-summary" th:if="${!#lists.isEmpty(stockPortfolioPageInfo.currencies)}">
+                <article class="portfolio-summary-card"
+                         data-summary-card="true"
+                         th:each="currency : ${stockPortfolioPageInfo.currencies}"
+                         th:attr="data-currency=${currency.name()},
+                                  data-fraction-digits=${currency.fractionDigits}">
+                    <div class="portfolio-summary-heading">
+                        <span>총 평가금액</span>
+                        <span class="portfolio-summary-currency" th:text="${currency.name()}">KRW</span>
+                    </div>
+                    <strong class="portfolio-summary-value" data-summary-market-value="true">수신 대기</strong>
+                    <div class="portfolio-summary-grid">
+                        <div class="portfolio-summary-item">
+                            <span class="portfolio-summary-label">총 평가손익</span>
+                            <strong data-summary-profit="true">-</strong>
+                        </div>
+                        <div class="portfolio-summary-item">
+                            <span class="portfolio-summary-label">총 수익률</span>
+                            <strong data-summary-profit-rate="true">-</strong>
+                        </div>
+                    </div>
+                    <small class="portfolio-summary-status"
+                           data-summary-status="true"
+                           th:text="|매입금액 ${stockPortfolioPageInfo.formatDecimal(stockPortfolioPageInfo.getTotalPurchaseAmount(currency), currency.fractionDigits)} ${currency.name()}|">
+                        매입금액
+                    </small>
+                </article>
+            </div>
+
+            <div class="table-scroll" th:if="${!#lists.isEmpty(stockPortfolioPageInfo.holdings)}">
+                <table>
+                    <thead>
+                    <tr>
+                        <th th:if="${stockPortfolioPageInfo.allAccounts}">계좌</th>
+                        <th>종목</th>
+                        <th>시장</th>
+                        <th>수량</th>
+                        <th>평균단가</th>
+                        <th>현재가</th>
+                        <th>평가금액</th>
+                        <th>평가손익</th>
+                        <th>수익률</th>
+                        <th>주문</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr class="portfolio-row"
+                        th:each="holding : ${stockPortfolioPageInfo.holdings}"
+                        th:attr="data-stock-id=${holding.stock.id},
+                                 data-currency=${holding.currencyCode.name()},
+                                 data-quantity=${holding.quantity},
+                                 data-average-price=${holding.averagePurchasePrice},
+                                 data-fraction-digits=${holding.currencyCode.fractionDigits}">
+                        <td class="portfolio-account" th:if="${stockPortfolioPageInfo.allAccounts}">
+                            <span th:text="${holding.investment.securitiesCompanyCode.displayName}">증권사</span>
+                            <small th:text="${holding.investment.accountNumber}">00000000</small>
+                        </td>
+                        <td class="portfolio-stock">
+                            <a th:href="@{/investments/stocks/detail(stockId=${holding.stock.id})}"
+                               th:text="${holding.stock.nameKo}">종목</a>
+                            <small th:text="${holding.stock.symbol}">005930</small>
+                        </td>
+                        <td th:text="${holding.stock.marketType}">KOSPI</td>
+                        <td th:text="${stockPortfolioPageInfo.formatQuantity(holding.quantity)}">0</td>
+                        <td class="money-cell">
+                            <span th:text="${stockPortfolioPageInfo.formatDecimal(holding.averagePurchasePrice, holding.currencyCode.fractionDigits)}">0</span>
+                            <small th:text="${holding.currencyCode.name()}">KRW</small>
+                        </td>
+                        <td class="portfolio-current-price money-cell">수신 대기</td>
+                        <td class="portfolio-market-value money-cell">-</td>
+                        <td class="portfolio-profit money-cell">-</td>
+                        <td class="portfolio-profit-rate">-</td>
+                        <td>
+                            <a th:href="@{/investments/stocks/order/{stockId}(stockId=${holding.stock.id},investmentId=${holding.investment.id})}">주문</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p>
+                <a th:href="@{/investments}">투자 홈</a>
+                <a th:href="@{/investments/stocks/search}">종목 검색</a>
+            </p>
+        </section>
+    </main>
+</div>
+<script>
+    (() => {
+        const rows = Array.from(document.querySelectorAll('.portfolio-row'));
+        if (rows.length === 0 || !window.WebSocket) {
+            return;
+        }
+
+        const rowsByStockId = new Map();
+        rows.forEach((row) => {
+            const stockId = Number(row.dataset.stockId);
+            const stockRows = rowsByStockId.get(stockId) || [];
+            stockRows.push(row);
+            rowsByStockId.set(stockId, stockRows);
+        });
+        const subscribedStockIds = Array.from(rowsByStockId.keys());
+        recalculateSummary();
+
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const socket = new WebSocket(`${protocol}://${window.location.host}/ws/stocks`);
+
+        socket.addEventListener('open', () => {
+            subscribedStockIds.forEach((stockId) => {
+                socket.send(JSON.stringify({
+                    type: 'SUBSCRIBE_PORTFOLIO_STOCK',
+                    stockId
+                }));
+            });
+        });
+
+        socket.addEventListener('message', (event) => {
+            const message = parseMessage(event.data);
+            if (!message || message.type !== 'STOCK_TRADE') {
+                return;
+            }
+
+            const stockRows = rowsByStockId.get(Number(message.stockId));
+            if (!stockRows) {
+                return;
+            }
+
+            stockRows.forEach((row) => updateRow(row, message));
+            recalculateSummary();
+        });
+
+        window.addEventListener('pagehide', () => {
+            if (socket.readyState !== WebSocket.OPEN) {
+                return;
+            }
+
+            subscribedStockIds.forEach((stockId) => {
+                socket.send(JSON.stringify({
+                    type: 'UNSUBSCRIBE_PORTFOLIO_STOCK',
+                    stockId
+                }));
+            });
+            socket.close();
+        });
+
+        function updateRow(row, message) {
+            const price = toNumber(message.currentPrice);
+            const quantity = toNumber(row.dataset.quantity);
+            const averagePrice = toNumber(row.dataset.averagePrice);
+            const fractionDigits = Number(row.dataset.fractionDigits || 0);
+            const currency = row.dataset.currency || '';
+            if (![price, quantity, averagePrice].every(isFinite)) {
+                return;
+            }
+
+            row.dataset.currentPrice = String(price);
+            const marketValue = price * quantity;
+            const purchaseValue = averagePrice * quantity;
+            const profit = marketValue - purchaseValue;
+            const profitRate = purchaseValue === 0 ? 0 : (profit / purchaseValue) * 100;
+            const direction = profit > 0 ? 'positive' : profit < 0 ? 'negative' : 'flat';
+
+            setText(row, '.portfolio-current-price', `${formatNumber(price, fractionDigits)} ${currency}`);
+            setText(row, '.portfolio-market-value', `${formatNumber(marketValue, fractionDigits)} ${currency}`);
+            setDirectionalText(row, '.portfolio-profit', `${formatSignedNumber(profit, fractionDigits)} ${currency}`, direction);
+            setDirectionalText(row, '.portfolio-profit-rate', `${profitRate.toFixed(2)}%`, direction);
+        }
+
+        function recalculateSummary() {
+            const summariesByCurrency = new Map();
+            rows.forEach((row) => {
+                const currency = row.dataset.currency || '';
+                const quantity = toNumber(row.dataset.quantity);
+                const averagePrice = toNumber(row.dataset.averagePrice);
+                const currentPrice = toNumber(row.dataset.currentPrice);
+                const fractionDigits = Number(row.dataset.fractionDigits || 0);
+                if (![quantity, averagePrice].every(isFinite)) {
+                    return;
+                }
+
+                const summary = summariesByCurrency.get(currency) || {
+                    purchaseValue: 0,
+                    marketValue: 0,
+                    receivedCount: 0,
+                    totalCount: 0,
+                    fractionDigits
+                };
+                summary.purchaseValue += averagePrice * quantity;
+                summary.totalCount += 1;
+
+                if (isFinite(currentPrice)) {
+                    summary.marketValue += currentPrice * quantity;
+                    summary.receivedCount += 1;
+                }
+
+                summariesByCurrency.set(currency, summary);
+            });
+
+            document.querySelectorAll('[data-summary-card]').forEach((card) => {
+                const currency = card.dataset.currency || '';
+                const summary = summariesByCurrency.get(currency);
+                if (!summary) {
+                    return;
+                }
+
+                const fractionDigits = Number(card.dataset.fractionDigits || summary.fractionDigits || 0);
+                const status = card.querySelector('[data-summary-status]');
+                if (status) {
+                    status.textContent = `매입금액 ${formatNumber(summary.purchaseValue, fractionDigits)} ${currency}`;
+                }
+
+                if (summary.receivedCount < summary.totalCount) {
+                    setSummaryText(card, '[data-summary-market-value]', '수신 대기');
+                    setSummaryText(card, '[data-summary-profit]', '-');
+                    setSummaryText(card, '[data-summary-profit-rate]', '-');
+                    if (status) {
+                        status.textContent += ` · ${summary.receivedCount}/${summary.totalCount} 종목 반영`;
+                    }
+                    return;
+                }
+
+                const profit = summary.marketValue - summary.purchaseValue;
+                const profitRate = summary.purchaseValue === 0 ? 0 : (profit / summary.purchaseValue) * 100;
+                const direction = profit > 0 ? 'positive' : profit < 0 ? 'negative' : 'flat';
+
+                setSummaryText(card, '[data-summary-market-value]', `${formatNumber(summary.marketValue, fractionDigits)} ${currency}`);
+                setDirectionalSummaryText(card, '[data-summary-profit]', `${formatSignedNumber(profit, fractionDigits)} ${currency}`, direction);
+                setDirectionalSummaryText(card, '[data-summary-profit-rate]', `${profitRate.toFixed(2)}%`, direction);
+            });
+        }
+
+        function setText(row, selector, value) {
+            const element = row.querySelector(selector);
+            if (element) {
+                element.textContent = value;
+            }
+        }
+
+        function setDirectionalText(row, selector, value, direction) {
+            const element = row.querySelector(selector);
+            if (element) {
+                element.textContent = value;
+                element.classList.remove('positive', 'negative', 'flat');
+                element.classList.add(direction);
+            }
+        }
+
+        function setSummaryText(card, selector, value) {
+            const element = card.querySelector(selector);
+            if (element) {
+                element.textContent = value;
+                element.classList.remove('positive', 'negative', 'flat');
+            }
+        }
+
+        function setDirectionalSummaryText(card, selector, value, direction) {
+            const element = card.querySelector(selector);
+            if (element) {
+                element.textContent = value;
+                element.classList.remove('positive', 'negative', 'flat');
+                element.classList.add(direction);
+            }
+        }
+
+        function parseMessage(payload) {
+            try {
+                return JSON.parse(payload);
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function toNumber(value) {
+            if (value === null || value === undefined || value === '') {
+                return NaN;
+            }
+
+            return Number(String(value).replaceAll(',', ''));
+        }
+
+        function formatNumber(value, fractionDigits) {
+            return new Intl.NumberFormat('ko-KR', {
+                maximumFractionDigits: fractionDigits
+            }).format(value);
+        }
+
+        function formatSignedNumber(value, fractionDigits) {
+            const sign = value > 0 ? '+' : '';
+            return `${sign}${formatNumber(value, fractionDigits)}`;
+        }
+    })();
+</script>
+</body>
+</html>

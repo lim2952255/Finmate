@@ -3,7 +3,7 @@ package com.finmate.infra.kis.stock.realtime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-// 국내 종목 / 해외 종목 / 국내 주가지 종류별 메타데이터를 정의
+// 국내 종목 / 해외 종목 / 국내 주가지수, 실시간 호가별 메타데이터를 정의
 public enum KisRealtimeApi {
     DOMESTIC_STOCK_TRADE(
             "H0UNCNT0",
@@ -61,6 +61,81 @@ public enum KisRealtimeApi {
             "PRDY_CTRT",
             "STCK_CNTG_HOUR"
     ),
+    DOMESTIC_STOCK_ORDERBOOK(
+            "H0UNASP0",
+            List.of(
+                    "MKSC_SHRN_ISCD",
+                    "BSOP_HOUR",
+                    "HOUR_CLS_CODE",
+                    "ASKP1",
+                    "ASKP2",
+                    "ASKP3",
+                    "ASKP4",
+                    "ASKP5",
+                    "ASKP6",
+                    "ASKP7",
+                    "ASKP8",
+                    "ASKP9",
+                    "ASKP10",
+                    "BIDP1",
+                    "BIDP2",
+                    "BIDP3",
+                    "BIDP4",
+                    "BIDP5",
+                    "BIDP6",
+                    "BIDP7",
+                    "BIDP8",
+                    "BIDP9",
+                    "BIDP10",
+                    "ASKP_RSQN1",
+                    "ASKP_RSQN2",
+                    "ASKP_RSQN3",
+                    "ASKP_RSQN4",
+                    "ASKP_RSQN5",
+                    "ASKP_RSQN6",
+                    "ASKP_RSQN7",
+                    "ASKP_RSQN8",
+                    "ASKP_RSQN9",
+                    "ASKP_RSQN10",
+                    "BIDP_RSQN1",
+                    "BIDP_RSQN2",
+                    "BIDP_RSQN3",
+                    "BIDP_RSQN4",
+                    "BIDP_RSQN5",
+                    "BIDP_RSQN6",
+                    "BIDP_RSQN7",
+                    "BIDP_RSQN8",
+                    "BIDP_RSQN9",
+                    "BIDP_RSQN10",
+                    "TOTAL_ASKP_RSQN",
+                    "TOTAL_BIDP_RSQN",
+                    "OVTM_TOTAL_ASKP_RSQN",
+                    "OVTM_TOTAL_BIDP_RSQN",
+                    "ANTC_CNPR",
+                    "ANTC_CNQN",
+                    "ANTC_VOL",
+                    "ANTC_CNTG_VRSS",
+                    "ANTC_CNTG_VRSS_SIGN",
+                    "ANTC_CNTG_PRDY_CTRT",
+                    "ACML_VOL",
+                    "TOTAL_ASKP_RSQN_ICDC",
+                    "TOTAL_BIDP_RSQN_ICDC",
+                    "OVTM_TOTAL_ASKP_ICDC",
+                    "OVTM_TOTAL_BIDP_ICDC",
+                    "STCK_DEAL_CLS_CODE",
+                    "KMID_PRC",
+                    "KMID_TOTAL_RSQN",
+                    "KMID_CLS_CODE",
+                    "NMID_PRC",
+                    "NMID_TOTAL_RSQN",
+                    "NMID_CLS_CODE"
+            ),
+            "MKSC_SHRN_ISCD",
+            "ASKP1",
+            "",
+            "",
+            "BSOP_HOUR"
+    ),
     OVERSEAS_STOCK_TRADE(
             "HDFSCNT0",
             List.of(
@@ -95,6 +170,32 @@ public enum KisRealtimeApi {
             "DIFF",
             "RATE",
             "XHMS"
+    ),
+    OVERSEAS_STOCK_ORDERBOOK(
+            "HDFSASP0",
+            List.of(
+                    "symb",
+                    "zdiv",
+                    "xymd",
+                    "xhms",
+                    "kymd",
+                    "khms",
+                    "bvol",
+                    "avol",
+                    "bdvl",
+                    "advl",
+                    "pbid1",
+                    "pask1",
+                    "vbid1",
+                    "vask1",
+                    "dbid1",
+                    "dask1"
+            ),
+            "symb",
+            "pask1",
+            "",
+            "",
+            "xhms"
     ),
     DOMESTIC_INDEX_TRADE(
             "H0UPCNT0",
@@ -169,6 +270,10 @@ public enum KisRealtimeApi {
         return Arrays.stream(values())
                 .filter(api -> api.trId.equals(trId))
                 .findFirst();
+    }
+
+    public boolean isOrderbook() {
+        return this == DOMESTIC_STOCK_ORDERBOOK || this == OVERSEAS_STOCK_ORDERBOOK;
     }
 
     public String getTrId() {

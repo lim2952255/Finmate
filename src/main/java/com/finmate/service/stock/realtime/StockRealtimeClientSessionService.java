@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.finmate.domain.stock.dto.realtime.RealtimeSubscriptionState;
 import com.finmate.domain.stock.dto.realtime.StockRealtimeClientMessage;
+import com.finmate.domain.stock.dto.realtime.StockRealtimeOrderbookClientMessage;
+import com.finmate.domain.stock.dto.realtime.StockRealtimeOrderbookClientMessage.OrderbookLevel;
 import com.finmate.infra.kis.stock.realtime.KisRealtimeApi;
 import com.finmate.infra.kis.stock.realtime.KisRealtimePayload;
 import com.finmate.infra.kis.stock.realtime.KisRealtimePayloadReceivedEvent;
@@ -17,20 +19,24 @@ import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.finmate.infra.kis.parser.KisValueParser.parseNullableBigDecimal;
+import static com.finmate.infra.kis.parser.KisValueParser.parseNullableBigDecimalOrNull;
 import static com.finmate.infra.kis.parser.KisValueParser.parseNullableLong;
 
-// 클라이언트의 WebSocket 세션과 종목 구독정보를 관리하고, KIS 실시간 시세 이벤트가 들어오면, 해당 종목을 구독중인 클라이언트에게 JSON 메세지로 전송하는 중간 관리자
+// 스프링서버의 WebSocket과 클라이언트의 연결을 관리하고, KIS 실시간 시세 이벤트가 들어오면, 해당 종목을 구독중인 클라이언트에게 JSON 메세지로 전송하는 중간 관리자
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class StockRealtimeClientSessionService {
     // 스프링 서버에서 클라이언트에게 보내는 메세지 타입
     private static final String STOCK_TRADE_MESSAGE_TYPE = "STOCK_TRADE"; // 실시간 시세 데이터
+    private static final String STOCK_ORDERBOOK_MESSAGE_TYPE = "STOCK_ORDERBOOK"; // 실시간 호가 데이터
     private static final String SUBSCRIBED_MESSAGE_TYPE = "SUBSCRIBED"; // 구독 성공 정보
     private static final String UNSUBSCRIBED_MESSAGE_TYPE = "UNSUBSCRIBED"; // 구독 취소 정보
     private static final String ERROR_MESSAGE_TYPE = "ERROR"; // 오류 메세지
@@ -51,57 +57,75 @@ public class StockRealtimeClientSessionService {
     }
     // 클라이언트가 득정 종목을 구독하는 메서드
     public void subscribeStock(WebSocketSession session, Long stockId) {
+        subscribeStock(session, stockId, StockRealtimeSubscriptionPurpose.DETAIL_PAGE);
+    }
+
+    // 클라이언트가 특정 목적의 종목 구독을 요청하는 메서드
+    public void subscribeStock(WebSocketSession session, Long stockId, StockRealtimeSubscriptionPurpose purpose) {
         if (stockId == null) {
             // 클라이언트(세션)에게 에러메세지 전송
             sendError(session, "stockId is required.");
             return;
         }
+        // 구독 목적 정규화
+        StockRealtimeSubscriptionPurpose normalizedPurpose = normalizePurpose(purpose);
         // 현재 세션이 구독중인 목록을 받는다.
         Set<ClientSubscription> sessionSubscriptions =
                 subscriptionsBySession.computeIfAbsent(session.getId(), ignored -> ConcurrentHashMap.newKeySet());
-        // 현재 세션이 이미 해당 종목을 구독중이였다면 별다른 작업없이 바로 return
-        if (sessionSubscriptions.stream().anyMatch(subscription -> subscription.stockId().equals(stockId))) {
+        // 현재 세션이 이미 해당 종목을 구독중이고, 현재 구독하고자 하는 목적으로 구독중이였다면 별다른 작업없이 바로 return
+        if (sessionSubscriptions.stream()
+                .anyMatch(subscription -> subscription.stockId().equals(stockId)
+                        && subscription.purpose() == normalizedPurpose)) {
             return;
         }
-        // 현재 세션이 아직 해당 종목을 구독중인 상태가 아니였다면 구독 수행
+        // 현재 세션이 아직 해당 종목을 특정 목적으로 구독중인 상태가 아니였다면 구독 수행
         try {
-            // subscriptionManager를 통해서 종목을 구독상태로 만든다.(이미 실제 Kis 서버에서는 다른사용자에 의해 이미 종목이 구독상태였을 수 있다. 이 경우 count만 증가)
-            RealtimeSubscriptionState state = subscriptionManager.subscribeStock(stockId);
+            // subscriptionManager를 통해서 종목을 구독상태로 만든다. 이때 구독목적도 함께 전달한다.(이미 실제 Kis 서버에서는 다른사용자에 의해 이미 종목이 구독상태였을 수 있다. 이 경우 count만 증가)
+            List<RealtimeSubscriptionState> states = subscriptionManager.subscribeStock(stockId, normalizedPurpose);
             // client가 구독한 종목에 대한 정보를 담은 record 생성
-            ClientSubscription subscription = new ClientSubscription(stockId, state.api(), state.trKey());
-            // 현재 세션이 구독중인 구독목록에 새로운 구독정보를 추가
-            sessionSubscriptions.add(subscription);
-            // 해당 종목을 구독중인 세션 목록에 현재 세션을 등록
-            sessionIdsByRealtimeKey
-                    .computeIfAbsent(subscription.realtimeKey(), ignored -> ConcurrentHashMap.newKeySet())
-                    .add(session.getId());
-            // 세션에게 구독 성공 메세지를 전송
-            sendStatus(session, SUBSCRIBED_MESSAGE_TYPE, subscription);
-            // realtimeStore에서 실시간 종목 데이터를 꺼내서 session에 전달한다.
-            realtimeStore.get(subscription.api(), subscription.trKey())
-                    .ifPresent(payload -> sendPayload(session, subscription, payload));
+            List<ClientSubscription> subscriptions = states.stream()
+                    .map(state -> new ClientSubscription(stockId, state.api(), state.trKey(), normalizedPurpose))
+                    .toList();
+            subscriptions.forEach(subscription -> {
+                // 현재 세션이 구독중인 구독목록에 새로운 구독정보를 추가
+                sessionSubscriptions.add(subscription);
+                // 해당 종목을 구독중인 세션 목록에 현재 세션을 등록
+                sessionIdsByRealtimeKey
+                        .computeIfAbsent(subscription.realtimeKey(), ignored -> ConcurrentHashMap.newKeySet())
+                        .add(session.getId());
+                // 세션에게 구독 성공 메세지를 전송
+                sendStatus(session, SUBSCRIBED_MESSAGE_TYPE, subscription);
+                // realtimeStore에서 실시간 종목 데이터를 꺼내서 session에 전달한다.
+                realtimeStore.get(subscription.api(), subscription.trKey())
+                        .ifPresent(payload -> sendPayload(session, subscription, payload));
+            });
         } catch (RuntimeException e) {
             log.warn("실시간 종목 구독에 실패했습니다. sessionId={}, stockId={}", session.getId(), stockId, e);
             sendError(session, "실시간 시세 구독에 실패했습니다.");
         }
     }
-    // 클라이언트가 특정 종목에 대한 구독을 해제하는 메서드
-    public void unsubscribeStock(WebSocketSession session, Long stockId) {
+
+    // 클라이언트가 특정 목적의 종목 구독을 해제하는 메서드
+    public void unsubscribeStock(WebSocketSession session, Long stockId, StockRealtimeSubscriptionPurpose purpose) {
         if (stockId == null) {
             sendError(session, "stockId is required.");
             return;
         }
+        StockRealtimeSubscriptionPurpose normalizedPurpose = normalizePurpose(purpose);
         // 현재 세션이 구독중인 종목 목록을 받는다.
         Set<ClientSubscription> sessionSubscriptions = subscriptionsBySession.get(session.getId());
         if (sessionSubscriptions == null) {
             // 만약 구독중인 종목이 없다면 바로 리턴
             return;
         }
-        // 현재 세션이 해당 종목을 구독중인 상태라면, unsubscribe를 호출해서 구독을 취소한다.
-        sessionSubscriptions.stream()
+        // 현재 세션이 해당 종목을 구독중인 상태라면, unsubscribe를 호출해서 구독을 취소한다. 이때 동일 종목에 대해 여러 목적으로 구독이 되어있는 경우, 특정 목적의 구독만 해제한다.
+        List<ClientSubscription> targetSubscriptions = sessionSubscriptions.stream()
                 .filter(subscription -> subscription.stockId().equals(stockId))
-                .findFirst()
-                .ifPresent(subscription -> unsubscribe(session, subscription));
+                .filter(subscription -> subscription.purpose() == normalizedPurpose)
+                .toList();
+        if (!targetSubscriptions.isEmpty()) {
+            unsubscribe(session, stockId, normalizedPurpose, targetSubscriptions);
+        }
     }
 
     // 현재 세션에 대한 연결을 종료하는 메서드
@@ -114,11 +138,13 @@ public class StockRealtimeClientSessionService {
             return;
         }
         // 현재 세션이 구독중이던 종목에 대해서 subscriptionManager를 호출해서 구독을 해제한다.(counter를 감소시킨다)
-        subscriptions.forEach(subscription -> {
+        subscriptions.forEach(subscription ->
             // sessionIdsByRealtimeKey 특정 종목을 구독하고 있던 session목록에서 현재 세션을 제거한다.
-            removeSessionFromRealtimeKey(session.getId(), subscription);
-            subscriptionManager.unsubscribeStock(subscription.stockId());
-        });
+            removeSessionFromRealtimeKey(session.getId(), subscription));
+        subscriptions.stream()
+                .map(subscription -> new ClientSubscriptionKey(subscription.stockId(), subscription.purpose()))
+                .distinct()
+                .forEach(key -> subscriptionManager.unsubscribeStock(key.stockId(), key.purpose()));
     }
 
     // KIS WebSocket에 실시간 시세 데이터가 들어와 Spring 이벤트가 발생했을 때 실행되는 메서드
@@ -152,28 +178,38 @@ public class StockRealtimeClientSessionService {
             subscriptions.stream()
                     .filter(subscription -> subscription.api() == payload.api())
                     .filter(subscription -> subscription.trKey().equals(payload.trKey()))
-                    .forEach(subscription -> sendPayload(session, subscription, payload));
+                    .findFirst()
+                    .ifPresent(subscription -> sendPayload(session, subscription, payload));
         });
     }
 
     // 현재 세션에서 특정 종목에 대한 구독을 취소하는 메서드
-    private void unsubscribe(WebSocketSession session, ClientSubscription subscription) {
+    private void unsubscribe(WebSocketSession session,
+                             Long stockId,
+                             StockRealtimeSubscriptionPurpose purpose,
+                             List<ClientSubscription> subscriptions) {
         // 현재 세션이 구독하고 있던 종목 목록을 조회
         Set<ClientSubscription> sessionSubscriptions = subscriptionsBySession.get(session.getId());
         if (sessionSubscriptions != null) {
             // 현재 세션이 구독하고 있던 종목 목록에서 종목을 제거
-            sessionSubscriptions.remove(subscription);
+            sessionSubscriptions.removeAll(subscriptions);
         }
         // 제거하고자 하는 종목을 구독하고 있는 세션 목록에서 현재 세션 제거
-        removeSessionFromRealtimeKey(session.getId(), subscription);
+        subscriptions.forEach(subscription -> removeSessionFromRealtimeKey(session.getId(), subscription));
         // subscriptionManager의 unsubscribeStock을 호출해서 해당 종목에 대한 subscribe Counter를 감소시킨다.
-        subscriptionManager.unsubscribeStock(subscription.stockId());
+        subscriptionManager.unsubscribeStock(stockId, purpose);
         // 구독 취소가 성공했다는 메세지를 세션에 전송한다.
-        sendStatus(session, UNSUBSCRIBED_MESSAGE_TYPE, subscription);
+        subscriptions.forEach(subscription -> sendStatus(session, UNSUBSCRIBED_MESSAGE_TYPE, subscription));
     }
 
     // 특정 종목을 구독하고 있는 세션 목록을 조회하고, 해당 목록에서 현재 세션을 제거하는 메서드
     private void removeSessionFromRealtimeKey(String sessionId, ClientSubscription subscription) {
+        Set<ClientSubscription> currentSubscriptions = subscriptionsBySession.get(sessionId);
+        if (currentSubscriptions != null
+                && currentSubscriptions.stream().anyMatch(current -> current.realtimeKey().equals(subscription.realtimeKey()))) {
+            return;
+        }
+
         Set<String> sessionIds = sessionIdsByRealtimeKey.get(subscription.realtimeKey());
         if (sessionIds == null) {
             return;
@@ -196,7 +232,8 @@ public class StockRealtimeClientSessionService {
                 "type", type,
                 "stockId", subscription.stockId(),
                 "api", subscription.api(),
-                "trKey", subscription.trKey()));
+                "trKey", subscription.trKey(),
+                "purpose", subscription.purpose()));
     }
 
     // 세션에게 오류를 전달하는 메서드
@@ -229,7 +266,16 @@ public class StockRealtimeClientSessionService {
     }
 
     // KIS payload를 클라이언트 DTO로 변환하여 리턴한다.
-    private StockRealtimeClientMessage toClientMessage(ClientSubscription subscription, KisRealtimePayload payload) {
+    private Object toClientMessage(ClientSubscription subscription, KisRealtimePayload payload) {
+        if (payload.api().isOrderbook()) {
+            return toOrderbookClientMessage(subscription, payload);
+        }
+
+        return toTradeClientMessage(subscription, payload);
+    }
+
+    // KIS 체결가 payload를 클라이언트 DTO로 변환하여 리턴한다.
+    private StockRealtimeClientMessage toTradeClientMessage(ClientSubscription subscription, KisRealtimePayload payload) {
         Map<String, String> values = payload.values();
         BigDecimal currentPrice = parseNullableBigDecimal(payload.price());
         BigDecimal openPrice = parseNullableBigDecimal(value(values, "STCK_OPRC", "OPEN"));
@@ -248,6 +294,7 @@ public class StockRealtimeClientSessionService {
                 lowPrice,
                 parseNullableBigDecimal(payload.change()),
                 parseNullableBigDecimal(payload.changeRate()),
+                value(values, "PRDY_VRSS_SIGN", "SIGN"),
                 parseNullableLong(value(values, "ACML_VOL", "TVOL")),
                 parseNullableBigDecimal(value(values, "ACML_TR_PBMN", "TAMT")),
                 value(values, "BSOP_DATE", "XYMD"),
@@ -255,6 +302,76 @@ public class StockRealtimeClientSessionService {
                 candleType(openPrice, currentPrice),
                 payload.receivedAt());
     }
+
+    // KIS 호가 payload를 클라이언트 DTO로 변환하여 리턴한다.
+    private StockRealtimeOrderbookClientMessage toOrderbookClientMessage(ClientSubscription subscription,
+                                                                         KisRealtimePayload payload) {
+        Map<String, String> values = payload.values();
+
+        return new StockRealtimeOrderbookClientMessage(
+                STOCK_ORDERBOOK_MESSAGE_TYPE,
+                subscription.stockId(),
+                payload.api(),
+                payload.trId(),
+                payload.trKey(),
+                askLevels(payload.api(), values),
+                bidLevels(payload.api(), values),
+                totalAskQuantity(payload.api(), values),
+                totalBidQuantity(payload.api(), values),
+                payload.tradeTime(),
+                payload.receivedAt());
+    }
+
+    private List<OrderbookLevel> askLevels(KisRealtimeApi api, Map<String, String> values) {
+        if (api == KisRealtimeApi.OVERSEAS_STOCK_ORDERBOOK) {
+            return orderbookLevels(values, "pask", "vask", 1);
+        }
+
+        return orderbookLevels(values, "ASKP", "ASKP_RSQN", 10);
+    }
+
+    private List<OrderbookLevel> bidLevels(KisRealtimeApi api, Map<String, String> values) {
+        if (api == KisRealtimeApi.OVERSEAS_STOCK_ORDERBOOK) {
+            return orderbookLevels(values, "pbid", "vbid", 1);
+        }
+
+        return orderbookLevels(values, "BIDP", "BIDP_RSQN", 10);
+    }
+
+    private List<OrderbookLevel> orderbookLevels(Map<String, String> values,
+                                                 String pricePrefix,
+                                                 String quantityPrefix,
+                                                 int maxLevel) {
+        List<OrderbookLevel> levels = new ArrayList<>();
+        for (int level = 1; level <= maxLevel; level++) {
+            BigDecimal price = parseNullableBigDecimalOrNull(values.get(pricePrefix + level));
+            BigDecimal quantity = parseNullableBigDecimalOrNull(values.get(quantityPrefix + level));
+            if (price == null && quantity == null) {
+                continue;
+            }
+
+            levels.add(new OrderbookLevel(level, price, quantity));
+        }
+
+        return levels;
+    }
+
+    private BigDecimal totalAskQuantity(KisRealtimeApi api, Map<String, String> values) {
+        if (api == KisRealtimeApi.OVERSEAS_STOCK_ORDERBOOK) {
+            return parseNullableBigDecimalOrNull(values.get("avol"));
+        }
+
+        return parseNullableBigDecimalOrNull(values.get("TOTAL_ASKP_RSQN"));
+    }
+
+    private BigDecimal totalBidQuantity(KisRealtimeApi api, Map<String, String> values) {
+        if (api == KisRealtimeApi.OVERSEAS_STOCK_ORDERBOOK) {
+            return parseNullableBigDecimalOrNull(values.get("bvol"));
+        }
+
+        return parseNullableBigDecimalOrNull(values.get("TOTAL_BIDP_RSQN"));
+    }
+
     private String value(Map<String, String> values, String firstKey, String secondKey) {
         String firstValue = values.get(firstKey);
         if (firstValue != null && !firstValue.isBlank()) {
@@ -286,14 +403,26 @@ public class StockRealtimeClientSessionService {
         return api.getTrId() + ":" + trKey;
     }
 
+    // purpose가 없으면 기본값으로 상세페이지 구독으로 설정
+    private StockRealtimeSubscriptionPurpose normalizePurpose(StockRealtimeSubscriptionPurpose purpose) {
+        return purpose == null ? StockRealtimeSubscriptionPurpose.DETAIL_PAGE : purpose;
+    }
+
     // client가 구독한 종목 정보
     private record ClientSubscription(
             Long stockId,
             KisRealtimeApi api,
-            String trKey
+            String trKey,
+            StockRealtimeSubscriptionPurpose purpose // 클라이언트가 어떤 종목을 어떤 목적으로 구독하였는지
     ) {
         private String realtimeKey() {
             return api.getTrId() + ":" + trKey;
         }
+    }
+
+    private record ClientSubscriptionKey(
+            Long stockId,
+            StockRealtimeSubscriptionPurpose purpose // 구독 목적
+    ) {
     }
 }

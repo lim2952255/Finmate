@@ -6,7 +6,7 @@ import com.finmate.domain.stock.dto.detail.StockDetailPageInfo;
 import com.finmate.domain.stock.dto.ranking.StockMarketMoversPageInfo;
 import com.finmate.domain.stock.dto.search.StockSearchPageInfo;
 import com.finmate.domain.user.dto.SessionUser;
-import com.finmate.global.Const;
+import com.finmate.global.constant.Const;
 import com.finmate.service.stock.StockDetailService;
 import com.finmate.service.stock.StockService;
 import com.finmate.service.stock.ranking.StockMarketMoverService;

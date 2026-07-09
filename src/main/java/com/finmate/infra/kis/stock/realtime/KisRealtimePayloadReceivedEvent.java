@@ -1,6 +1,6 @@
 package com.finmate.infra.kis.stock.realtime;
 
-// KIS 실시간 데이터가 수신되었다는 사실 Spring 내부에 알리기 위한 이벤트 객체
+// KIS 서버로부터 실시간 종목데이터를 수신한 경우, 해당 이벤트를 발생시켜 종목을 구독중인 클라이언트들에게 종목 데이터를 전달한다.
 public record KisRealtimePayloadReceivedEvent(
         KisRealtimePayload payload
 ) {

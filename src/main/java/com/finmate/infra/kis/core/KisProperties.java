@@ -48,7 +48,7 @@ public class KisProperties {
 
         return requestIntervalMillis;
     }
-
+    // KIS WebSocket 연결용 URI를 생성하는 메서드
     public String getNormalizedWebSocketEndpoint() {
         validateRequired(webSocketUrl, "KIS websocket url setting is required.");
         validateRequired(webSocketPath, "KIS websocket path setting is required.");

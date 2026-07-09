@@ -13,8 +13,9 @@ public class KisWebSocketApprovalService {
     private static final int DEFAULT_APPROVAL_KEY_TTL_HOURS = 23; // APPROVAL_Key의 지속시간
     private static final int REFRESH_BEFORE_EXPIRE_MINUTES = 5;
 
-    private final KisWebSocketApprovalClient approvalClient;
+    private final KisWebSocketApprovalClient approvalClient; // approvalKey를 실제로 요청하고 발급받는 client
 
+    // 발급받은 approvalKey 관리 및 만료기간 관리
     private String approvalKey;
     private LocalDateTime expiresAt;
 

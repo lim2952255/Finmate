@@ -1,5 +1,6 @@
 package com.finmate.domain.normal.account.dto;
 
+import com.finmate.domain.investment.CurrencyCode;
 import com.finmate.domain.normal.account.BankCode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -31,9 +32,10 @@ public class TransferRequest {
     private String toAccountNumber;
 
     @NotNull(message = "이체 금액은 필수입니다.")
-    @Positive(message = "이체 금액은 1원 이상이어야 합니다.")
+    @Positive(message = "이체 금액은 0보다 커야 합니다.")
     private BigDecimal amount;
 
     // 이체 화면 표시용 정보
     private TransferLimitInfo transferLimitInfo;
+    private CurrencyCode currencyCode;
 }

@@ -28,30 +28,32 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+// (KIS WebSocket <-> 스프링 웹서버)
 // KIS 한국투자증권 WebSocket 서버에 연결해서 실시간 시세를 받고, 사용자가 구독한 종목의 최신 데이터를 메모리에 저장하는 클라이언트 서비스
+// 몇명의 클라이언트들이 종목을 구독하고 있는지를 counter로 관리하면서 종목에 대한 구독정보를 관리한다.
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class KisRealtimeWebSocketClient {
     private static final String SUBSCRIBE_TYPE = "1"; // 종목 구독 타입
     private static final String UNSUBSCRIBE_TYPE = "2"; // 종목 구독해제 타입
-    private static final long RECONNECT_DELAY_SECONDS = 3L; // 연결 해제시 다시 WebSocket에 연결하기 위한 딜레이 설정
+    private static final long RECONNECT_DELAY_SECONDS = 3L; // KIS 웹소켓과 연결이 해제된 경우, 다시 WebSocket에 연결하기 위한 딜레이 설정
 
     private final KisProperties kisProperties; // KIS API에 연결하기 위한 속성 저장
     private final KisWebSocketApprovalService approvalService; // KIS WebSocket에 연결하기 위한 ApprovalKey 발급 및 저장
     private final KisRealtimeMessageParser messageParser; // KIS WebSocket을 통해 받은 실시간 데이터(Json 문자열)을 파싱하는 클래스
     private final KisRealtimeStore realtimeStore; // KIS WebSocket을 통해 받은 실시간 데이터들을 메모리에 저장하는 저장소
     private final ObjectMapper objectMapper; // Json 문자열 -> 자바 객체 / 자바 객체 -> Json 문자열 변환
-    private final ApplicationEventPublisher eventPublisher; // KIS 수신 데이터를 내부 WebSocket 계층으로 전달하기 위한 이벤트 발행기
+    private final ApplicationEventPublisher eventPublisher; // KIS 수신 데이터를 내부 WebSocket 계층으로 전달하기 위한 이벤트 발생기
 
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .build();
 
-    // 실시간으로 데이터를 받을 종목들(구독한 종목들)을 관리하는 set
+    // 실시간으로 데이터를 받을 종목들(구독한 종목들)을 관리하는 set (실시간으로 변하기 때문에 메모리에 저장)
     private final Set<KisRealtimeSubscription> activeSubscriptions = ConcurrentHashMap.newKeySet();
 
-    // 재연결 스케줄. 이는 데몬으로 실행해서 이로 인해 JVM 프로그램이 종료되지 않는 것을 방지
+    // 재연결 스케줄러. 이는 데몬으로 실행해서 이로 인해 JVM 프로그램이 종료되지 않는 것을 방지
     private final ScheduledExecutorService reconnectExecutor = Executors.newSingleThreadScheduledExecutor(runnable -> {
         Thread thread = new Thread(runnable, "kis-realtime-reconnect");
         thread.setDaemon(true);
@@ -72,14 +74,14 @@ public class KisRealtimeWebSocketClient {
     // 애플리케이션 종료 여부
     private volatile boolean shutdown;
 
-    // KIS WebSocket에 연결을 시작하는 메서드
+    // KIS WebSocket에 연결을 시작하는 메서드(외부에서 명시적으로 호출하여 연결하는 용도)
     public void connect() {
         ensureConnected();
     }
 
     // 특정 종목을 구독하는 메서드
     public void subscribe(KisRealtimeSubscription subscription) {
-        boolean added = activeSubscriptions.add(subscription); // 중목을 구독목록에 추가 (만약 이미 종목이 구독상태였다면 false를 리턴)
+        boolean added = activeSubscriptions.add(subscription); // 종목을 구독목록에 추가 (만약 이미 종목이 구독상태였다면 false를 리턴)
         boolean alreadyConnected = connected;
 
         try {
@@ -87,6 +89,7 @@ public class KisRealtimeWebSocketClient {
 
             if (added && alreadyConnected) {
                 // WebSocket에 종목 구독을 추가
+                // added가 true라는 것은 해당 종목이 이번에 새로 구독상태가 되었다는 의미이기 때문에, KIS WebSocket에 종목을 구독한다는 메세지를 전송한다.
                 sendSubscription(subscription, SUBSCRIBE_TYPE);
             }
 
@@ -105,6 +108,7 @@ public class KisRealtimeWebSocketClient {
     }
 
     // 종목에 대한 구독을 해제하는 메서드
+    // 이는 한 클라이언트가 구독을 해제한다고 바로 호출해서는 안되며, 각 종목에 대한 구독 숫자(counter)를 기반으로 해당 counter가 0이 된 경우에만 호출되어야 한다.
     public void unsubscribe(KisRealtimeSubscription subscription) {
         boolean removed = activeSubscriptions.remove(subscription); // 종목에 대한 구독 해제
         if (!removed) {
@@ -126,23 +130,26 @@ public class KisRealtimeWebSocketClient {
                 .sorted((left, right) -> left.id().compareTo(right.id()))
                 .toList();
     }
-    // 연결이 안되어 있으면 연결하고, 종료상태면 연결하지 않고, 이미 연결되어 있으면 아무것도 하지 않는다.
+    // 연결이 안되어 있으면 연결하고, 종료상태면 연결하지 않고, 이미 연결되어 있으면 아무것도 하지 않는다.(연결상태를 보장하는 메서드)
     private void ensureConnected() {
         synchronized (connectionLock) {
+            // 만약 애플리케이션이 종료상태이거나 이미 연결되어 있는 상태, 연결 중인 상태라면 바로 return한다.
             if (shutdown || connected || connecting) {
                 return;
             }
             connecting = true;
         }
-        // 연결이 안되어 있는 경우에는 웹소켓에 연결한다.
+        // 연결이 안되어 있는 경우에는 KIS WebSocket에 연결한다.
         try {
+            // KIS WebSocket에 연결하기 위한 URI 생성
             URI endpoint = URI.create(kisProperties.getNormalizedWebSocketEndpoint());
-            // 웹소켓에 연결하는 메서드
+            // KIS WebSocket에 연결하는 메서드
             WebSocket newWebSocket = httpClient.newWebSocketBuilder()
                     .connectTimeout(Duration.ofSeconds(10))
                     .buildAsync(endpoint, new KisRealtimeWebSocketListener())
                     .join();
 
+            // 연결상태를 설정하는 와중에 다른 스레드에서 연결을 시도할 수 있기 때문에 동기화 락을 건다.
             synchronized (connectionLock) {
                 // 웹소켓에 연결한 이후, 상태를 설정하는 메서드
                 this.webSocket = newWebSocket;
@@ -151,7 +158,7 @@ public class KisRealtimeWebSocketClient {
             }
 
             log.info("KIS realtime websocket connected. endpoint={}", endpoint);
-            // WebSocket에 다시 연결하고 나면, 기존에 구독중이던 종목들을 다시 구독하는 메서드
+            // WebSocket에 재연결시, 기존에 구독중이던 종목들을 다시 구독하는 요청을 보내는 메서드
             resubscribeAll();
         } catch (Exception e) {
             synchronized (connectionLock) {
@@ -188,7 +195,7 @@ public class KisRealtimeWebSocketClient {
         }
     }
 
-    // 구독요청 / 구독해제 메세지를 생성하는 메서드
+    // 구독요청 / 구독해제 요청 메세지를 Json 문자열 형태로 생성하는 메서드
     private String buildSubscriptionMessage(KisRealtimeSubscription subscription, String trType)
             throws JsonProcessingException {
         Map<String, Object> header = new LinkedHashMap<>();
@@ -215,7 +222,8 @@ public class KisRealtimeWebSocketClient {
     // KIS Websocket으로부터 텍스트 메세지를 응답받았을때 이를 파싱하는 메서드
     private void handleTextMessage(WebSocket currentWebSocket, String rawMessage) {
         if (messageParser.isPingPongMessage(rawMessage)) {
-            // 만약 KIS Websocket에서 보낸 메세지가 PingPong 메세지라면, Pong 응답 메세지를 전달한다.
+            // 만약 KIS WebSocket에서 보낸 메세지가 PingPong 메세지라면, Pong 응답 메세지를 전달한다.
+            // KIS WebSocket에서 연결확인용으로 Ping 메세지를 보냈을때, 이에 응답하지 않으면 연결이 해제될 수 있기 때문에, Pong 응답 메세지를 생성해서 전달해야 한다.
             sendPong(currentWebSocket, rawMessage);
             return;
         }
@@ -321,6 +329,7 @@ public class KisRealtimeWebSocketClient {
         }
 
         // KIS 서버에서 WebSocket을 통해 텍스트 메세지를 전달받으면 호출된다.
+        // KIS 서버에서 WebSocket을 통해 실시간 데이터를 받으면, handlerTextMessage를 호출하여 이를 파싱하여 realtimeStore에 저장하고, 이벤트를 발생시켜, 해당 종목을 구독중인 클라이언트들에게 데이터 전달
         @Override
         public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
             partialMessage.append(data); // 메세지가 여러번에 걸쳐서 전송될 수 있기 때문에, StringBuilder를 통해서 메세지를 연결한다.

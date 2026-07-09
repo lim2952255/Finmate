@@ -28,6 +28,7 @@ public class StockDailyPriceCandle {
     private final String hoverX;
     private final String hoverWidth;
     private final String candleType;
+    private final String color;
     private final String title;
 
     public StockDailyPriceCandle(StockDailyPrice dailyPrice,
@@ -72,6 +73,7 @@ public class StockDailyPriceCandle {
         this.hoverX = formatCoordinate(x - calculatedHoverWidth / 2);
         this.hoverWidth = formatCoordinate(calculatedHoverWidth);
         this.candleType = resolveCandleType(dailyPrice);
+        this.color = colorByCandleType(this.candleType);
         this.title = dailyPrice.getTradeDate().format(DATE_FORMATTER)
                 + " 시가 " + dailyPrice.getOpenPrice()
                 + " 고가 " + dailyPrice.getHighPrice()
@@ -104,6 +106,18 @@ public class StockDailyPriceCandle {
         }
 
         return "flat";
+    }
+
+    private String colorByCandleType(String candleType) {
+        if ("bullish".equals(candleType)) {
+            return "#dc2626";
+        }
+
+        if ("bearish".equals(candleType)) {
+            return "#2563eb";
+        }
+
+        return "#64748b";
     }
 
     private String formatCoordinate(double value) {

@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 // 증권 계좌도 외부에서 함부로 수정하면 안되기 때문에 Setter를 설정하지 않는다.
 /*
@@ -49,9 +52,10 @@ public class Investment {
     @Column(name = "securities_company_code", nullable = false, updatable = false)
     private SecuritiesCompanyCode securitiesCompanyCode;
 
-    // 주식 주문에 사용할 수 있는 현금성 잔고
-    @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal depositBalance = BigDecimal.ZERO;
+    // 각 증권 계좌별로 통화 종류에 맞는 금액을 얻기 위한 연관관계 설정
+    @OneToMany(mappedBy = "investmentAccount", cascade = CascadeType.ALL, orphanRemoval = false)
+    @OrderBy("currencyCode ASC")
+    private List<InvestmentCashBalance> cashBalances = new ArrayList<>();
 
     @Column(name = "is_primary", nullable = false)
     private boolean primary;
@@ -78,7 +82,7 @@ public class Investment {
         investment.user = user;
         investment.accountNumber = accountNumber;
         investment.securitiesCompanyCode = securitiesCompanyCode;
-        investment.depositBalance = BigDecimal.ZERO;
+        investment.initializeCashBalances(); // 모든 통화의 예수금 잔고를 등록
         investment.primary = false;
         return investment;
     }
@@ -91,32 +95,42 @@ public class Investment {
         this.primary = false;
     }
 
-    public void depositCash(BigDecimal amount) {
-        if (amount == null) {
-            throw new RuntimeException("입금 금액은 필수입니다.");
+    // 증권 계좌에 특정 통화의 예수금 잔고를 하나 추가하는 메서드
+    public InvestmentCashBalance addCashBalance(CurrencyCode currencyCode) {
+        if (currencyCode == null) {
+            throw new RuntimeException("통화는 필수입니다.");
+        }
+        // 이미 해당 증권 계좌에 해당 예수금 통화가 등록되어 있으면 오류 출력
+        boolean exists = this.cashBalances.stream()
+                .anyMatch(cashBalance -> cashBalance.getCurrencyCode() == currencyCode);
+        if (exists) {
+            throw new RuntimeException("이미 등록된 예수금 통화입니다.");
         }
 
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("입금 금액은 0보다 커야 합니다.");
-        }
-
-        this.depositBalance = this.depositBalance.add(amount);
+        // 예수금 통화 생성 후 연관관계 설정
+        InvestmentCashBalance cashBalance = InvestmentCashBalance.create(this, currencyCode);
+        this.cashBalances.add(cashBalance);
+        return cashBalance;
     }
 
-    public void withdrawCash(BigDecimal amount) {
-        if (amount == null) {
-            throw new RuntimeException("출금 금액은 필수입니다.");
-        }
+    // 현재 증권 계좌의 KRW 통화의 총 금액을 출력
+    public BigDecimal getDepositBalance() {
+        return getAvailableCashBalance(CurrencyCode.KRW);
+    }
 
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("출금 금액은 0보다 커야 합니다.");
-        }
 
-        if (this.depositBalance.compareTo(amount) < 0) {
-            throw new RuntimeException("예수금이 부족합니다.");
-        }
+    public BigDecimal getAvailableCashBalance(CurrencyCode currencyCode) {
+        return this.cashBalances.stream()
+                .filter(cashBalance -> cashBalance.getCurrencyCode() == currencyCode)
+                .findFirst()
+                .map(InvestmentCashBalance::getAvailableBalance)
+                .orElse(BigDecimal.ZERO);
+    }
 
-        this.depositBalance = this.depositBalance.subtract(amount);
+    // 모든 통화 종류에 따라 통화 예수금 잔고를 추가하는 메서드
+    private void initializeCashBalances() {
+        Arrays.stream(CurrencyCode.values())
+                .forEach(this::addCashBalance);
     }
 
     @PrePersist

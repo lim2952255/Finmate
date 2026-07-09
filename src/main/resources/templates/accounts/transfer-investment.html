@@ -32,6 +32,7 @@
                     <tr>
                         <th>은행</th>
                         <th>계좌번호</th>
+                        <th>통화</th>
                         <th>잔액</th>
                         <th>대표계좌</th>
                         <th>선택</th>
@@ -41,8 +42,10 @@
                     <tr th:each="account : ${investmentDepositPageInfo.accounts}">
                         <td th:text="${account.bankCode.displayName}">신한은행</td>
                         <td th:text="${account.accountNumber}">000000-00-000000</td>
+                        <td th:text="${account.currencyCode.name()}">KRW</td>
                         <td>
-                            <span th:text="${#numbers.formatDecimal(account.balance, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                            <span th:text="${#numbers.formatDecimal(account.balance, 0, 'COMMA', account.currencyCode.fractionDigits, 'POINT')}">0</span>
+                            <span th:text="${account.currencyCode.name()}">KRW</span>
                         </td>
                         <td>
                             <span th:if="${account.primary}">대표계좌</span>
@@ -70,7 +73,13 @@
                 </p>
                 <p>
                     <strong>잔액</strong>
-                    <span th:text="${#numbers.formatDecimal(investmentDepositPageInfo.fromAccount.balance, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                    <span th:text="${#numbers.formatDecimal(investmentDepositPageInfo.fromAccount.balance, 0, 'COMMA', investmentDepositPageInfo.fromAccount.currencyCode.fractionDigits, 'POINT')}">0</span>
+                    <span th:text="${investmentDepositPageInfo.fromAccount.currencyCode.name()}">KRW</span>
+                </p>
+                <p>
+                    <strong>입금 통화</strong>
+                    <span th:text="${investmentDepositPageInfo.fromAccount.currencyCode.displayName}">원화</span>
+                    <span th:text="${investmentDepositPageInfo.fromAccount.currencyCode.name()}">KRW</span>
                 </p>
                 <p>
                     <a th:href="@{/accounts/transfer-investment}">출금 계좌 다시 선택</a>
@@ -105,7 +114,7 @@
                             <th>선택</th>
                             <th>증권사</th>
                             <th>계좌번호</th>
-                            <th>예수금</th>
+                            <th>통화별 예수금</th>
                             <th>대표계좌</th>
                         </tr>
                         </thead>
@@ -120,7 +129,12 @@
                             <td th:text="${investment.securitiesCompanyCode.displayName}">키움증권</td>
                             <td th:text="${investment.accountNumber}">000000-00-000000</td>
                             <td>
-                                <span th:text="${#numbers.formatDecimal(investment.depositBalance, 0, 'COMMA', 0, 'POINT')}">0</span>원
+                                <ul>
+                                    <li th:each="cashBalance : ${investment.cashBalances}">
+                                        <span th:text="${#numbers.formatDecimal(cashBalance.availableBalance, 0, 'COMMA', cashBalance.currencyCode.fractionDigits, 'POINT')}">0</span>
+                                        <span th:text="${cashBalance.currencyCode.name()}">KRW</span>
+                                    </li>
+                                </ul>
                             </td>
                             <td>
                                 <span th:if="${investment.primary}">대표계좌</span>
@@ -137,7 +151,12 @@
 
                     <div>
                         <label for="amount">이체 금액</label>
-                        <input id="amount" th:field="*{amount}" type="number" min="1" step="1" placeholder="이체 금액">
+                        <input id="amount"
+                               th:field="*{amount}"
+                               type="number"
+                               th:min="${investmentDepositPageInfo.fromAccount.currencyCode.minimumAmount}"
+                               th:step="${investmentDepositPageInfo.fromAccount.currencyCode.inputStep}"
+                               placeholder="이체 금액">
                         <p th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}">이체 금액 오류</p>
                     </div>
 

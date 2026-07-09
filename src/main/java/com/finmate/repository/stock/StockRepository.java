@@ -18,6 +18,15 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
 
     Optional<Stock> findByMarketTypeAndSymbol(StockMarketType marketType, String symbol);
 
+    @Query("""
+            select s
+            from Stock s
+            where s.realtimeSymbol = :realtimeKey
+               or s.symbol = :realtimeKey
+               or concat('DNAS', s.symbol) = :realtimeKey
+            """)
+    Optional<Stock> findByRealtimeKey(@Param("realtimeKey") String realtimeKey);
+
     // favoriteStock과 left join을 수행하여 관심종목을 우선적으로 정렬하여 조회
     //coalesce: null 대체 함수
     @Query(value = """
