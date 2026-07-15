@@ -96,7 +96,8 @@
                     </tbody>
                 </table>
 
-                <nav th:if="${stockSearchPageInfo.stockPage != null && stockSearchPageInfo.stockPage.totalPages > 1}"
+                <nav class="pagination-nav"
+                     th:if="${stockSearchPageInfo.stockPage != null && stockSearchPageInfo.stockPage.totalPages > 1}"
                      aria-label="종목 검색 결과 페이지">
                     <p>
                         <span th:text="${stockSearchPageInfo.stockPage.number + 1}">1</span>

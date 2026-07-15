@@ -12,7 +12,10 @@
 
     <main class="main">
         <section class="content">
-            <h1>보유계좌 목록</h1>
+            <div class="page-heading">
+                <h1>보유계좌 목록</h1>
+                <p>보유 중인 일반 계좌의 잔액, 대표계좌 여부, 이체와 거래내역을 확인합니다.</p>
+            </div>
 
             <p th:if="${errorMessage != null}" th:text="${errorMessage}">
                 계좌 목록 오류
@@ -22,50 +25,57 @@
                 아직 개설된 계좌가 없습니다.
             </p>
 
-            <table th:unless="${#lists.isEmpty(accounts)}">
-                <thead>
-                <tr>
-                    <th>은행</th>
-                    <th>계좌번호</th>
-                    <th>통화</th>
-                    <th>잔액</th>
-                    <th>대표계좌</th>
-                    <th>이체</th>
-                    <th>거래내역</th>
-                    <th>설정</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="account : ${accounts}">
-                    <td th:text="${account.bankCode.displayName}">신한은행</td>
-                    <td th:text="${account.accountNumber}">000000-00-000000</td>
-                    <td th:text="${account.currencyCode.name()}">KRW</td>
-                    <td>
-                        <span th:text="${#numbers.formatDecimal(account.balance, 0, 'COMMA', account.currencyCode.fractionDigits, 'POINT')}">0</span>
-                        <span th:text="${account.currencyCode.name()}">KRW</span>
-                    </td>
-                    <td>
-                        <span th:if="${account.primary}">대표계좌</span>
-                        <span th:unless="${account.primary}">-</span>
-                    </td>
-                    <td>
-                        <a th:href="@{/accounts/transfer(from=${account.accountNumber}, fromBankCode=${account.bankCode})}">이체</a>
-                    </td>
-                    <td>
-                        <a th:href="@{/accounts/transactions(accountNumber=${account.accountNumber}, bankCode=${account.bankCode.name()})}">거래내역</a>
-                    </td>
-                    <td>
-                        <span th:if="${account.primary}">현재 대표계좌</span>
-                        <form th:unless="${account.primary}"
-                              th:action="@{/accounts/list}"
-                              method="post">
-                            <input type="hidden" name="primaryAccountId" th:value="${account.id}">
-                            <button type="submit">대표계좌 설정</button>
-                        </form>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+            <div class="table-scroll" th:unless="${#lists.isEmpty(accounts)}">
+                <table class="records-table">
+                    <thead>
+                    <tr>
+                        <th>계좌</th>
+                        <th>통화</th>
+                        <th>잔액</th>
+                        <th>대표계좌</th>
+                        <th>이체</th>
+                        <th>거래내역</th>
+                        <th>설정</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="account : ${accounts}">
+                        <td>
+                            <div class="account-cell">
+                                <span class="primary-line" th:text="${account.bankCode.displayName}">신한은행</span>
+                                <span class="secondary-line" th:text="${account.accountNumber}">000000-00-000000</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge badge-neutral" th:text="${account.currencyCode.name()}">KRW</span>
+                        </td>
+                        <td class="money-cell">
+                            <span th:text="${#numbers.formatDecimal(account.balance, 1, 'COMMA', account.currencyCode.fractionDigits, 'POINT')}">0</span>
+                            <span th:text="${account.currencyCode.name()}">KRW</span>
+                        </td>
+                        <td>
+                            <span class="badge badge-submitted" th:if="${account.primary}">대표계좌</span>
+                            <span class="secondary-line" th:unless="${account.primary}">-</span>
+                        </td>
+                        <td>
+                            <a th:href="@{/accounts/transfer(from=${account.accountNumber}, fromBankCode=${account.bankCode})}">이체</a>
+                        </td>
+                        <td>
+                            <a th:href="@{/accounts/transactions(accountNumber=${account.accountNumber}, bankCode=${account.bankCode.name()})}">거래내역</a>
+                        </td>
+                        <td>
+                            <span class="secondary-line" th:if="${account.primary}">현재 대표계좌</span>
+                            <form th:unless="${account.primary}"
+                                  th:action="@{/accounts/list}"
+                                  method="post">
+                                <input type="hidden" name="primaryAccountId" th:value="${account.id}">
+                                <button type="submit">대표계좌 설정</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
 
             <p>
                 <a th:href="@{/accounts/open}">계좌 개설</a>

@@ -3,6 +3,8 @@ package com.finmate.infra.kis.stock.realtime;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.finmate.infra.kis.core.KisProperties;
+import com.finmate.infra.kis.core.KisRetryConnection;
+import com.finmate.infra.kis.websocket.KisWebSocketApprovalService;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,11 +12,9 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -45,10 +45,7 @@ public class KisRealtimeWebSocketClient {
     private final KisRealtimeStore realtimeStore; // KIS WebSocket을 통해 받은 실시간 데이터들을 메모리에 저장하는 저장소
     private final ObjectMapper objectMapper; // Json 문자열 -> 자바 객체 / 자바 객체 -> Json 문자열 변환
     private final ApplicationEventPublisher eventPublisher; // KIS 수신 데이터를 내부 WebSocket 계층으로 전달하기 위한 이벤트 발생기
-
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .build();
+    private final KisRetryConnection kisRetryConnection; // KIS WebSocket 연결 실패 시 재시도
 
     // 실시간으로 데이터를 받을 종목들(구독한 종목들)을 관리하는 set (실시간으로 변하기 때문에 메모리에 저장)
     private final Set<KisRealtimeSubscription> activeSubscriptions = ConcurrentHashMap.newKeySet();
@@ -81,19 +78,16 @@ public class KisRealtimeWebSocketClient {
 
     // 특정 종목을 구독하는 메서드
     public void subscribe(KisRealtimeSubscription subscription) {
-        boolean added = activeSubscriptions.add(subscription); // 종목을 구독목록에 추가 (만약 이미 종목이 구독상태였다면 false를 리턴)
-        boolean alreadyConnected = connected;
+        boolean added = false;
 
         try {
             ensureConnected(); // 연결을 보장하는 메서드(연결이 안되어 있으면 연결, 연결이 되어 있으면 유지)
+            added = activeSubscriptions.add(subscription); // 종목을 구독목록에 추가 (만약 이미 종목이 구독상태였다면 false를 리턴)
 
-            if (added && alreadyConnected) {
+            if (added) {
                 // WebSocket에 종목 구독을 추가
                 // added가 true라는 것은 해당 종목이 이번에 새로 구독상태가 되었다는 의미이기 때문에, KIS WebSocket에 종목을 구독한다는 메세지를 전송한다.
                 sendSubscription(subscription, SUBSCRIBE_TYPE);
-            }
-
-            if (added) { // 종목을 추가하면 로그를 출력
                 log.info("KIS realtime subscribed. trId={}, trKey={}",
                         subscription.api().getTrId(),
                         subscription.trKey());
@@ -132,44 +126,65 @@ public class KisRealtimeWebSocketClient {
     }
     // 연결이 안되어 있으면 연결하고, 종료상태면 연결하지 않고, 이미 연결되어 있으면 아무것도 하지 않는다.(연결상태를 보장하는 메서드)
     private void ensureConnected() {
-        synchronized (connectionLock) {
-            // 만약 애플리케이션이 종료상태이거나 이미 연결되어 있는 상태, 연결 중인 상태라면 바로 return한다.
-            if (shutdown || connected || connecting) {
+        synchronized (connectionLock) { // connectionLock을 획득한 상태
+            while (!shutdown && connecting) {
+                // 만약 아직 애플리케이션이 종료 상태가 아니며, 다른 스레드에서 이미 연결을 시도중인 상황이라 다른 스레드에서 연결이 끝날때까지 대기한다.
+                waitUntilConnectionAttemptFinished();
+                // 다른 스레드에서 연결을 시도 후 연결을 실패한 상황이라면 연결을 시도하고, 프로그램이 종료되었거나 이미 연결이 되었다면 종료한다.
+            }
+            // 만약 애플리케이션이 종료상태이거나 이미 연결되어 있는 상태라면 바로 return한다.
+            if (shutdown || connected) {
                 return;
             }
             connecting = true;
         }
         // 연결이 안되어 있는 경우에는 KIS WebSocket에 연결한다.
         try {
+            approvalService.getApprovalKey();
             // KIS WebSocket에 연결하기 위한 URI 생성
             URI endpoint = URI.create(kisProperties.getNormalizedWebSocketEndpoint());
-            // KIS WebSocket에 연결하는 메서드
-            WebSocket newWebSocket = httpClient.newWebSocketBuilder()
-                    .connectTimeout(Duration.ofSeconds(10))
-                    .buildAsync(endpoint, new KisRealtimeWebSocketListener())
-                    .join();
+            // KIS WebSocket에 연결하는 메서드 이때 KisRetryConnection을 활용하여 최대 5번까지 연결을 재시도한다.
+            WebSocket newWebSocket = kisRetryConnection.webSocketConnectionAndRetry(
+                    endpoint,
+                    new KisRealtimeWebSocketListener());
 
             // 연결상태를 설정하는 와중에 다른 스레드에서 연결을 시도할 수 있기 때문에 동기화 락을 건다.
             synchronized (connectionLock) {
                 // 웹소켓에 연결한 이후, 상태를 설정하는 메서드
                 this.webSocket = newWebSocket;
                 this.connected = true;
-                this.connecting = false;
             }
 
             log.info("KIS realtime websocket connected. endpoint={}", endpoint);
             // WebSocket에 재연결시, 기존에 구독중이던 종목들을 다시 구독하는 요청을 보내는 메서드
             resubscribeAll();
+            // 연결 성공 시 connecting 상태를 false로 변경하고, 대기중이던 스레드들을 깨운다.
+            synchronized (connectionLock) {
+                this.connecting = false;
+                connectionLock.notifyAll(); // 대기중인 스레드를 깨운다.
+            }
         } catch (Exception e) {
             synchronized (connectionLock) {
                 // 만약 웹소켓 연결에 실패하면 상태를 초기화한다.
                 this.webSocket = null;
                 this.connected = false;
                 this.connecting = false;
+                connectionLock.notifyAll(); // 대기중인 스레드를 깨운다.
             }
             throw new RuntimeException("KIS realtime websocket connection failed.", e);
         }
     }
+
+    private void waitUntilConnectionAttemptFinished() {
+        try {
+            // connectionLock을 반환하면서 대기한다.
+            connectionLock.wait();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("KIS realtime websocket connection wait interrupted.", e);
+        }
+    }
+
     // 기존에 구독중이던 종목들을 다시 등록하는 메서드
     private void resubscribeAll() {
         List<KisRealtimeSubscription> subscriptions = new ArrayList<>(activeSubscriptions);

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.finmate.domain.stock.StockMarketType;
 import com.finmate.domain.stock.dto.ranking.StockRankingType;
 import com.finmate.infra.kis.core.KisApiResponse;
-import com.finmate.infra.kis.core.KisRestClient;
+import com.finmate.infra.kis.rest.KisRestClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

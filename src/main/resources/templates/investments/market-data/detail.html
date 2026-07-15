@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinMate</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <style>
+        .market-hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.9fr);
+            gap: 20px;
+            align-items: stretch;
+            margin-bottom: 22px;
+            padding: 24px;
+            border: 1px solid #dbe3ef;
+            border-radius: 18px;
+            background:
+                    radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 34%),
+                    linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+        }
+
+        .market-hero-main {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .market-title-line {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .market-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            padding: 0 10px;
+            border-radius: 999px;
+            background: #dbeafe;
+            color: #1d4ed8;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .market-symbol {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .market-hero h1 {
+            margin: 0;
+            color: #0f172a;
+            font-size: clamp(30px, 4vw, 46px);
+            line-height: 1.08;
+            letter-spacing: -0.04em;
+        }
+
+        .market-description {
+            max-width: 640px;
+            margin: 10px 0 0;
+            color: #475569;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .market-price-row {
+            display: flex;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            gap: 10px 14px;
+        }
+
+        .market-current-price {
+            color: #0f172a;
+            font-size: clamp(34px, 5vw, 52px);
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            line-height: 1;
+        }
+
+        .market-latest-date {
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .market-hero-stats {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .market-stat {
+            min-height: 96px;
+            padding: 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.86);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+        }
+
+        .market-stat.featured {
+            grid-column: 1 / -1;
+            background: #0f172a;
+        }
+
+        .market-stat span {
+            display: block;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .market-stat strong {
+            display: block;
+            margin-top: 8px;
+            color: #0f172a;
+            font-size: 18px;
+            font-weight: 900;
+            word-break: keep-all;
+        }
+
+        .market-stat.featured span {
+            color: #cbd5e1;
+        }
+
+        .market-stat.featured strong {
+            color: #ffffff;
+            font-size: 24px;
+        }
+
+        .chart-control-form {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: end;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .chart-control-form label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .market-chart-section,
+        .market-table-section {
+            padding: 22px;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            background: #ffffff;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+        }
+
+        .chart-section-header,
+        .market-table-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .chart-section-header h2,
+        .market-table-header h2 {
+            margin: 4px 0 0;
+            color: #0f172a;
+            font-size: 24px;
+            letter-spacing: -0.02em;
+        }
+
+        .chart-section-header p,
+        .market-table-header p {
+            margin: 8px 0 0;
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .section-eyebrow {
+            color: #2563eb;
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+        }
+
+        .saved-data-pill {
+            display: inline-flex;
+            align-items: center;
+            min-height: 34px;
+            padding: 0 12px;
+            border-radius: 999px;
+            background: #ecfdf5;
+            color: #047857;
+            font-size: 13px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .market-control-bar {
+            padding: 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: #f8fafc;
+        }
+
+        .market-control-bar select {
+            min-width: 180px;
+        }
+
+        .chart-empty-message {
+            margin: 0;
+            padding: 28px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 14px;
+            background: #f8fafc;
+            color: #64748b;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .chart-panel {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+            gap: 18px;
+            align-items: start;
+        }
+
+        .chart-card {
+            min-width: 0;
+            padding: 18px;
+            border: 1px solid #dbe3ef;
+            border-radius: 16px;
+            background:
+                    linear-gradient(180deg, rgba(248, 250, 252, 0.78) 0%, #ffffff 32%),
+                    #ffffff;
+        }
+
+        .chart-main-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .chart-price {
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 8px 12px;
+        }
+
+        .chart-price strong {
+            color: #0f172a;
+            font-size: 40px;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -0.035em;
+        }
+
+        .chart-price span {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .chart-price-change {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 6px;
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .chart-price-change span {
+            color: inherit;
+            font-size: inherit;
+        }
+
+        .chart-price-change.bullish {
+            color: #dc2626;
+        }
+
+        .chart-price-change.bearish {
+            color: #2563eb;
+        }
+
+        .chart-price-change.flat {
+            color: #64748b;
+        }
+
+        .chart-price-time {
+            color: #64748b;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 10px;
+            color: #475569;
+            font-size: 13px;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-color {
+            width: 18px;
+            height: 3px;
+            border-radius: 999px;
+            background: #2563eb;
+        }
+
+        .chart-scroll {
+            position: relative;
+            overflow-x: auto;
+            border: 1px solid #d7e0ec;
+            border-radius: 14px;
+            background:
+                    linear-gradient(180deg, rgba(248, 250, 252, 0.9) 0%, rgba(255, 255, 255, 0.95) 100%);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        }
+
+        .market-chart-svg {
+            display: block;
+            min-width: 920px;
+            background:
+                    linear-gradient(90deg, rgba(37, 99, 235, 0.035) 0%, rgba(37, 99, 235, 0) 42%),
+                    #ffffff;
+        }
+
+        .chart-grid-line {
+            stroke: #e5e7eb;
+            stroke-width: 1;
+        }
+
+        .chart-axis-line {
+            stroke: #cbd5e1;
+            stroke-width: 1;
+        }
+
+        .chart-axis-label {
+            fill: #64748b;
+            font-size: 12px;
+        }
+
+        .chart-date-grid-line {
+            stroke: #eef2f7;
+            stroke-width: 1;
+        }
+
+        .chart-date-axis-label {
+            fill: #64748b;
+            font-size: 12px;
+        }
+
+        .chart-current-line {
+            stroke: #64748b;
+            stroke-dasharray: 5 5;
+            stroke-width: 1;
+        }
+
+        .chart-current-line.bullish {
+            stroke: #dc2626;
+        }
+
+        .chart-current-line.bearish {
+            stroke: #2563eb;
+        }
+
+        .chart-current-line.flat {
+            stroke: #64748b;
+        }
+
+        .chart-current-badge {
+            fill: #64748b;
+            rx: 5;
+        }
+
+        .chart-current-badge.bullish {
+            fill: #dc2626;
+        }
+
+        .chart-current-badge.bearish {
+            fill: #2563eb;
+        }
+
+        .chart-current-badge.flat {
+            fill: #64748b;
+        }
+
+        .chart-current-badge-text {
+            fill: #ffffff;
+            font-size: 11px;
+            font-weight: 800;
+            pointer-events: none;
+        }
+
+        .market-line {
+            fill: none;
+            stroke: #2563eb;
+            stroke-width: 3.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 4px 5px rgba(37, 99, 235, 0.16));
+        }
+
+        .chart-hover-target {
+            fill: transparent;
+            pointer-events: all;
+        }
+
+        .chart-crosshair {
+            display: none;
+            pointer-events: none;
+        }
+
+        .chart-crosshair.visible {
+            display: block;
+        }
+
+        .chart-crosshair-line {
+            stroke: #334155;
+            stroke-dasharray: 4 4;
+            stroke-width: 1;
+            opacity: 0.74;
+        }
+
+        .chart-crosshair-badge {
+            fill: #0f172a;
+            opacity: 0.94;
+            rx: 4;
+        }
+
+        .chart-crosshair-text {
+            fill: #ffffff;
+            font-size: 11px;
+            font-weight: 800;
+            pointer-events: none;
+        }
+
+        .chart-tooltip {
+            position: absolute;
+            z-index: 5;
+            display: none;
+            min-width: 210px;
+            padding: 12px 14px;
+            border: 1px solid #2563eb;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
+            pointer-events: none;
+        }
+
+        .chart-tooltip.visible {
+            display: block;
+        }
+
+        .chart-tooltip-title {
+            margin-bottom: 8px;
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 900;
+        }
+
+        .chart-tooltip-row {
+            display: grid;
+            grid-template-columns: 74px 1fr;
+            gap: 10px;
+            align-items: center;
+            min-height: 24px;
+            font-size: 14px;
+        }
+
+        .chart-tooltip-label {
+            color: #64748b;
+        }
+
+        .chart-tooltip-value {
+            color: #0f172a;
+            text-align: right;
+            font-weight: 800;
+        }
+
+        .chart-caption {
+            margin: 12px 0 0;
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .chart-side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 16px;
+            border: 1px solid #dbe3ef;
+            border-radius: 16px;
+            background:
+                    linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+        }
+
+        .chart-side-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .chart-side-item:last-child {
+            padding-bottom: 0;
+            border-bottom: 0;
+        }
+
+        .chart-side-item span {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .chart-side-item strong {
+            color: #0f172a;
+            font-size: 17px;
+            font-weight: 900;
+        }
+
+        .chart-side-item small {
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .chart-side-item.featured {
+            margin: -2px -2px 0;
+            padding: 14px;
+            border: 0;
+            border-radius: 14px;
+            background: #eff6ff;
+        }
+
+        .chart-side-item.featured span {
+            color: #1d4ed8;
+        }
+
+        .chart-side-item.featured strong {
+            color: #1e3a8a;
+            font-size: 22px;
+        }
+
+        .market-price-table th,
+        .market-price-table td {
+            white-space: nowrap;
+        }
+
+        .market-price-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .market-price-table td:not(:first-child),
+        .market-price-table th:not(:first-child) {
+            text-align: right;
+        }
+
+        .stock-action-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 18px 0 0;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .stock-action-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .stock-action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 42px;
+            padding: 0 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #0f172a;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .stock-action-button.primary {
+            border-color: #2563eb;
+            background: #2563eb;
+            color: #ffffff;
+        }
+
+        @media (max-width: 900px) {
+            .market-hero {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-panel {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-main-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .chart-legend {
+                justify-content: flex-start;
+            }
+
+            .stock-action-section {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .stock-action-button {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .market-hero,
+            .market-chart-section,
+            .market-table-section {
+                padding: 16px;
+                border-radius: 14px;
+            }
+
+            .market-hero-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-control-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .chart-section-header,
+            .market-table-header {
+                flex-direction: column;
+            }
+
+            .market-control-bar select {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div th:replace="~{/layout/header :: header}"></div>
+
+    <main class="main">
+        <section class="content">
+            <section class="market-hero">
+                <div class="market-hero-main">
+                    <div>
+                        <div class="market-title-line">
+                            <span class="market-badge"
+                                  th:text="${marketIndicatorPageInfo.indicatorType.displayName}">환율</span>
+                            <span class="market-symbol"
+                                  th:text="${marketIndicatorPageInfo.selectedIndicator.kisSymbol}">FX@KRW</span>
+                        </div>
+                        <h1>
+                            <span th:text="${marketIndicatorPageInfo.selectedIndicator.displayName}">USD/KRW</span>
+                            <span th:text="|(${marketIndicatorPageInfo.selectedIndicator.nameKo})|">(원/달러)</span>
+                        </h1>
+                        <p class="market-description"
+                           th:text="${marketIndicatorPageInfo.selectedIndicator.description}">
+                            미국 달러 대비 원화 환율
+                        </p>
+                    </div>
+
+                    <div class="market-price-row">
+                        <strong class="market-current-price"
+                                th:text="${marketIndicatorPageInfo.formatLatestClosePrice()}">1,506.70</strong>
+                        <span class="chart-price-change"
+                              th:classappend="${marketIndicatorPageInfo.priceChangeClass()}">
+                            <span th:text="${marketIndicatorPageInfo.formatSignedChangeAmount()}">-</span>
+                            <span th:text="${marketIndicatorPageInfo.formatSignedChangeRate()}">-</span>
+                        </span>
+                        <span class="market-latest-date"
+                              th:text="|기준 ${marketIndicatorPageInfo.formatDate(marketIndicatorPageInfo.latestTradeDate())}|">기준 2026-07-10</span>
+                    </div>
+                </div>
+
+                <div class="market-hero-stats">
+                    <div class="market-stat featured">
+                        <span>최근 종가</span>
+                        <strong th:text="${marketIndicatorPageInfo.formatLatestClosePrice()}">1,506.70</strong>
+                    </div>
+                    <div class="market-stat">
+                        <span>단위</span>
+                        <strong th:text="${marketIndicatorPageInfo.selectedIndicator.unit}">KRW</strong>
+                    </div>
+                    <div class="market-stat">
+                        <span>조회 기간</span>
+                        <strong th:text="${marketIndicatorPageInfo.selectedPeriod.displayName}">1년</strong>
+                    </div>
+                    <div class="market-stat">
+                        <span>기간 최고</span>
+                        <strong th:text="${marketIndicatorPageInfo.hasDailyPrices() ? marketIndicatorPageInfo.formatPrice(marketIndicatorPageInfo.maxClosePrice()) : '-'}">1,559.00</strong>
+                    </div>
+                    <div class="market-stat">
+                        <span>기간 최저</span>
+                        <strong th:text="${marketIndicatorPageInfo.hasDailyPrices() ? marketIndicatorPageInfo.formatPrice(marketIndicatorPageInfo.minClosePrice()) : '-'}">1,440.00</strong>
+                    </div>
+                </div>
+            </section>
+
+            <section class="market-chart-section">
+                <div class="chart-section-header">
+                    <div>
+                        <span class="section-eyebrow">MARKET CHART</span>
+                        <h2>일봉 차트</h2>
+                        <p>
+                            선택한 기간의 종가 흐름을 한 화면에서 확인합니다.
+                            차트는 온디멘드로 저장된 일봉 데이터를 기준으로 표시합니다.
+                        </p>
+                    </div>
+                    <span class="saved-data-pill"
+                          th:if="${marketIndicatorPageInfo.savedDailyPriceCount > 0}"
+                          th:text="|새 데이터 ${marketIndicatorPageInfo.savedDailyPriceCount}건 저장|">새 데이터 0건 저장</span>
+                </div>
+
+                <form class="chart-control-form market-control-bar" method="get" th:attr="action=${marketDataActionPath}">
+                    <label for="indicator">
+                        대상
+                        <select id="indicator" name="indicator">
+                            <option th:each="indicator : ${marketIndicatorPageInfo.indicators}"
+                                    th:value="${indicator.name()}"
+                                    th:selected="${indicator == marketIndicatorPageInfo.selectedIndicator}"
+                                    th:text="|${indicator.displayName} (${indicator.nameKo})|">
+                                USD/KRW
+                            </option>
+                        </select>
+                    </label>
+
+                    <label for="period">
+                        기간
+                        <select id="period" name="period">
+                            <option th:each="period : ${marketDataPeriods}"
+                                    th:value="${period.name()}"
+                                    th:selected="${period == marketIndicatorPageInfo.selectedPeriod}"
+                                    th:text="${period.displayName}">
+                                1년
+                            </option>
+                        </select>
+                    </label>
+
+                    <button type="submit">조회</button>
+                </form>
+
+                <p class="chart-empty-message" th:unless="${marketIndicatorPageInfo.hasDailyPrices()}">
+                    표시할 일봉 데이터가 없습니다.
+                </p>
+
+                <div class="chart-panel" th:if="${marketIndicatorPageInfo.hasDailyPrices()}">
+                    <div class="chart-card">
+                        <div class="chart-main-header">
+                            <div class="chart-price">
+                                <strong th:text="${marketIndicatorPageInfo.formatLatestClosePrice()}">1,506.70</strong>
+                                <span class="chart-price-change"
+                                      th:classappend="${marketIndicatorPageInfo.priceChangeClass()}">
+                                    <span th:text="${marketIndicatorPageInfo.formatSignedChangeAmount()}">-</span>
+                                    <span th:text="${marketIndicatorPageInfo.formatSignedChangeRate()}">-</span>
+                                </span>
+                                <span class="chart-price-time"
+                                      th:text="${marketIndicatorPageInfo.formatDate(marketIndicatorPageInfo.latestTradeDate())}">2026-07-10</span>
+                            </div>
+
+                            <div class="chart-legend">
+                                <span class="legend-item">
+                                    <span class="legend-color"></span>
+                                    <span>종가</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="chart-scroll" aria-label="일봉 종가 차트">
+                            <svg class="market-chart-svg"
+                                 role="img"
+                                 th:attr="viewBox=|0 0 ${marketIndicatorPageInfo.chartWidth()} ${marketIndicatorPageInfo.chartHeight()}|,
+                                          width=${marketIndicatorPageInfo.chartWidth()},
+                                          height=${marketIndicatorPageInfo.chartHeight()}">
+                                <title th:text="|${marketIndicatorPageInfo.selectedIndicator.displayName} ${marketIndicatorPageInfo.selectedPeriod.displayName} 종가 차트|">
+                                    USD/KRW 1년 종가 차트
+                                </title>
+                                <line class="chart-date-grid-line"
+                                      th:each="dateLabel : ${marketIndicatorPageInfo.dateAxisLabels()}"
+                                      th:attr="x1=${dateLabel.x()},y1=${marketIndicatorPageInfo.chartTop()},x2=${dateLabel.x()},y2=${marketIndicatorPageInfo.dateAxisLineY()}"></line>
+                                <line class="chart-grid-line"
+                                      th:attr="x1=${marketIndicatorPageInfo.chartLeft()},y1=${marketIndicatorPageInfo.chartTop()},x2=${marketIndicatorPageInfo.chartRight()},y2=${marketIndicatorPageInfo.chartTop()}"></line>
+                                <line class="chart-grid-line"
+                                      th:attr="x1=${marketIndicatorPageInfo.chartLeft()},y1=${marketIndicatorPageInfo.chartMiddleY()},x2=${marketIndicatorPageInfo.chartRight()},y2=${marketIndicatorPageInfo.chartMiddleY()}"></line>
+                                <line class="chart-grid-line"
+                                      th:attr="x1=${marketIndicatorPageInfo.chartLeft()},y1=${marketIndicatorPageInfo.chartBottom()},x2=${marketIndicatorPageInfo.chartRight()},y2=${marketIndicatorPageInfo.chartBottom()}"></line>
+                                <line class="chart-axis-line"
+                                      th:attr="x1=${marketIndicatorPageInfo.chartRight()},y1=${marketIndicatorPageInfo.chartTop()},x2=${marketIndicatorPageInfo.chartRight()},y2=${marketIndicatorPageInfo.chartBottom()}"></line>
+                                <line class="chart-axis-line"
+                                      th:attr="x1=${marketIndicatorPageInfo.chartLeft()},y1=${marketIndicatorPageInfo.chartBottom()},x2=${marketIndicatorPageInfo.chartRight()},y2=${marketIndicatorPageInfo.chartBottom()}"></line>
+                                <text class="chart-axis-label"
+                                      dominant-baseline="middle"
+                                      th:attr="x=${marketIndicatorPageInfo.chartRight() + 8},y=${marketIndicatorPageInfo.chartTop()}"
+                                      th:text="${marketIndicatorPageInfo.formatPrice(marketIndicatorPageInfo.maxClosePrice())}">1,559.00</text>
+                                <text class="chart-axis-label"
+                                      dominant-baseline="middle"
+                                      th:attr="x=${marketIndicatorPageInfo.chartRight() + 8},y=${marketIndicatorPageInfo.chartMiddleY()}"
+                                      th:text="${marketIndicatorPageInfo.formatPrice(marketIndicatorPageInfo.middleClosePrice())}">1,500.00</text>
+                                <text class="chart-axis-label"
+                                      dominant-baseline="middle"
+                                      th:attr="x=${marketIndicatorPageInfo.chartRight() + 8},y=${marketIndicatorPageInfo.chartBottom()}"
+                                      th:text="${marketIndicatorPageInfo.formatPrice(marketIndicatorPageInfo.minClosePrice())}">1,440.00</text>
+                                <text class="chart-date-axis-label"
+                                      th:each="dateLabel : ${marketIndicatorPageInfo.dateAxisLabels()}"
+                                      th:attr="x=${dateLabel.x()},y=${marketIndicatorPageInfo.dateAxisLabelY()},text-anchor=${dateLabel.textAnchor()}"
+                                      th:text="${dateLabel.displayValue()}">2026.07.10</text>
+                                <polyline class="market-line"
+                                          th:attr="points=${marketIndicatorPageInfo.chartPolylinePoints()}"></polyline>
+
+                                <g th:if="${marketIndicatorPageInfo.hasLatestPriceLine()}">
+                                    <line class="chart-current-line"
+                                          th:classappend="${marketIndicatorPageInfo.priceChangeClass()}"
+                                          th:attr="x1=${marketIndicatorPageInfo.chartLeft()},y1=${marketIndicatorPageInfo.latestPriceLineY()},x2=${marketIndicatorPageInfo.chartRight()},y2=${marketIndicatorPageInfo.latestPriceLineY()}"></line>
+                                    <rect class="chart-current-badge"
+                                          th:classappend="${marketIndicatorPageInfo.priceChangeClass()}"
+                                          th:attr="x=${marketIndicatorPageInfo.chartRight() + 2},y=${marketIndicatorPageInfo.latestPriceBadgeY()},width=80,height=34"></rect>
+                                    <text class="chart-current-badge-text"
+                                          text-anchor="middle"
+                                          th:attr="x=${marketIndicatorPageInfo.chartRight() + 42},y=${marketIndicatorPageInfo.latestPriceBadgePriceY()}"
+                                          th:text="${marketIndicatorPageInfo.formatLatestClosePrice()}">1,506.70</text>
+                                    <text class="chart-current-badge-text"
+                                          text-anchor="middle"
+                                          th:attr="x=${marketIndicatorPageInfo.chartRight() + 42},y=${marketIndicatorPageInfo.latestPriceBadgeRateY()}"
+                                          th:text="${marketIndicatorPageInfo.formatSignedChangeRate()}">-</text>
+                                </g>
+
+                                <g id="market-chart-data-layer"
+                                   th:attr="data-chart-max-price=${marketIndicatorPageInfo.maxClosePrice()},
+                                            data-chart-min-price=${marketIndicatorPageInfo.minClosePrice()},
+                                            data-chart-left=${marketIndicatorPageInfo.chartLeft()},
+                                            data-price-area-top=${marketIndicatorPageInfo.chartTop()},
+                                            data-price-area-bottom=${marketIndicatorPageInfo.chartBottom()},
+                                            data-date-axis-line-y=${marketIndicatorPageInfo.dateAxisLineY()},
+                                            data-price-axis-x=${marketIndicatorPageInfo.chartRight()},
+                                            data-price-fraction-digits=${marketIndicatorPageInfo.selectedIndicator.fractionDigits}">
+                                    <rect class="chart-hover-target"
+                                          th:each="point : ${marketIndicatorPageInfo.chartPoints()}"
+                                          th:attr="x=${point.hoverX()},
+                                                   y=${marketIndicatorPageInfo.chartTop()},
+                                                   width=${point.hoverWidth()},
+                                                   height=${marketIndicatorPageInfo.chartPlotHeight()},
+                                                   data-date=${point.tradeDate()},
+                                                   data-open=${point.openPrice()},
+                                                   data-high=${point.highPrice()},
+                                                   data-low=${point.lowPrice()},
+                                                   data-close=${point.closePrice()},
+                                                   data-volume=${point.volume()},
+                                                   data-close-raw=${point.rawClosePrice()}">
+                                        <title th:text="${point.title()}">일봉 데이터</title>
+                                    </rect>
+                                </g>
+
+                                <g id="market-chart-crosshair" class="chart-crosshair" aria-hidden="true">
+                                    <line id="market-crosshair-vertical"
+                                          class="chart-crosshair-line"
+                                          th:attr="y1=${marketIndicatorPageInfo.chartTop()},y2=${marketIndicatorPageInfo.chartBottom()}"></line>
+                                    <line id="market-crosshair-horizontal"
+                                          class="chart-crosshair-line"
+                                          th:attr="x1=${marketIndicatorPageInfo.chartLeft()},x2=${marketIndicatorPageInfo.chartRight()}"></line>
+                                    <rect id="market-crosshair-price-badge"
+                                          class="chart-crosshair-badge"
+                                          rx="4"
+                                          th:attr="x=${marketIndicatorPageInfo.chartRight() + 2},width=80,height=22"></rect>
+                                    <text id="market-crosshair-price-text"
+                                          class="chart-crosshair-text"
+                                          text-anchor="middle"
+                                          dominant-baseline="middle"
+                                          th:attr="x=${marketIndicatorPageInfo.chartRight() + 42}">0</text>
+                                    <rect id="market-crosshair-date-badge"
+                                          class="chart-crosshair-badge"
+                                          width="82"
+                                          height="22"
+                                          rx="4"></rect>
+                                    <text id="market-crosshair-date-text"
+                                          class="chart-crosshair-text"
+                                          text-anchor="middle"
+                                          dominant-baseline="middle">0000-00-00</text>
+                                </g>
+                            </svg>
+                            <div id="market-chart-tooltip" class="chart-tooltip" aria-hidden="true"></div>
+                        </div>
+                        <p class="chart-caption">
+                            <span th:text="${marketIndicatorPageInfo.formatDate(marketIndicatorPageInfo.chartStartDate)}">2025-07-10</span>
+                            부터
+                            <span th:text="${marketIndicatorPageInfo.formatDate(marketIndicatorPageInfo.expectedLatestTradeDate)}">2026-07-10</span>
+                            까지의
+                            <span th:text="${marketIndicatorPageInfo.selectedPeriod.displayName}">1년</span>
+                            일봉입니다.
+                        </p>
+                    </div>
+
+                    <aside class="chart-side-panel">
+                        <div class="chart-side-item featured">
+                            <span>대상</span>
+                            <strong th:text="${marketIndicatorPageInfo.selectedIndicator.displayName}">USD/KRW</strong>
+                            <small th:text="${marketIndicatorPageInfo.selectedIndicator.description}">미국 달러 대비 원화 환율</small>
+                        </div>
+                        <div class="chart-side-item">
+                            <span>구분</span>
+                            <strong th:text="${marketIndicatorPageInfo.indicatorType.displayName}">환율</strong>
+                        </div>
+                        <div class="chart-side-item">
+                            <span>기간</span>
+                            <strong th:text="${marketIndicatorPageInfo.selectedPeriod.displayName}">1년</strong>
+                        </div>
+                        <div class="chart-side-item">
+                            <span>최근 거래일</span>
+                            <strong th:text="${marketIndicatorPageInfo.formatDate(marketIndicatorPageInfo.latestTradeDate())}">2026-07-10</strong>
+                        </div>
+                        <div class="chart-side-item">
+                            <span>표시 일수</span>
+                            <strong th:text="${#lists.size(marketIndicatorPageInfo.dailyPrices)}">250</strong>
+                        </div>
+                        <div class="chart-side-item">
+                            <span>기간 최고</span>
+                            <strong th:text="${marketIndicatorPageInfo.formatPrice(marketIndicatorPageInfo.maxClosePrice())}">1,559.00</strong>
+                        </div>
+                        <div class="chart-side-item">
+                            <span>기간 최저</span>
+                            <strong th:text="${marketIndicatorPageInfo.formatPrice(marketIndicatorPageInfo.minClosePrice())}">1,440.00</strong>
+                        </div>
+                        <div class="chart-side-item">
+                            <span>이번 접근에서 저장</span>
+                            <strong th:text="|${marketIndicatorPageInfo.savedDailyPriceCount}건|">0건</strong>
+                            <small th:text="|조회 기준 ${marketIndicatorPageInfo.formatDate(marketIndicatorPageInfo.expectedLatestTradeDate)}|">조회 기준 2026-07-10</small>
+                        </div>
+                    </aside>
+                </div>
+            </section>
+
+            <section class="market-table-section">
+                <div class="market-table-header">
+                    <div>
+                        <span class="section-eyebrow">RECENT PRICES</span>
+                        <h2>최근 일봉</h2>
+                    </div>
+                    <p>최근 저장된 일봉 데이터를 표로 확인합니다.</p>
+                </div>
+                <p th:if="${#lists.isEmpty(marketIndicatorPageInfo.recentDailyPrices())}">
+                    저장된 일봉 데이터가 없습니다.
+                </p>
+                <div class="table-scroll" th:unless="${#lists.isEmpty(marketIndicatorPageInfo.recentDailyPrices())}">
+                    <table class="records-table market-price-table">
+                        <thead>
+                        <tr>
+                            <th>거래일</th>
+                            <th>시가</th>
+                            <th>고가</th>
+                            <th>저가</th>
+                            <th>종가</th>
+                            <th>거래량</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="dailyPrice : ${marketIndicatorPageInfo.recentDailyPrices()}">
+                            <td class="date-cell" th:text="${marketIndicatorPageInfo.formatDate(dailyPrice.tradeDate)}">2026-07-10</td>
+                            <td class="money-cell" th:text="${marketIndicatorPageInfo.formatPrice(dailyPrice.openPrice)}">0</td>
+                            <td class="money-cell" th:text="${marketIndicatorPageInfo.formatPrice(dailyPrice.highPrice)}">0</td>
+                            <td class="money-cell" th:text="${marketIndicatorPageInfo.formatPrice(dailyPrice.lowPrice)}">0</td>
+                            <td class="money-cell" th:text="${marketIndicatorPageInfo.formatPrice(dailyPrice.closePrice)}">0</td>
+                            <td class="balance-cell" th:text="${marketIndicatorPageInfo.formatVolume(dailyPrice.accumulatedVolume)}">0</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="stock-action-section">
+                <a class="stock-action-button primary" th:href="@{/investments/market-data}">환율 / 지수 메뉴</a>
+                <div class="stock-action-links">
+                    <a class="stock-action-button" th:href="@{/investments/exchanges}">실시간 환율</a>
+                    <a class="stock-action-button" th:href="@{/investments/indices}">실시간 지수 시세</a>
+                    <a class="stock-action-button" th:href="@{/investments}">투자 홈</a>
+                </div>
+            </section>
+        </section>
+    </main>
+</div>
+<script>
+    (() => {
+        const dataLayer = document.getElementById('market-chart-data-layer');
+        if (!dataLayer) {
+            return;
+        }
+
+        const chartScroll = dataLayer.closest('.chart-scroll');
+        const chartSvg = chartScroll ? chartScroll.querySelector('.market-chart-svg') : null;
+        const tooltip = document.getElementById('market-chart-tooltip');
+        const crosshair = document.getElementById('market-chart-crosshair');
+        const crosshairVertical = document.getElementById('market-crosshair-vertical');
+        const crosshairHorizontal = document.getElementById('market-crosshair-horizontal');
+        const crosshairPriceBadge = document.getElementById('market-crosshair-price-badge');
+        const crosshairPriceText = document.getElementById('market-crosshair-price-text');
+        const crosshairDateBadge = document.getElementById('market-crosshair-date-badge');
+        const crosshairDateText = document.getElementById('market-crosshair-date-text');
+        const chartMaxPrice = toNumber(dataLayer.dataset.chartMaxPrice);
+        const chartMinPrice = toNumber(dataLayer.dataset.chartMinPrice);
+        const chartLeft = toNumber(dataLayer.dataset.chartLeft);
+        const priceAreaTop = toNumber(dataLayer.dataset.priceAreaTop);
+        const priceAreaBottom = toNumber(dataLayer.dataset.priceAreaBottom);
+        const dateAxisLineY = toNumber(dataLayer.dataset.dateAxisLineY);
+        const priceAxisX = toNumber(dataLayer.dataset.priceAxisX);
+        const priceFractionDigits = Number(dataLayer.dataset.priceFractionDigits || 2);
+        const priceAreaHeight = priceAreaBottom - priceAreaTop;
+        let hoverTargets = [];
+
+        if (!chartScroll
+                || !chartSvg
+                || !tooltip
+                || ![chartMaxPrice, chartMinPrice, chartLeft, priceAreaTop, priceAreaBottom, dateAxisLineY, priceAxisX]
+                        .every(Number.isFinite)) {
+            return;
+        }
+
+        refreshHoverTargets();
+
+        chartScroll.addEventListener('mousemove', (event) => {
+            const point = toSvgPoint(event);
+            if (!isInsideInteractiveChart(point)) {
+                hideChartPointer();
+                return;
+            }
+
+            const target = findNearestHoverTarget(point.x);
+            if (!target) {
+                hideChartPointer();
+                return;
+            }
+
+            const cursorPrice = toCursorPrice(point.y);
+            showCrosshair(point, cursorPrice, target);
+            showTooltip(target, event, cursorPrice);
+        });
+
+        chartScroll.addEventListener('mouseleave', hideChartPointer);
+
+        function refreshHoverTargets() {
+            hoverTargets = Array.from(chartScroll.querySelectorAll('.chart-hover-target'))
+                    .map((target) => {
+                        const x = toNumber(target.getAttribute('x'));
+                        const width = toNumber(target.getAttribute('width'));
+                        return {
+                            target,
+                            centerX: x + width / 2
+                        };
+                    })
+                    .filter((item) => Number.isFinite(item.centerX));
+        }
+
+        function findNearestHoverTarget(x) {
+            if (hoverTargets.length === 0) {
+                return null;
+            }
+
+            return hoverTargets.reduce((nearest, item) => {
+                const distance = Math.abs(item.centerX - x);
+                if (distance < nearest.distance) {
+                    return {
+                        target: item.target,
+                        distance
+                    };
+                }
+
+                return nearest;
+            }, {
+                target: null,
+                distance: Number.POSITIVE_INFINITY
+            }).target;
+        }
+
+        function showCrosshair(point, cursorPrice, target) {
+            if (!crosshair || !crosshairVertical || !crosshairHorizontal) {
+                return;
+            }
+
+            const x = clamp(point.x, chartLeft, priceAxisX);
+            const y = clamp(point.y, priceAreaTop, priceAreaBottom);
+            const dateLabel = target.dataset.date || '-';
+            const priceLabel = formatPrice(cursorPrice);
+
+            crosshair.classList.add('visible');
+            crosshair.setAttribute('aria-hidden', 'false');
+            crosshairVertical.setAttribute('x1', formatCoordinate(x));
+            crosshairVertical.setAttribute('x2', formatCoordinate(x));
+            crosshairVertical.setAttribute('y1', formatCoordinate(priceAreaTop));
+            crosshairVertical.setAttribute('y2', formatCoordinate(priceAreaBottom));
+            crosshairHorizontal.setAttribute('x1', formatCoordinate(chartLeft));
+            crosshairHorizontal.setAttribute('x2', formatCoordinate(priceAxisX));
+            crosshairHorizontal.setAttribute('y1', formatCoordinate(y));
+            crosshairHorizontal.setAttribute('y2', formatCoordinate(y));
+
+            if (crosshairPriceBadge && crosshairPriceText) {
+                crosshairPriceBadge.setAttribute('y', formatCoordinate(y - 11));
+                crosshairPriceText.setAttribute('y', formatCoordinate(y));
+                crosshairPriceText.textContent = priceLabel;
+            }
+
+            if (crosshairDateBadge && crosshairDateText) {
+                const dateBadgeWidth = Math.max(82, dateLabel.length * 7 + 18);
+                const dateBadgeX = clamp(x - dateBadgeWidth / 2, chartLeft, priceAxisX - dateBadgeWidth);
+                const dateBadgeY = dateAxisLineY + 4;
+                crosshairDateBadge.setAttribute('x', formatCoordinate(dateBadgeX));
+                crosshairDateBadge.setAttribute('y', formatCoordinate(dateBadgeY));
+                crosshairDateBadge.setAttribute('width', formatCoordinate(dateBadgeWidth));
+                crosshairDateText.setAttribute('x', formatCoordinate(dateBadgeX + dateBadgeWidth / 2));
+                crosshairDateText.setAttribute('y', formatCoordinate(dateBadgeY + 11));
+                crosshairDateText.textContent = dateLabel;
+            }
+        }
+
+        function showTooltip(target, event, cursorPrice) {
+            tooltip.innerHTML = `
+                <div class="chart-tooltip-title">${escapeHtml(target.dataset.date || '-')}</div>
+                ${tooltipRow('커서 가격', formatPrice(cursorPrice))}
+                ${tooltipRow('시가', target.dataset.open)}
+                ${tooltipRow('고가', target.dataset.high)}
+                ${tooltipRow('저가', target.dataset.low)}
+                ${tooltipRow('종가', target.dataset.close)}
+                ${tooltipRow('거래량', target.dataset.volume)}
+            `;
+            tooltip.classList.add('visible');
+            tooltip.setAttribute('aria-hidden', 'false');
+            placeTooltip(event);
+        }
+
+        function tooltipRow(label, value) {
+            return `
+                <div class="chart-tooltip-row">
+                    <span class="chart-tooltip-label">${escapeHtml(label)}</span>
+                    <span class="chart-tooltip-value">${escapeHtml(value || '-')}</span>
+                </div>
+            `;
+        }
+
+        function placeTooltip(event) {
+            const chartRect = chartScroll.getBoundingClientRect();
+            const cursorX = event.clientX - chartRect.left + chartScroll.scrollLeft;
+            const cursorY = event.clientY - chartRect.top + chartScroll.scrollTop;
+            const visibleLeft = chartScroll.scrollLeft;
+            const visibleRight = visibleLeft + chartScroll.clientWidth;
+            let left = cursorX + 16;
+            let top = cursorY + 16;
+
+            if (left + tooltip.offsetWidth > visibleRight - 12) {
+                left = cursorX - tooltip.offsetWidth - 16;
+            }
+
+            if (top + tooltip.offsetHeight > chartScroll.scrollTop + chartScroll.clientHeight - 12) {
+                top = cursorY - tooltip.offsetHeight - 16;
+            }
+
+            tooltip.style.left = `${Math.max(visibleLeft + 8, left)}px`;
+            tooltip.style.top = `${Math.max(chartScroll.scrollTop + 8, top)}px`;
+        }
+
+        function toSvgPoint(event) {
+            const screenMatrix = chartSvg.getScreenCTM();
+            if (!screenMatrix) {
+                return null;
+            }
+
+            const point = chartSvg.createSVGPoint();
+            point.x = event.clientX;
+            point.y = event.clientY;
+            return point.matrixTransform(screenMatrix.inverse());
+        }
+
+        function isInsideInteractiveChart(point) {
+            return point
+                    && point.x >= chartLeft
+                    && point.x <= priceAxisX
+                    && point.y >= priceAreaTop
+                    && point.y <= priceAreaBottom;
+        }
+
+        function toCursorPrice(y) {
+            if (chartMaxPrice <= chartMinPrice || priceAreaHeight <= 0) {
+                return chartMaxPrice;
+            }
+
+            const clampedY = clamp(y, priceAreaTop, priceAreaBottom);
+            const rate = (clampedY - priceAreaTop) / priceAreaHeight;
+            return chartMaxPrice - (chartMaxPrice - chartMinPrice) * rate;
+        }
+
+        function hideChartPointer() {
+            tooltip.classList.remove('visible');
+            tooltip.setAttribute('aria-hidden', 'true');
+
+            if (crosshair) {
+                crosshair.classList.remove('visible');
+                crosshair.setAttribute('aria-hidden', 'true');
+            }
+        }
+
+        function formatPrice(value) {
+            if (!Number.isFinite(value)) {
+                return '-';
+            }
+
+            return new Intl.NumberFormat('ko-KR', {
+                minimumFractionDigits: priceFractionDigits,
+                maximumFractionDigits: priceFractionDigits
+            }).format(value);
+        }
+
+        function toNumber(value) {
+            if (value == null || value === '') {
+                return Number.NaN;
+            }
+
+            return Number(String(value).replace(/,/g, ''));
+        }
+
+        function clamp(value, min, max) {
+            return Math.max(min, Math.min(max, value));
+        }
+
+        function formatCoordinate(value) {
+            return Number(value).toFixed(2);
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+        }
+    })();
+</script>
+</body>
+</html>

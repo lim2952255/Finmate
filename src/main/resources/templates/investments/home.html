@@ -12,8 +12,10 @@
 
     <main class="main">
         <section class="content">
-            <h1>투자</h1>
-            <p>증권 계좌, 예수금, 포트폴리오, 주문 내역과 투자 정보를 관리합니다.</p>
+            <div class="page-heading">
+                <h1>투자</h1>
+                <p>증권 계좌, 예수금, 포트폴리오, 주문 내역과 투자 정보를 관리합니다.</p>
+            </div>
 
             <section>
                 <h2>내 증권 계좌 요약</h2>
@@ -25,49 +27,52 @@
                     </p>
                 </div>
 
-                <div th:unless="${#lists.isEmpty(investmentHomeInfo.investments)}">
-                    <div>
-                        <strong>총 예수금</strong>
-                        <ul th:unless="${#maps.isEmpty(investmentHomeInfo.totalDepositBalancesByCurrency)}">
-                            <li th:each="entry : ${investmentHomeInfo.totalDepositBalancesByCurrency}">
-                                <span th:text="${#numbers.formatDecimal(entry.value, 0, 'COMMA', entry.key.fractionDigits, 'POINT')}">0</span>
+                <div class="dashboard-grid" th:unless="${#lists.isEmpty(investmentHomeInfo.investments)}">
+                    <div class="metric-card">
+                        <span class="metric-label">총 예수금</span>
+                        <ul class="currency-list" th:unless="${#maps.isEmpty(investmentHomeInfo.totalDepositBalancesByCurrency)}">
+                            <li class="currency-pill" th:each="entry : ${investmentHomeInfo.totalDepositBalancesByCurrency}">
+                                <span th:text="${#numbers.formatDecimal(entry.value, 1, 'COMMA', entry.key.fractionDigits, 'POINT')}">0</span>
                                 <span th:text="${entry.key.name()}">KRW</span>
                             </li>
                         </ul>
                     </div>
-                    <p>
-                        <strong>증권 계좌 수</strong>
-                        <span th:text="${investmentHomeInfo.investmentAccountCount}">0</span>개
-                    </p>
+                    <div class="metric-card">
+                        <span class="metric-label">증권 계좌 수</span>
+                        <span class="metric-value">
+                            <span th:text="${investmentHomeInfo.investmentAccountCount}">0</span>개
+                        </span>
+                        <span class="metric-note">모든 증권계좌 기준</span>
+                    </div>
                 </div>
             </section>
 
             <section th:unless="${#lists.isEmpty(investmentHomeInfo.investments)}">
                 <h2>대표 증권계좌</h2>
 
-                <div th:if="${investmentHomeInfo.primaryInvestment != null}">
-                    <p>
-                        <strong>증권사</strong>
-                        <span th:text="${investmentHomeInfo.primaryInvestment.securitiesCompanyCode.displayName}">키움증권</span>
-                    </p>
-                    <p>
-                        <strong>계좌번호</strong>
-                        <span th:text="${investmentHomeInfo.primaryInvestment.accountNumber}">000000-00-000000</span>
-                    </p>
-                    <div>
-                        <strong>예수금</strong>
-                        <ul>
-                            <li th:each="cashBalance : ${investmentHomeInfo.primaryInvestment.cashBalances}">
-                                <span th:text="${#numbers.formatDecimal(cashBalance.availableBalance, 0, 'COMMA', cashBalance.currencyCode.fractionDigits, 'POINT')}">0</span>
+                <div class="entity-card detail-stack" th:if="${investmentHomeInfo.primaryInvestment != null}">
+                    <div class="detail-row">
+                        <span class="detail-label">증권사</span>
+                        <span class="detail-value" th:text="${investmentHomeInfo.primaryInvestment.securitiesCompanyCode.displayName}">키움증권</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">계좌번호</span>
+                        <span class="detail-value" th:text="${investmentHomeInfo.primaryInvestment.accountNumber}">000000-00-000000</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">예수금</span>
+                        <ul class="currency-list">
+                            <li class="currency-pill" th:each="cashBalance : ${investmentHomeInfo.primaryInvestment.cashBalances}">
+                                <span th:text="${#numbers.formatDecimal(cashBalance.availableBalance, 1, 'COMMA', cashBalance.currencyCode.fractionDigits, 'POINT')}">0</span>
                                 <span th:text="${cashBalance.currencyCode.name()}">KRW</span>
                             </li>
                         </ul>
                     </div>
 
-                    <p>
+                    <div class="action-row">
                         <a th:href="@{/investments/transfer(from=${investmentHomeInfo.primaryInvestment.accountNumber}, fromSecuritiesCompanyCode=${investmentHomeInfo.primaryInvestment.securitiesCompanyCode})}">투자금 이체</a>
                         <a th:href="@{/investments/portfolio}">포트폴리오 보기</a>
-                    </p>
+                    </div>
                 </div>
 
                 <p th:if="${investmentHomeInfo.primaryInvestment == null}">
@@ -80,18 +85,20 @@
                 <p>
                     보유 종목과 현재가 연동 후 총 평가금액, 평가손익, 수익률을 표시할 예정입니다.
                 </p>
-                <p>
-                    <strong>총 평가금액</strong>
-                    <span>미구현</span>
-                </p>
-                <p>
-                    <strong>평가손익</strong>
-                    <span>미구현</span>
-                </p>
-                <p>
-                    <strong>수익률</strong>
-                    <span>미구현</span>
-                </p>
+                <div class="summary-grid">
+                    <div class="metric-card">
+                        <span class="metric-label">총 평가금액</span>
+                        <span class="metric-value">미구현</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">평가손익</span>
+                        <span class="metric-value">미구현</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">수익률</span>
+                        <span class="metric-value">미구현</span>
+                    </div>
+                </div>
             </section>
 
             <nav aria-label="투자 메뉴">
@@ -122,6 +129,9 @@
                     </li>
                     <li>
                         <a th:href="@{/investments/stocks/market-movers}">거래대금 상위 / 급등락 종목</a>
+                    </li>
+                    <li>
+                        <a th:href="@{/investments/market-data}">환율 / 지수 정보</a>
                     </li>
                     <li>
                         <a th:href="@{/investments/reports}">뉴스 / AI 리포트</a>

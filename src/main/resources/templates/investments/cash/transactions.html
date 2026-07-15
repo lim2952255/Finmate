@@ -12,11 +12,14 @@
 
     <main class="main">
         <section class="content">
-            <h1>예수금 입출금 내역</h1>
+            <div class="page-heading">
+                <h1>예수금 입출금 내역</h1>
+                <p>일반 계좌와 증권계좌 사이의 예수금 입금, 출금 흐름을 확인합니다.</p>
+            </div>
 
             <section>
                 <h2>증권계좌 선택</h2>
-                <p>
+                <p class="action-row">
                     <a th:href="@{/investments/securityCashTransaction(period=${securitiesCashTransactionPageInfo.period}, page=0)}">전체 증권계좌</a>
                 </p>
 
@@ -24,47 +27,52 @@
                     아직 개설된 증권 계좌가 없습니다.
                 </p>
 
-                <table th:unless="${#lists.isEmpty(securitiesCashTransactionPageInfo.investments)}">
-                    <thead>
-                    <tr>
-                        <th>번호</th>
-                        <th>증권사</th>
-                        <th>계좌번호</th>
-                        <th>예수금</th>
-                        <th>조회</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="investment, investmentStat : ${securitiesCashTransactionPageInfo.investments}">
-                        <td th:text="${investmentStat.count}">1</td>
-                        <td th:text="${investment.securitiesCompanyCode.displayName}">키움증권</td>
-                        <td th:text="${investment.accountNumber}">000000-00-000000</td>
-                        <td>
-                            <ul>
-                                <li th:each="cashBalance : ${investment.cashBalances}">
-                                    <span th:text="${#numbers.formatDecimal(cashBalance.availableBalance, 0, 'COMMA', cashBalance.currencyCode.fractionDigits, 'POINT')}">0</span>
-                                    <span th:text="${cashBalance.currencyCode.name()}">KRW</span>
-                                </li>
-                            </ul>
-                        </td>
-                        <td>
-                            <a th:href="@{/investments/securityCashTransaction(investmentNumber=${investment.accountNumber}, securitiesCompanyCode=${investment.securitiesCompanyCode.name()}, period=${securitiesCashTransactionPageInfo.period}, page=0)}">
-                                예수금 내역 조회
-                            </a>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+                <div class="table-scroll" th:unless="${#lists.isEmpty(securitiesCashTransactionPageInfo.investments)}">
+                    <table class="records-table">
+                        <thead>
+                        <tr>
+                            <th>번호</th>
+                            <th>증권계좌</th>
+                            <th>예수금</th>
+                            <th>조회</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="investment, investmentStat : ${securitiesCashTransactionPageInfo.investments}">
+                            <td class="number-cell" th:text="${investmentStat.count}">1</td>
+                            <td>
+                                <div class="account-cell">
+                                    <span class="primary-line" th:text="${investment.securitiesCompanyCode.displayName}">키움증권</span>
+                                    <span class="secondary-line" th:text="${investment.accountNumber}">000000-00-000000</span>
+                                </div>
+                            </td>
+                            <td>
+                                <ul class="compact-list">
+                                    <li th:each="cashBalance : ${investment.cashBalances}">
+                                        <span th:text="${#numbers.formatDecimal(cashBalance.availableBalance, 1, 'COMMA', cashBalance.currencyCode.fractionDigits, 'POINT')}">0</span>
+                                        <span th:text="${cashBalance.currencyCode.name()}">KRW</span>
+                                    </li>
+                                </ul>
+                            </td>
+                            <td>
+                                <a th:href="@{/investments/securityCashTransaction(investmentNumber=${investment.accountNumber}, securitiesCompanyCode=${investment.securitiesCompanyCode.name()}, period=${securitiesCashTransactionPageInfo.period}, page=0)}">
+                                    예수금 내역 조회
+                                </a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
             </section>
 
-            <section>
+            <section class="filter-panel">
                 <h2>조회 조건</h2>
-                <p th:if="${securitiesCashTransactionPageInfo.selectedInvestment == null}">
-                    <strong>조회 계좌</strong>
+                <p class="selected-context" th:if="${securitiesCashTransactionPageInfo.selectedInvestment == null}">
+                    <span>조회 계좌</span>
                     <span>전체 증권계좌</span>
                 </p>
-                <p th:if="${securitiesCashTransactionPageInfo.selectedInvestment != null}">
-                    <strong>조회 계좌</strong>
+                <p class="selected-context" th:if="${securitiesCashTransactionPageInfo.selectedInvestment != null}">
+                    <span>조회 계좌</span>
                     <span th:text="${securitiesCashTransactionPageInfo.selectedInvestment.securitiesCompanyCode.displayName}">키움증권</span>
                     <span th:text="${securitiesCashTransactionPageInfo.selectedInvestment.accountNumber}">000000-00-000000</span>
                 </p>
@@ -95,19 +103,26 @@
 
             <section th:if="${securitiesCashTransactionPageInfo.transactionSummary != null}">
                 <h2>거래 요약</h2>
-                <p>
-                    <strong>총 입금액</strong>
-                    <span th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.totalDepositAmount, 0, 'COMMA', 0, 'POINT')}">0</span>
-                </p>
-                <p>
-                    <strong>총 출금액</strong>
-                    <span th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.totalWithdrawalAmount, 0, 'COMMA', 0, 'POINT')}">0</span>
-                </p>
-                <p>
-                    <strong>순액</strong>
-                    <span th:if="${securitiesCashTransactionPageInfo.transactionSummary.netAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">+</span>
-                    <span th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.netAmount, 0, 'COMMA', 0, 'POINT')}">0</span>
-                </p>
+                <div class="summary-grid">
+                    <div class="metric-card">
+                        <span class="metric-label">총 입금액</span>
+                        <span class="metric-value money-positive"
+                              th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.totalDepositAmount, 1, 'COMMA', 0, 'POINT')}">0</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">총 출금액</span>
+                        <span class="metric-value money-negative"
+                              th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.totalWithdrawalAmount, 1, 'COMMA', 0, 'POINT')}">0</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">순액</span>
+                        <span class="metric-value"
+                              th:classappend="${securitiesCashTransactionPageInfo.transactionSummary.netAmount.compareTo(T(java.math.BigDecimal).ZERO) < 0} ? ' money-negative' : ' money-positive'">
+                            <span th:if="${securitiesCashTransactionPageInfo.transactionSummary.netAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">+</span>
+                            <span th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.netAmount, 1, 'COMMA', 0, 'POINT')}">0</span>
+                        </span>
+                    </div>
+                </div>
             </section>
 
             <section>
@@ -117,48 +132,52 @@
                     조회 기간에 해당하는 예수금 거래내역이 없습니다.
                 </p>
 
-                <table th:unless="${#lists.isEmpty(securitiesCashTransactionPageInfo.transactions)}">
-                    <thead>
-                    <tr>
-                        <th>번호</th>
-                        <th>거래일시</th>
-                        <th>증권계좌</th>
-                        <th>거래유형</th>
-                        <th>거래금액</th>
-                        <th>거래 전 예수금</th>
-                        <th>거래 후 예수금</th>
-                        <th>상대 은행</th>
-                        <th>상대 계좌</th>
-                        <th>상대 이름</th>
-                        <th>설명</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="transaction, transactionStat : ${securitiesCashTransactionPageInfo.transactions}">
-                        <td th:text="${securitiesCashTransactionPageInfo.transactionPage.number * securitiesCashTransactionPageInfo.transactionPage.size + transactionStat.count}">1</td>
-                        <td th:text="${#temporals.format(transaction.createdAt, 'yyyy-MM-dd HH:mm:ss')}">
-                            2026-06-30 12:00:00
-                        </td>
-                        <td>
-                            <span th:text="${transaction.investment.securitiesCompanyCode.displayName}">키움증권</span>
-                            <span th:text="${transaction.investment.accountNumber}">000000-00-000000</span>
-                        </td>
-                        <td>
-                            <span th:if="${transaction.type.name() == 'DEPOSIT'}">예수금 입금</span>
-                            <span th:if="${transaction.type.name() == 'WITHDRAW'}">예수금 출금</span>
-                        </td>
-                        <td>
+                <div class="table-scroll" th:unless="${#lists.isEmpty(securitiesCashTransactionPageInfo.transactions)}">
+                    <table class="records-table">
+                        <thead>
+                        <tr>
+                            <th>번호</th>
+                            <th>거래일시</th>
+                            <th>증권계좌</th>
+                            <th>거래유형</th>
+                            <th>거래금액</th>
+                            <th>거래 전 예수금</th>
+                            <th>거래 후 예수금</th>
+                            <th>상대 은행</th>
+                            <th>상대 계좌</th>
+                            <th>상대 이름</th>
+                            <th>설명</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="transaction, transactionStat : ${securitiesCashTransactionPageInfo.transactions}">
+                            <td class="number-cell" th:text="${securitiesCashTransactionPageInfo.transactionPage.number * securitiesCashTransactionPageInfo.transactionPage.size + transactionStat.count}">1</td>
+                            <td class="date-cell" th:text="${#temporals.format(transaction.createdAt, 'yyyy-MM-dd HH:mm')}">
+                                2026-06-30 12:00
+                            </td>
+                            <td>
+                                <div class="account-cell">
+                                    <span class="primary-line" th:text="${transaction.investment.securitiesCompanyCode.displayName}">키움증권</span>
+                                    <span class="secondary-line" th:text="${transaction.investment.accountNumber}">000000-00-000000</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-deposit" th:if="${transaction.type.name() == 'DEPOSIT'}">예수금 입금</span>
+                                <span class="badge badge-withdraw" th:if="${transaction.type.name() == 'WITHDRAW'}">예수금 출금</span>
+                            </td>
+                            <td class="money-cell"
+                                th:classappend="${transaction.type.name() == 'WITHDRAW'} ? ' is-negative' : ' is-positive'">
                             <span th:if="${transaction.type.name() == 'WITHDRAW'}">-</span>
                             <span th:if="${transaction.type.name() == 'DEPOSIT'}">+</span>
-                            <span th:text="${#numbers.formatDecimal(transaction.amount, 0, 'COMMA', transaction.transfer.currencyCode.fractionDigits, 'POINT')}">0</span>
+                            <span th:text="${#numbers.formatDecimal(transaction.amount, 1, 'COMMA', transaction.transfer.currencyCode.fractionDigits, 'POINT')}">0</span>
                             <span th:text="${transaction.transfer.currencyCode.name()}">KRW</span>
                         </td>
-                        <td>
-                            <span th:text="${#numbers.formatDecimal(transaction.balanceBeforeTransaction, 0, 'COMMA', transaction.transfer.currencyCode.fractionDigits, 'POINT')}">0</span>
+                        <td class="balance-cell">
+                            <span th:text="${#numbers.formatDecimal(transaction.balanceBeforeTransaction, 1, 'COMMA', transaction.transfer.currencyCode.fractionDigits, 'POINT')}">0</span>
                             <span th:text="${transaction.transfer.currencyCode.name()}">KRW</span>
                         </td>
-                        <td>
-                            <span th:text="${#numbers.formatDecimal(transaction.balanceAfterTransaction, 0, 'COMMA', transaction.transfer.currencyCode.fractionDigits, 'POINT')}">0</span>
+                        <td class="balance-cell">
+                            <span th:text="${#numbers.formatDecimal(transaction.balanceAfterTransaction, 1, 'COMMA', transaction.transfer.currencyCode.fractionDigits, 'POINT')}">0</span>
                             <span th:text="${transaction.transfer.currencyCode.name()}">KRW</span>
                         </td>
                         <td>
@@ -182,12 +201,14 @@
                             </span>
                             <span th:if="${transaction.counterpartyName == null}">-</span>
                         </td>
-                        <td th:text="${transaction.description}">증권계좌 예수금 입금</td>
-                    </tr>
-                    </tbody>
-                </table>
+                            <td th:text="${transaction.description}">증권계좌 예수금 입금</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-                <nav th:if="${securitiesCashTransactionPageInfo.transactionPage != null && securitiesCashTransactionPageInfo.transactionPage.totalPages > 1}"
+                <nav class="pagination-nav"
+                     th:if="${securitiesCashTransactionPageInfo.transactionPage != null && securitiesCashTransactionPageInfo.transactionPage.totalPages > 1}"
                      aria-label="예수금 거래내역 페이지">
                     <p>
                         <span th:text="${securitiesCashTransactionPageInfo.transactionPage.number + 1}">1</span>

@@ -1,18 +1,16 @@
-package com.finmate.infra.kis.stock.realtime;
+package com.finmate.infra.kis.websocket;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.finmate.infra.kis.core.KisProperties;
-import com.finmate.infra.kis.core.KisRateLimiter;
+import com.finmate.infra.kis.core.KisRetryConnection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
@@ -24,11 +22,8 @@ public class KisWebSocketApprovalClient {
     private static final String APPROVAL_PATH = "/oauth2/Approval";
 
     private final KisProperties kisProperties; // Kis api를 활용하기 위한 기본 설정정보
-    private final KisRateLimiter kisRateLimiter; // 요청속도 제한 / 조절
+    private final KisRetryConnection kisRetryConnection; // KIS 연결 실패 시 재시도
     private final ObjectMapper objectMapper; // 응답받은 Json 문자열을 객체로 변환
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .build();
 
     // ApprovalKey를 발급받는 메서드
     public KisWebSocketApprovalResponse issueApprovalKey() {
@@ -50,33 +45,17 @@ public class KisWebSocketApprovalClient {
                     .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                     .build();
 
-            kisRateLimiter.waitTurn(); // 요청 속도 조절
-            // api 호출후 응답 데이터를 받는다.
-            HttpResponse<String> response = httpClient.send(
+            // KISRetryConnection을 통해 최대 5번까지 Approval Token을 요청한다.
+            KisWebSocketApprovalResponse approvalResponse = kisRetryConnection.connectionAndRetry(
                     request,
-                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new RuntimeException("KIS websocket approval key request failed. status="
-                        + response.statusCode()
-                        + ", url=" + requestUri
-                        + ", body=" + response.body());
-            }
-            // api 응답 메세지의 body(Json 문자열)를 KisWebSocketApprovalResponse 객체로 변환한다.
-            KisWebSocketApprovalResponse approvalResponse = objectMapper.readValue(
-                    response.body(),
                     KisWebSocketApprovalResponse.class);
             if (approvalResponse.approvalKey() == null || approvalResponse.approvalKey().isBlank()) {
-                throw new RuntimeException("KIS websocket approval key response is empty. body=" + response.body());
+                throw new RuntimeException("KIS websocket approval key response is empty.");
             }
 
             return approvalResponse;
-        } catch (IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-
-            throw new RuntimeException("KIS websocket approval key request failed.", e);
+        } catch (JsonProcessingException exception) {
+            throw new RuntimeException("KIS websocket approval key request creation failed.", exception);
         }
     }
 

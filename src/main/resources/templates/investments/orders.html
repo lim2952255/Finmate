@@ -31,7 +31,10 @@
 
     <main class="main">
         <section class="content">
-            <h1>주문·체결 내역</h1>
+            <div class="page-heading">
+                <h1>주문·체결 내역</h1>
+                <p>주문, 예약 주문, 체결 내역을 계좌별 또는 전체 증권계좌 기준으로 확인합니다.</p>
+            </div>
 
             <form class="orders-toolbar" th:action="@{/investments/orders}" method="get"
                   th:if="${!#lists.isEmpty(stockTradingHistoryPageInfo.investments)}">
@@ -63,7 +66,7 @@
                 <h2>주문</h2>
                 <p th:if="${#lists.isEmpty(stockTradingHistoryPageInfo.orders)}">주문 내역이 없습니다.</p>
                 <div class="table-scroll" th:unless="${#lists.isEmpty(stockTradingHistoryPageInfo.orders)}">
-                    <table>
+                    <table class="records-table">
                         <thead>
                         <tr>
                             <th th:if="${stockTradingHistoryPageInfo.allAccounts}">계좌</th>
@@ -83,22 +86,47 @@
                         <tbody>
                         <tr th:each="order : ${stockTradingHistoryPageInfo.orders}">
                             <td th:if="${stockTradingHistoryPageInfo.allAccounts}">
-                                <span th:text="${order.investment.securitiesCompanyCode.displayName}">증권사</span>
-                                <small th:text="${order.investment.accountNumber}">00000000</small>
+                                <div class="account-cell">
+                                    <span class="primary-line" th:text="${order.investment.securitiesCompanyCode.displayName}">증권사</span>
+                                    <span class="secondary-line" th:text="${order.investment.accountNumber}">00000000</span>
+                                </div>
                             </td>
-                            <td th:text="${order.orderNumber}">번호</td>
                             <td>
-                                <a th:href="@{/investments/stocks/detail(stockId=${order.stock.id})}"
-                                   th:text="${order.stock.nameKo}">종목</a>
+                                <span class="code-chip"
+                                      th:title="${order.orderNumber}"
+                                      th:text="${order.orderNumber}">번호</span>
                             </td>
-                            <td th:text="${order.side}">BUY</td>
-                            <td th:text="${order.orderType}">MARKET</td>
-                            <td th:text="${order.status}">SUBMITTED</td>
+                            <td>
+                                <div class="stock-cell">
+                                    <a class="primary-line"
+                                       th:href="@{/investments/stocks/detail(stockId=${order.stock.id})}"
+                                       th:text="${order.stock.nameKo}">종목</a>
+                                    <span class="secondary-line" th:text="${order.stock.symbol}">005930</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-buy" th:if="${order.side.name() == 'BUY'}">매수</span>
+                                <span class="badge badge-sell" th:if="${order.side.name() == 'SELL'}">매도</span>
+                            </td>
+                            <td>
+                                <span class="badge badge-neutral" th:if="${order.orderType.name() == 'MARKET'}">시장가</span>
+                                <span class="badge badge-neutral" th:if="${order.orderType.name() == 'LIMIT'}">지정가</span>
+                            </td>
+                            <td>
+                                <span class="badge badge-submitted" th:if="${order.status.name() == 'SUBMITTED'}">접수</span>
+                                <span class="badge badge-warning" th:if="${order.status.name() == 'PARTIALLY_FILLED'}">부분체결</span>
+                                <span class="badge badge-filled" th:if="${order.status.name() == 'FILLED'}">체결</span>
+                                <span class="badge badge-neutral" th:if="${order.status.name() == 'CANCELED'}">취소</span>
+                                <span class="badge badge-neutral" th:if="${order.status.name() == 'EXPIRED'}">만료</span>
+                                <span class="badge badge-neutral"
+                                      th:unless="${order.status.name() == 'SUBMITTED' or order.status.name() == 'PARTIALLY_FILLED' or order.status.name() == 'FILLED' or order.status.name() == 'CANCELED' or order.status.name() == 'EXPIRED'}"
+                                      th:text="${order.status}">상태</span>
+                            </td>
                             <td th:text="${stockTradingHistoryPageInfo.formatDecimal(order.quantity, 6)}">0</td>
                             <td th:text="${stockTradingHistoryPageInfo.formatDecimal(order.executedQuantity, 6)}">0</td>
-                            <td th:text="${stockTradingHistoryPageInfo.formatDecimal(order.orderPrice, order.currencyCode.fractionDigits)}">-</td>
-                            <td th:text="${order.expiresAt != null ? #temporals.format(order.expiresAt, 'yyyy-MM-dd HH:mm') : '-'}">-</td>
-                            <td th:text="${#temporals.format(order.createdAt, 'yyyy-MM-dd HH:mm:ss')}">2026-07-07</td>
+                            <td class="money-cell" th:text="${stockTradingHistoryPageInfo.formatDecimal(order.orderPrice, order.currencyCode.fractionDigits)}">-</td>
+                            <td class="date-cell" th:text="${order.expiresAt != null ? #temporals.format(order.expiresAt, 'yyyy-MM-dd HH:mm') : '-'}">-</td>
+                            <td class="date-cell" th:text="${#temporals.format(order.createdAt, 'yyyy-MM-dd HH:mm')}">2026-07-07</td>
                             <td>
                                 <form th:if="${order.status.name() == 'SUBMITTED' or order.status.name() == 'PARTIALLY_FILLED'}"
                                       th:action="@{/investments/stocks/order/{orderId}/cancel(orderId=${order.id})}"
@@ -118,7 +146,7 @@
                 <h2>예약 주문</h2>
                 <p th:if="${#lists.isEmpty(stockTradingHistoryPageInfo.reservations)}">예약 주문 내역이 없습니다.</p>
                 <div class="table-scroll" th:unless="${#lists.isEmpty(stockTradingHistoryPageInfo.reservations)}">
-                    <table>
+                    <table class="records-table">
                         <thead>
                         <tr>
                             <th th:if="${stockTradingHistoryPageInfo.allAccounts}">계좌</th>
@@ -137,21 +165,47 @@
                         <tbody>
                         <tr th:each="reservation : ${stockTradingHistoryPageInfo.reservations}">
                             <td th:if="${stockTradingHistoryPageInfo.allAccounts}">
-                                <span th:text="${reservation.investment.securitiesCompanyCode.displayName}">증권사</span>
-                                <small th:text="${reservation.investment.accountNumber}">00000000</small>
+                                <div class="account-cell">
+                                    <span class="primary-line" th:text="${reservation.investment.securitiesCompanyCode.displayName}">증권사</span>
+                                    <span class="secondary-line" th:text="${reservation.investment.accountNumber}">00000000</span>
+                                </div>
                             </td>
-                            <td th:text="${reservation.reservationNumber}">번호</td>
                             <td>
-                                <a th:href="@{/investments/stocks/detail(stockId=${reservation.stock.id})}"
-                                   th:text="${reservation.stock.nameKo}">종목</a>
+                                <span class="code-chip"
+                                      th:title="${reservation.reservationNumber}"
+                                      th:text="${reservation.reservationNumber}">번호</span>
                             </td>
-                            <td th:text="${reservation.side}">BUY</td>
-                            <td th:text="${reservation.orderType}">MARKET</td>
-                            <td th:text="${reservation.status}">ACTIVE</td>
-                            <td th:text="${reservation.triggerCondition}">조건</td>
-                            <td th:text="${stockTradingHistoryPageInfo.formatDecimal(reservation.triggerPrice, reservation.currencyCode.fractionDigits)}">0</td>
+                            <td>
+                                <div class="stock-cell">
+                                    <a class="primary-line"
+                                       th:href="@{/investments/stocks/detail(stockId=${reservation.stock.id})}"
+                                       th:text="${reservation.stock.nameKo}">종목</a>
+                                    <span class="secondary-line" th:text="${reservation.stock.symbol}">005930</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-buy" th:if="${reservation.side.name() == 'BUY'}">매수</span>
+                                <span class="badge badge-sell" th:if="${reservation.side.name() == 'SELL'}">매도</span>
+                            </td>
+                            <td>
+                                <span class="badge badge-neutral" th:if="${reservation.orderType.name() == 'MARKET'}">시장가</span>
+                                <span class="badge badge-neutral" th:if="${reservation.orderType.name() == 'LIMIT'}">지정가</span>
+                            </td>
+                            <td>
+                                <span class="badge badge-active" th:if="${reservation.status.name() == 'ACTIVE'}">대기</span>
+                                <span class="badge badge-filled" th:if="${reservation.status.name() == 'TRIGGERED'}">실행</span>
+                                <span class="badge badge-neutral" th:if="${reservation.status.name() == 'CANCELED'}">취소</span>
+                                <span class="badge badge-neutral" th:if="${reservation.status.name() == 'EXPIRED'}">만료</span>
+                                <span class="badge badge-neutral"
+                                      th:unless="${reservation.status.name() == 'ACTIVE' or reservation.status.name() == 'TRIGGERED' or reservation.status.name() == 'CANCELED' or reservation.status.name() == 'EXPIRED'}"
+                                      th:text="${reservation.status}">상태</span>
+                            </td>
+                            <td>
+                                <span class="badge badge-neutral" th:text="${reservation.triggerCondition}">조건</span>
+                            </td>
+                            <td class="money-cell" th:text="${stockTradingHistoryPageInfo.formatDecimal(reservation.triggerPrice, reservation.currencyCode.fractionDigits)}">0</td>
                             <td th:text="${stockTradingHistoryPageInfo.formatDecimal(reservation.quantity, 6)}">0</td>
-                            <td th:text="${reservation.expiresAt != null ? #temporals.format(reservation.expiresAt, 'yyyy-MM-dd HH:mm') : '-'}">-</td>
+                            <td class="date-cell" th:text="${reservation.expiresAt != null ? #temporals.format(reservation.expiresAt, 'yyyy-MM-dd HH:mm') : '-'}">-</td>
                             <td>
                                 <form th:if="${reservation.status.name() == 'ACTIVE'}"
                                       th:action="@{/investments/stocks/order/reservations/{reservationId}/cancel(reservationId=${reservation.id})}"
@@ -171,7 +225,7 @@
                 <h2>체결</h2>
                 <p th:if="${#lists.isEmpty(stockTradingHistoryPageInfo.transactions)}">체결 내역이 없습니다.</p>
                 <div class="table-scroll" th:unless="${#lists.isEmpty(stockTradingHistoryPageInfo.transactions)}">
-                    <table>
+                    <table class="records-table">
                         <thead>
                         <tr>
                             <th th:if="${stockTradingHistoryPageInfo.allAccounts}">계좌</th>
@@ -186,15 +240,25 @@
                         <tbody>
                         <tr th:each="transaction : ${stockTradingHistoryPageInfo.transactions}">
                             <td th:if="${stockTradingHistoryPageInfo.allAccounts}">
-                                <span th:text="${transaction.investment.securitiesCompanyCode.displayName}">증권사</span>
-                                <small th:text="${transaction.investment.accountNumber}">00000000</small>
+                                <div class="account-cell">
+                                    <span class="primary-line" th:text="${transaction.investment.securitiesCompanyCode.displayName}">증권사</span>
+                                    <span class="secondary-line" th:text="${transaction.investment.accountNumber}">00000000</span>
+                                </div>
                             </td>
-                            <td th:text="${#temporals.format(transaction.executedAt, 'yyyy-MM-dd HH:mm:ss')}">2026-07-07</td>
-                            <td th:text="${transaction.stock.nameKo}">종목</td>
-                            <td th:text="${transaction.side}">BUY</td>
+                            <td class="date-cell" th:text="${#temporals.format(transaction.executedAt, 'yyyy-MM-dd HH:mm')}">2026-07-07</td>
+                            <td>
+                                <div class="stock-cell">
+                                    <span class="primary-line" th:text="${transaction.stock.nameKo}">종목</span>
+                                    <span class="secondary-line" th:text="${transaction.stock.symbol}">005930</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-buy" th:if="${transaction.side.name() == 'BUY'}">매수</span>
+                                <span class="badge badge-sell" th:if="${transaction.side.name() == 'SELL'}">매도</span>
+                            </td>
                             <td th:text="${stockTradingHistoryPageInfo.formatDecimal(transaction.quantity, 6)}">0</td>
-                            <td th:text="${stockTradingHistoryPageInfo.formatDecimal(transaction.executionPrice, transaction.currencyCode.fractionDigits)}">0</td>
-                            <td th:text="${stockTradingHistoryPageInfo.formatDecimal(transaction.netCashAmount, transaction.currencyCode.fractionDigits)}">0</td>
+                            <td class="money-cell" th:text="${stockTradingHistoryPageInfo.formatDecimal(transaction.executionPrice, transaction.currencyCode.fractionDigits)}">0</td>
+                            <td class="money-cell" th:text="${stockTradingHistoryPageInfo.formatDecimal(transaction.netCashAmount, transaction.currencyCode.fractionDigits)}">0</td>
                         </tr>
                         </tbody>
                     </table>

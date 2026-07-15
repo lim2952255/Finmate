@@ -6,8 +6,6 @@ import java.math.RoundingMode;
 // 각 통화 종류, 소수점 자릿수, 금액 scale 검증
 public enum CurrencyCode {
     KRW("원화", "₩", 0),
-    JPY("엔화", "¥", 0),
-    EUR("유로", "€", 2),
     USD("달러", "$", 2);
 
     public static final CurrencyCode DEFAULT = KRW;

@@ -411,6 +411,362 @@ nav a:hover {
     text-decoration: none;
 }
 
+.pagination-nav,
+nav[aria-label$="페이지"] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--color-border);
+}
+
+.pagination-nav p,
+nav[aria-label$="페이지"] p {
+    flex-basis: 100%;
+    margin: 0 0 2px;
+    color: var(--color-muted);
+    font-size: 14px;
+    font-weight: 750;
+}
+
+.pagination-nav > span,
+nav[aria-label$="페이지"] > span {
+    display: inline-flex;
+}
+
+.pagination-nav a,
+.pagination-nav strong,
+nav[aria-label$="페이지"] a,
+nav[aria-label$="페이지"] strong {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: auto !important;
+    max-width: none;
+    min-width: 38px;
+    height: 38px;
+    min-height: 38px;
+    padding: 0 12px;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: 850;
+    line-height: 1;
+    text-decoration: none;
+}
+
+.pagination-nav a,
+nav[aria-label$="페이지"] a {
+    color: var(--color-primary);
+    background: #ffffff;
+    border: 1px solid rgba(37, 99, 235, 0.22);
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+    transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.pagination-nav a:hover,
+nav[aria-label$="페이지"] a:hover {
+    color: #ffffff;
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.2);
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+.pagination-nav strong,
+nav[aria-label$="페이지"] strong {
+    color: #ffffff;
+    background: var(--color-primary);
+    border: 1px solid var(--color-primary);
+    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
+}
+
+.page-heading {
+    display: grid;
+    gap: 8px;
+    padding-bottom: 6px;
+}
+
+.page-heading h1 {
+    margin-bottom: 0;
+}
+
+.page-heading p {
+    max-width: 760px;
+    color: #53647c;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.dashboard-grid,
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+}
+
+.currency-summary-list {
+    display: grid;
+    gap: 18px;
+}
+
+.currency-summary-card {
+    display: grid;
+    gap: 12px;
+}
+
+.currency-summary-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.metric-card,
+.entity-card {
+    min-height: 126px;
+    padding: 18px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.metric-label,
+.detail-label {
+    display: block;
+    color: var(--color-muted);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.metric-value {
+    display: block;
+    margin-top: 8px;
+    color: var(--color-heading);
+    font-size: 24px;
+    font-weight: 900;
+    line-height: 1.15;
+}
+
+.metric-note {
+    display: block;
+    margin-top: 8px;
+    color: var(--color-muted);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.currency-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.currency-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 6px 10px;
+    color: #1e3a8a;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 850;
+}
+
+.detail-stack {
+    display: grid;
+    gap: 12px;
+}
+
+.detail-row {
+    display: grid;
+    gap: 4px;
+}
+
+.detail-value {
+    color: var(--color-heading);
+    font-weight: 850;
+}
+
+.action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.filter-panel {
+    display: grid;
+    gap: 14px;
+}
+
+.selected-context {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    max-width: 100%;
+    padding: 9px 12px;
+    color: #1e3a8a;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 7px;
+    font-weight: 800;
+}
+
+.records-table {
+    min-width: 900px;
+}
+
+.records-table th {
+    color: #43546b;
+    background: #f4f7fb;
+}
+
+.records-table td {
+    color: #1f2a44;
+    font-size: 14px;
+    font-weight: 650;
+}
+
+.records-table .number-cell {
+    width: 54px;
+    color: var(--color-muted);
+    text-align: center;
+    font-weight: 850;
+}
+
+.account-cell,
+.stock-cell {
+    display: grid;
+    gap: 4px;
+}
+
+.primary-line {
+    color: var(--color-heading);
+    font-weight: 850;
+}
+
+.secondary-line {
+    color: var(--color-muted);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.date-cell {
+    min-width: 112px;
+    white-space: nowrap;
+}
+
+.money-cell {
+    min-width: 118px;
+    white-space: nowrap;
+    font-weight: 900;
+}
+
+.money-cell.is-positive,
+.money-positive {
+    color: #047857;
+}
+
+.money-cell.is-negative,
+.money-negative {
+    color: #be123c;
+}
+
+.balance-cell {
+    min-width: 118px;
+    color: #334155;
+    white-space: nowrap;
+    font-weight: 800;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 5px 9px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.badge-neutral {
+    color: #334155;
+    background: #f1f5f9;
+    border-color: #d8e1ec;
+}
+
+.badge-positive,
+.badge-buy,
+.badge-filled,
+.badge-deposit {
+    color: #047857;
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+}
+
+.badge-negative,
+.badge-sell,
+.badge-withdraw {
+    color: #be123c;
+    background: #fff1f2;
+    border-color: #fecdd3;
+}
+
+.badge-pending,
+.badge-submitted,
+.badge-active {
+    color: #1d4ed8;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.badge-warning {
+    color: #92400e;
+    background: #fffbeb;
+    border-color: #fde68a;
+}
+
+.code-chip {
+    display: inline-block;
+    max-width: 116px;
+    padding: 5px 8px;
+    overflow: hidden;
+    color: #334155;
+    background: #f8fafc;
+    border: 1px solid #d8e1ec;
+    border-radius: 7px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 12px;
+    font-weight: 850;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.compact-list {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
 section > p:has(> a),
 .content > p:has(> a),
 .portfolio-toolbar,
@@ -526,5 +882,29 @@ small {
     .portfolio-toolbar > a,
     .orders-toolbar > a {
         width: 100%;
+    }
+
+    .dashboard-grid,
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .action-row {
+        width: 100%;
+    }
+
+    .pagination-nav,
+    nav[aria-label$="페이지"] {
+        justify-content: center;
+    }
+
+    .pagination-nav a,
+    .pagination-nav strong,
+    nav[aria-label$="페이지"] a,
+    nav[aria-label$="페이지"] strong {
+        min-width: 36px;
+        height: 36px;
+        min-height: 36px;
+        padding: 0 10px;
     }
 }

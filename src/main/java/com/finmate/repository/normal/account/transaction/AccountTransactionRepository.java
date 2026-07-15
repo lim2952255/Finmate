@@ -1,5 +1,6 @@
 package com.finmate.repository.normal.account.transaction;
 
+import com.finmate.domain.investment.CurrencyCode;
 import com.finmate.domain.normal.account.transaction.AccountTransaction;
 import com.finmate.domain.normal.account.transaction.AccountTransactionType;
 import org.springframework.data.domain.Page;
@@ -16,6 +17,12 @@ import java.util.List;
 // 거래내역 조회용
 @Repository
 public interface AccountTransactionRepository extends JpaRepository<AccountTransaction, Long> {
+
+    interface CurrencyAmountSum {
+        CurrencyCode getCurrencyCode();
+
+        BigDecimal getAmount();
+    }
 
     // 쿼리메서드를 통해서도 페이징 기능을 활용할 수는 있지만, account가 Lazy Loading이기 때문에 이후 계좌를 하나씩 조회하게 되면 N+1문제가 발생할 수 있음
     // 따라서 패치조인을 활용해서 N+1문제를 방지하기 위해 JPQL을 직접 작성한다
@@ -84,4 +91,34 @@ public interface AccountTransactionRepository extends JpaRepository<AccountTrans
                                             @Param("types") List<AccountTransactionType> types,
                                             @Param("startDateTime") LocalDateTime startDateTime,
                                             @Param("endDateTime") LocalDateTime endDateTime);
+
+    // 특정 사용자의 모든 일반 계좌 거래 합계를 통화별로 계산
+    @Query("""
+            select a.currencyCode as currencyCode, sum(t.amount) as amount
+            from AccountTransaction t
+            join t.account a
+            where a.user.id = :userId
+              and t.type in :types
+              and t.createdAt between :startDateTime and :endDateTime
+            group by a.currencyCode
+            """)
+    List<CurrencyAmountSum> sumAmountByUserIdAndTypesGroupByCurrency(@Param("userId") Long userId,
+                                                                     @Param("types") List<AccountTransactionType> types,
+                                                                     @Param("startDateTime") LocalDateTime startDateTime,
+                                                                     @Param("endDateTime") LocalDateTime endDateTime);
+
+    // 특정 계좌 하나의 거래 합계를 통화별로 계산
+    @Query("""
+            select a.currencyCode as currencyCode, sum(t.amount) as amount
+            from AccountTransaction t
+            join t.account a
+            where a.id = :accountId
+              and t.type in :types
+              and t.createdAt between :startDateTime and :endDateTime
+            group by a.currencyCode
+            """)
+    List<CurrencyAmountSum> sumAmountByAccountIdAndTypesGroupByCurrency(@Param("accountId") Long accountId,
+                                                                        @Param("types") List<AccountTransactionType> types,
+                                                                        @Param("startDateTime") LocalDateTime startDateTime,
+                                                                        @Param("endDateTime") LocalDateTime endDateTime);
 }

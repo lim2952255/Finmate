@@ -101,7 +101,7 @@ public class StockDailyPriceSyncService {
         // 새로 조회한 엔티티들을 저장할 list
         List<StockDailyPrice> dailyPrices = new ArrayList<>();
 
-        // response를 통해 조회한 데이터가 비어있는지 안전하게 확인하기 위해 safeList tkdyd
+        // response를 통해 조회한 데이터가 비어있는지 안전하게 확인하기 위해 safeList 사용
         for (DomesticDailyPriceItem item : safeList(response.output2())) {
             LocalDate tradeDate = parseRequiredDate(item.tradeDate(), "거래일은 필수입니다.");
             if (alreadyExists(stock, tradeDate, adjustedPrice)) {

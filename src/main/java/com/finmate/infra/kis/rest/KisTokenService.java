@@ -1,6 +1,6 @@
-package com.finmate.infra.kis.core;
+package com.finmate.infra.kis.rest;
 
-import com.finmate.infra.kis.core.KisAuthClient.KisAccessTokenResponse;
+import com.finmate.infra.kis.rest.KisAuthClient.KisAccessTokenResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

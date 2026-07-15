@@ -14,8 +14,6 @@ public final class AccountBalancePolicy {
         return switch (currencyCode) {
             case KRW -> BigDecimal.valueOf(3_000_000);
             case USD -> BigDecimal.ZERO;
-            case JPY -> BigDecimal.ZERO;
-            case EUR -> BigDecimal.ZERO;
         };
     }
 

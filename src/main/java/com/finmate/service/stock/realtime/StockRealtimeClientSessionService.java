@@ -55,10 +55,6 @@ public class StockRealtimeClientSessionService {
         // subscriptionsBySession에 새로 들어온 세션을 등록
         subscriptionsBySession.computeIfAbsent(session.getId(), ignored -> ConcurrentHashMap.newKeySet());
     }
-    // 클라이언트가 득정 종목을 구독하는 메서드
-    public void subscribeStock(WebSocketSession session, Long stockId) {
-        subscribeStock(session, stockId, StockRealtimeSubscriptionPurpose.DETAIL_PAGE);
-    }
 
     // 클라이언트가 특정 목적의 종목 구독을 요청하는 메서드
     public void subscribeStock(WebSocketSession session, Long stockId, StockRealtimeSubscriptionPurpose purpose) {

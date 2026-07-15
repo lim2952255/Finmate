@@ -7,6 +7,10 @@ import com.finmate.domain.investment.dto.cash.InvestmentWithdrawalRequest;
 import com.finmate.domain.investment.dto.cash.InvestmentWithdrawalPageInfo;
 import com.finmate.domain.investment.dto.cash.SecuritiesCashTransactionPageInfo;
 import com.finmate.domain.investment.Investment;
+import com.finmate.domain.market.MarketIndicatorSymbol;
+import com.finmate.domain.market.MarketIndicatorType;
+import com.finmate.domain.market.dto.MarketDataChartPeriod;
+import com.finmate.domain.market.dto.MarketIndicatorPageInfo;
 import com.finmate.domain.normal.account.transaction.TransactionPeriod;
 import com.finmate.domain.stock.dto.trading.StockPortfolioPageInfo;
 import com.finmate.domain.stock.dto.trading.StockTradingHistoryPageInfo;
@@ -14,6 +18,7 @@ import com.finmate.domain.user.User;
 import com.finmate.domain.user.dto.SessionUser;
 import com.finmate.global.constant.Const;
 import com.finmate.service.investment.InvestmentService;
+import com.finmate.service.market.MarketDataService;
 import com.finmate.service.stock.trading.StockTradingQueryService;
 import com.finmate.service.user.UserService;
 import jakarta.validation.Valid;
@@ -34,6 +39,7 @@ public class InvestmentController {
     private final InvestmentService investmentService;
     private final UserService userService;
     private final StockTradingQueryService stockTradingQueryService;
+    private final MarketDataService marketDataService;
 
     @GetMapping
     public String investmentHome(Model model,
@@ -174,7 +180,7 @@ public class InvestmentController {
         model.addAttribute("securitiesCashTransactionPageInfo", pageInfo);
         return "investments/cash/transactions";
     }
-
+    // 사용자의 포트폴리오, 또는 특정 증권계좌의 포트폴리오 출력
     @GetMapping("/portfolio")
     public String portfolio(@RequestParam(required = false) Long investmentId,
                             Model model,
@@ -184,6 +190,7 @@ public class InvestmentController {
         return "investments/portfolio";
     }
 
+    // 주문 페이지 출력
     @GetMapping("/orders")
     public String orders(@RequestParam(required = false) Long investmentId,
                          Model model,
@@ -191,5 +198,47 @@ public class InvestmentController {
         StockTradingHistoryPageInfo pageInfo = stockTradingQueryService.getTradingHistoryPageInfo(sessionUser.getId(), investmentId);
         model.addAttribute("stockTradingHistoryPageInfo", pageInfo);
         return "investments/orders";
+    }
+
+    // 실시간 환율/지수 정보 메뉴
+    @GetMapping("/market-data")
+    public String marketData() {
+        return "investments/market-data/index";
+    }
+
+    // 실시간 환율정보 출력
+    @GetMapping("/exchanges")
+    public String exchanges(@RequestParam(required = false) MarketIndicatorSymbol indicator,
+                            @RequestParam(required = false, defaultValue = "ONE_YEAR") MarketDataChartPeriod period,
+                            Model model) {
+        MarketIndicatorPageInfo pageInfo = marketDataService.getMarketIndicatorPageInfo(
+                MarketIndicatorType.EXCHANGE_RATE,
+                indicator,
+                period);
+        addMarketDataDetailModel(model, pageInfo, "실시간 환율", "/investments/exchanges");
+        return "investments/market-data/detail";
+    }
+
+    // 실시간 주가지수 시세 출력
+    @GetMapping("/indices")
+    public String indices(@RequestParam(required = false) MarketIndicatorSymbol indicator,
+                          @RequestParam(required = false, defaultValue = "ONE_YEAR") MarketDataChartPeriod period,
+                          Model model) {
+        MarketIndicatorPageInfo pageInfo = marketDataService.getMarketIndicatorPageInfo(
+                MarketIndicatorType.STOCK_INDEX,
+                indicator,
+                period);
+        addMarketDataDetailModel(model, pageInfo, "실시간 지수 시세", "/investments/indices");
+        return "investments/market-data/detail";
+    }
+
+    private void addMarketDataDetailModel(Model model,
+                                          MarketIndicatorPageInfo pageInfo,
+                                          String pageTitle,
+                                          String actionPath) {
+        model.addAttribute("marketIndicatorPageInfo", pageInfo);
+        model.addAttribute("marketDataPeriods", MarketDataChartPeriod.values());
+        model.addAttribute("marketDataPageTitle", pageTitle);
+        model.addAttribute("marketDataActionPath", actionPath);
     }
 }

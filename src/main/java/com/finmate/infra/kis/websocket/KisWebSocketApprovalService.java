@@ -1,6 +1,6 @@
-package com.finmate.infra.kis.stock.realtime;
+package com.finmate.infra.kis.websocket;
 
-import com.finmate.infra.kis.stock.realtime.KisWebSocketApprovalClient.KisWebSocketApprovalResponse;
+import com.finmate.infra.kis.websocket.KisWebSocketApprovalClient.KisWebSocketApprovalResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

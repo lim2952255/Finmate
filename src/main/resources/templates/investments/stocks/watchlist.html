@@ -75,7 +75,8 @@
                     </tbody>
                 </table>
 
-                <nav th:if="${favoriteStockPageInfo.favoriteStockPage != null && favoriteStockPageInfo.favoriteStockPage.totalPages > 1}"
+                <nav class="pagination-nav"
+                     th:if="${favoriteStockPageInfo.favoriteStockPage != null && favoriteStockPageInfo.favoriteStockPage.totalPages > 1}"
                      aria-label="관심 종목 페이지">
                     <p>
                         <span th:text="${favoriteStockPageInfo.favoriteStockPage.number + 1}">1</span>

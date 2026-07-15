@@ -20,18 +20,6 @@ public enum TransferLimitPolicy {
             CurrencyCode.USD,
             BigDecimal.valueOf(1_000),
             BigDecimal.valueOf(5_000)
-    ),
-    // 엔화
-    JPY_LIMIT(
-            CurrencyCode.JPY,
-            BigDecimal.valueOf(100_000),
-            BigDecimal.valueOf(500_000)
-    ),
-    // 유로
-    EUR_LIMIT(
-            CurrencyCode.EUR,
-            BigDecimal.valueOf(1_000),
-            BigDecimal.valueOf(5_000)
     );
 
     private final CurrencyCode currencyCode;

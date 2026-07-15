@@ -14,6 +14,7 @@ import com.finmate.domain.normal.account.transaction.AccountTransactionType;
 import com.finmate.domain.normal.account.transaction.TransactionPeriod;
 import com.finmate.domain.normal.account.transaction.dto.AccountTransactionPageInfo;
 import com.finmate.domain.normal.account.transaction.dto.TransactionSummary;
+import com.finmate.domain.normal.account.transaction.dto.TransactionSummaryByCurrency;
 import com.finmate.domain.normal.transfer.DailyTransferUsage;
 import com.finmate.domain.normal.transfer.Transfer;
 import com.finmate.domain.user.User;
@@ -34,6 +35,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -226,14 +228,17 @@ public class AccountService {
         Account selectedAccount = null;
         Page<AccountTransaction> transactionPage;
         TransactionSummary transactionSummary;
+        List<TransactionSummaryByCurrency> transactionSummariesByCurrency;
 
         if (accountNumber == null || accountNumber.isBlank() || bankCode == null) {
             transactionPage = findUserTransactionPage(userId, dateRange, safePage);
             transactionSummary = summarizeUserTransactions(userId, dateRange);
+            transactionSummariesByCurrency = summarizeUserTransactionsByCurrency(userId, accounts, dateRange);
         } else {
             selectedAccount = findOwnedAccount(userId, accountNumber, bankCode);
             transactionPage = findAccountTransactionPage(selectedAccount.getId(), dateRange, safePage);
             transactionSummary = summarizeAccountTransactions(selectedAccount.getId(), dateRange);
+            transactionSummariesByCurrency = summarizeAccountTransactionsByCurrency(selectedAccount, dateRange);
         }
 
         return new AccountTransactionPageInfo(
@@ -242,7 +247,8 @@ public class AccountService {
                 safePeriod,
                 TransactionPeriod.values(),
                 transactionPage,
-                transactionSummary);
+                transactionSummary,
+                transactionSummariesByCurrency);
     }
 
     private TransactionDateRange getTransactionDateRange(TransactionPeriod period) {
@@ -300,6 +306,74 @@ public class AccountService {
                 dateRange.endDateTime());
 
         return new TransactionSummary(totalDepositAmount, totalWithdrawalAmount);
+    }
+
+    private List<TransactionSummaryByCurrency> summarizeUserTransactionsByCurrency(Long userId,
+                                                                                   List<Account> accounts,
+                                                                                   TransactionDateRange dateRange) {
+        List<CurrencyCode> currencies = accounts.stream()
+                .map(Account::getCurrencyCode)
+                .distinct()
+                .toList();
+
+        return createCurrencyTransactionSummaries(
+                currencies,
+                accountTransactionRepository.sumAmountByUserIdAndTypesGroupByCurrency(
+                        userId,
+                        DEPOSIT_TYPES,
+                        dateRange.startDateTime(),
+                        dateRange.endDateTime()),
+                accountTransactionRepository.sumAmountByUserIdAndTypesGroupByCurrency(
+                        userId,
+                        WITHDRAWAL_TYPES,
+                        dateRange.startDateTime(),
+                        dateRange.endDateTime()));
+    }
+
+    private List<TransactionSummaryByCurrency> summarizeAccountTransactionsByCurrency(Account account,
+                                                                                      TransactionDateRange dateRange) {
+        return createCurrencyTransactionSummaries(
+                List.of(account.getCurrencyCode()),
+                accountTransactionRepository.sumAmountByAccountIdAndTypesGroupByCurrency(
+                        account.getId(),
+                        DEPOSIT_TYPES,
+                        dateRange.startDateTime(),
+                        dateRange.endDateTime()),
+                accountTransactionRepository.sumAmountByAccountIdAndTypesGroupByCurrency(
+                        account.getId(),
+                        WITHDRAWAL_TYPES,
+                        dateRange.startDateTime(),
+                        dateRange.endDateTime()));
+    }
+
+    private List<TransactionSummaryByCurrency> createCurrencyTransactionSummaries(
+            List<CurrencyCode> baseCurrencies,
+            List<AccountTransactionRepository.CurrencyAmountSum> depositAmounts,
+            List<AccountTransactionRepository.CurrencyAmountSum> withdrawalAmounts) {
+        Map<CurrencyCode, BigDecimal> totalDepositAmounts = new EnumMap<>(CurrencyCode.class);
+        Map<CurrencyCode, BigDecimal> totalWithdrawalAmounts = new EnumMap<>(CurrencyCode.class);
+
+        baseCurrencies.forEach(currencyCode -> {
+            totalDepositAmounts.put(currencyCode, BigDecimal.ZERO);
+            totalWithdrawalAmounts.put(currencyCode, BigDecimal.ZERO);
+        });
+        depositAmounts.forEach(amountSum ->
+                totalDepositAmounts.put(amountSum.getCurrencyCode(), zeroIfNull(amountSum.getAmount())));
+        withdrawalAmounts.forEach(amountSum ->
+                totalWithdrawalAmounts.put(amountSum.getCurrencyCode(), zeroIfNull(amountSum.getAmount())));
+
+        return Arrays.stream(CurrencyCode.values())
+                .filter(currencyCode -> totalDepositAmounts.containsKey(currencyCode)
+                        || totalWithdrawalAmounts.containsKey(currencyCode))
+                .map(currencyCode -> new TransactionSummaryByCurrency(
+                        currencyCode,
+                        totalDepositAmounts.getOrDefault(currencyCode, BigDecimal.ZERO),
+                        totalWithdrawalAmounts.getOrDefault(currencyCode, BigDecimal.ZERO)))
+                .toList();
+    }
+
+    private BigDecimal zeroIfNull(BigDecimal amount) {
+        return amount == null ? BigDecimal.ZERO : amount;
     }
 
     // 이체한도 업데이트

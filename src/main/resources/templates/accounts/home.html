@@ -12,47 +12,56 @@
 
     <main class="main">
         <section class="content">
-            <h1>계좌 관리</h1>
-            <p>계좌 개설, 보유계좌 조회, 거래내역 확인을 진행할 수 있습니다.</p>
+            <div class="page-heading">
+                <h1>계좌 관리</h1>
+                <p>계좌 개설, 보유계좌 조회, 거래내역 확인을 진행할 수 있습니다.</p>
+            </div>
 
             <section>
                 <h2>계좌 요약</h2>
-                <div>
-                    <strong>총 보유금액</strong>
-                    <p th:if="${#maps.isEmpty(accountHomeInfo.totalBalancesByCurrency)}">0 KRW</p>
-                    <ul th:unless="${#maps.isEmpty(accountHomeInfo.totalBalancesByCurrency)}">
-                        <li th:each="entry : ${accountHomeInfo.totalBalancesByCurrency}">
-                            <span th:text="${#numbers.formatDecimal(entry.value, 0, 'COMMA', entry.key.fractionDigits, 'POINT')}">0</span>
-                            <span th:text="${entry.key.name()}">KRW</span>
-                        </li>
-                    </ul>
+                <div class="dashboard-grid">
+                    <div class="metric-card">
+                        <span class="metric-label">총 보유금액</span>
+                        <span class="metric-value" th:if="${#maps.isEmpty(accountHomeInfo.totalBalancesByCurrency)}">0 KRW</span>
+                        <ul class="currency-list" th:unless="${#maps.isEmpty(accountHomeInfo.totalBalancesByCurrency)}">
+                            <li class="currency-pill" th:each="entry : ${accountHomeInfo.totalBalancesByCurrency}">
+                                <span th:text="${#numbers.formatDecimal(entry.value, 1, 'COMMA', entry.key.fractionDigits, 'POINT')}">0</span>
+                                <span th:text="${entry.key.name()}">KRW</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">보유계좌 수</span>
+                        <span class="metric-value">
+                            <span th:text="${accountHomeInfo.accountCount}">0</span>개
+                        </span>
+                        <span class="metric-note">일반 입출금 계좌 기준</span>
+                    </div>
                 </div>
-                <p>
-                    <strong>보유계좌 수</strong>
-                    <span th:text="${accountHomeInfo.accountCount}">0</span>개
-                </p>
             </section>
 
             <section>
                 <h2>대표계좌</h2>
                 <!-- 대표계좌 띄우기-->
-                <div th:if="${accountHomeInfo.primaryAccount != null}">
-                    <p>
-                        <strong>은행명</strong>
-                        <span th:text="${accountHomeInfo.primaryAccount.bankCode.displayName}">신한은행</span>
-                    </p>
-                    <p>
-                        <strong>계좌번호</strong>
-                        <span th:text="${accountHomeInfo.primaryAccount.accountNumber}">000-000-000000</span>
-                    </p>
-                    <p>
-                        <strong>금액</strong>
-                        <span th:text="${#numbers.formatDecimal(accountHomeInfo.primaryAccount.balance, 0, 'COMMA', accountHomeInfo.primaryAccount.currencyCode.fractionDigits, 'POINT')}">0</span>
-                        <span th:text="${accountHomeInfo.primaryAccount.currencyCode.name()}">KRW</span>
-                    </p>
-                    <p>
+                <div class="entity-card detail-stack" th:if="${accountHomeInfo.primaryAccount != null}">
+                    <div class="detail-row">
+                        <span class="detail-label">은행명</span>
+                        <span class="detail-value" th:text="${accountHomeInfo.primaryAccount.bankCode.displayName}">신한은행</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">계좌번호</span>
+                        <span class="detail-value" th:text="${accountHomeInfo.primaryAccount.accountNumber}">000-000-000000</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">잔액</span>
+                        <span class="detail-value">
+                            <span th:text="${#numbers.formatDecimal(accountHomeInfo.primaryAccount.balance, 1, 'COMMA', accountHomeInfo.primaryAccount.currencyCode.fractionDigits, 'POINT')}">0</span>
+                            <span th:text="${accountHomeInfo.primaryAccount.currencyCode.name()}">KRW</span>
+                        </span>
+                    </div>
+                    <div class="action-row">
                         <a th:href="@{/accounts/transfer(from=${accountHomeInfo.primaryAccount.accountNumber}, fromBankCode=${accountHomeInfo.primaryAccount.bankCode})}">이체</a>
-                    </p>
+                    </div>
                 </div>
                 <p th:if="${accountHomeInfo.primaryAccount == null}">
                     아직 대표계좌가 설정되어 있지 않습니다. 대표계좌를 설정해주세요.

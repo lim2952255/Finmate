@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinMate</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+</head>
+<body>
+<div class="page">
+    <div th:replace="~{/layout/header :: header}"></div>
+
+    <main class="main">
+        <section class="content">
+            <div class="page-heading">
+                <h1>환율 / 지수 정보</h1>
+                <p>한국투자증권 REST API 기준 최신 환율과 국내외 지수 일봉 데이터를 확인합니다.</p>
+            </div>
+
+            <section>
+                <h2>조회 메뉴</h2>
+                <div class="menu">
+                    <div class="menu-item">
+                        <a th:href="@{/investments/exchanges}">실시간 환율</a>
+                        <span>USD/KRW 환율의 최신 값과 3년치 일봉 데이터를 온디맨드로 동기화합니다.</span>
+                    </div>
+                    <div class="menu-item">
+                        <a th:href="@{/investments/indices}">실시간 지수 시세</a>
+                        <span>코스피, 코스닥, 나스닥 지수의 일봉 데이터를 온디맨드로 동기화합니다.</span>
+                    </div>
+                </div>
+            </section>
+
+            <p>
+                <a th:href="@{/investments}">투자 홈</a>
+            </p>
+        </section>
+    </main>
+</div>
+</body>
+</html>

@@ -1,16 +1,16 @@
-package com.finmate.infra.kis.core;
+package com.finmate.infra.kis.rest;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.finmate.infra.kis.core.KisProperties;
+import com.finmate.infra.kis.core.KisRetryConnection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
@@ -22,11 +22,8 @@ public class KisAuthClient {
     private static final String TOKEN_PATH = "/oauth2/tokenP";
 
     private final KisProperties kisProperties;
-    private final KisRateLimiter kisRateLimiter;
+    private final KisRetryConnection kisRetryConnection;
     private final ObjectMapper objectMapper;
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .build();
 
     public KisAccessTokenResponse issueAccessToken() {
         kisProperties.validateApiCredentials();
@@ -47,33 +44,19 @@ public class KisAuthClient {
                     .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                     .build();
 
-            kisRateLimiter.waitTurn();
-            HttpResponse<String> response = httpClient.send(
+            // KisRetryConnection을 통해 Auth Token을 KIS API를 통해 요청한다.
+            // 만약 요청에 실패하는경우 최대 4번까지 재시도를 수행한다.
+            KisAccessTokenResponse tokenResponse = kisRetryConnection.connectionAndRetry(
                     request,
-                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new RuntimeException("KIS access_token 발급에 실패했습니다. status="
-                        + response.statusCode()
-                        + ", url=" + requestUri
-                        + ", body=" + response.body());
-            }
-
-            KisAccessTokenResponse tokenResponse = objectMapper.readValue(
-                    response.body(),
                     KisAccessTokenResponse.class);
             if (tokenResponse.accessToken() == null || tokenResponse.accessToken().isBlank()) {
-                throw new RuntimeException("KIS access_token 응답이 비어 있습니다. body=" + response.body());
+                throw new RuntimeException("KIS access_token 응답이 비어 있습니다.");
             }
 
             // KIS access_token 획득
             return tokenResponse;
-        } catch (IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-
-            throw new RuntimeException("KIS access_token 발급 중 오류가 발생했습니다.", e);
+        } catch (JsonProcessingException exception) {
+            throw new RuntimeException("KIS access_token 요청 생성 중 오류가 발생했습니다.", exception);
         }
     }
 

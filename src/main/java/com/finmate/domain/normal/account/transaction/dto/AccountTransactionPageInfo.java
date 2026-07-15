@@ -19,6 +19,7 @@ public class AccountTransactionPageInfo {
     private final Page<AccountTransaction> transactionPage;
     private final List<AccountTransaction> transactions;
     private final TransactionSummary transactionSummary;
+    private final List<TransactionSummaryByCurrency> transactionSummariesByCurrency;
     private final PaginationInfo pagination;
 
     public AccountTransactionPageInfo(List<Account> accounts,
@@ -26,7 +27,8 @@ public class AccountTransactionPageInfo {
                                       TransactionPeriod period,
                                       TransactionPeriod[] periods,
                                       Page<AccountTransaction> transactionPage,
-                                      TransactionSummary transactionSummary) {
+                                      TransactionSummary transactionSummary,
+                                      List<TransactionSummaryByCurrency> transactionSummariesByCurrency) {
         this.accounts = accounts;
         this.selectedAccount = selectedAccount;
         this.period = period;
@@ -34,6 +36,7 @@ public class AccountTransactionPageInfo {
         this.transactionPage = transactionPage;
         this.transactions = transactionPage.getContent();
         this.transactionSummary = transactionSummary;
+        this.transactionSummariesByCurrency = transactionSummariesByCurrency;
         this.pagination = PaginationInfo.from(transactionPage);
     }
 }

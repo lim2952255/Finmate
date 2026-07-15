@@ -3,7 +3,7 @@ package com.finmate.infra.kis.stock.price;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.finmate.infra.kis.core.KisApiResponse;
-import com.finmate.infra.kis.core.KisRestClient;
+import com.finmate.infra.kis.rest.KisRestClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
