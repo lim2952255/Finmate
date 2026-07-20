@@ -5,6 +5,7 @@ import com.finmate.domain.stock.Stock;
 import com.finmate.domain.stock.dto.trading.StockOrderPageInfo;
 import com.finmate.domain.stock.dto.trading.StockPortfolioPageInfo;
 import com.finmate.domain.stock.dto.trading.StockTradingHistoryPageInfo;
+import com.finmate.domain.stock.market.StockMarketSchedules;
 import com.finmate.domain.stock.trading.StockHolding;
 import com.finmate.domain.stock.trading.StockOrderSide;
 import com.finmate.repository.investment.InvestmentRepository;
@@ -57,7 +58,9 @@ public class StockTradingQueryService {
                 holdings, // 사용자의 모든 증권계좌마다 해당 종목의 보유 수량
                 realtimePriceService.findExecutablePrice(stock, StockOrderSide.BUY).orElse(null), // 매수 기준 체결가
                 realtimePriceService.findExecutablePrice(stock, StockOrderSide.SELL).orElse(null), // 메도 기준 체결가
-                realtimePriceService.findCurrentTradePrice(stock).orElse(null)); // 실시간 체결가
+                realtimePriceService.findCurrentTradePrice(stock).orElse(null), // 실시간 체결가
+                StockMarketSchedules.isTradingTimeNow(stock.getMarketType()),
+                StockMarketSchedules.tradingTimeDescription(stock.getMarketType()));
     }
 
     // 포트폴리오 페이지 정보를 DTO에 담아서 리턴

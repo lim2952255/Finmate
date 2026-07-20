@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinMate</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+</head>
+<body>
+<div class="page">
+    <div th:replace="~{/layout/header :: header}"></div>
+
+    <main class="main">
+        <section class="content">
+            <div class="page-heading">
+                <h1>증권계좌 환전</h1>
+                <p>증권계좌 안의 KRW와 USD 예수금을 최신 USD/KRW 환율 기준으로 환전합니다.</p>
+            </div>
+
+            <p th:if="${errorMessage != null}" th:text="${errorMessage}">
+                환전 오류
+            </p>
+
+            <section>
+                <h2>현재 환율</h2>
+                <div class="summary-grid">
+                    <div class="metric-card">
+                        <span class="metric-label">USD/KRW</span>
+                        <span class="metric-value"
+                              th:if="${investmentCurrencyExchangePageInfo.usdKrwExchangeRate != null}">
+                            <span th:text="${#numbers.formatDecimal(investmentCurrencyExchangePageInfo.usdKrwExchangeRate, 1, 'COMMA', 2, 'POINT')}">1,300.00</span>
+                            KRW
+                        </span>
+                        <span class="metric-value"
+                              th:if="${investmentCurrencyExchangePageInfo.usdKrwExchangeRate == null}">
+                            수신 대기
+                        </span>
+                        <span class="metric-note">1 USD 기준. 환전은 24시간 가능하며, 환율 조회가 가능해야 처리됩니다.</span>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2>환전 요청</h2>
+
+                <p th:if="${#lists.isEmpty(investmentCurrencyExchangePageInfo.investments)}">
+                    환전에 사용할 증권 계좌가 없습니다.
+                </p>
+                <p th:if="${#lists.isEmpty(investmentCurrencyExchangePageInfo.investments)}">
+                    <a th:href="@{/investments/open}">증권 계좌 개설하기</a>
+                </p>
+
+                <form th:if="${not #lists.isEmpty(investmentCurrencyExchangePageInfo.investments)}"
+                      th:action="@{/investments/currency-exchange}"
+                      th:object="${investmentCurrencyExchangeRequest}"
+                      method="post">
+                    <p th:if="${#fields.hasGlobalErrors()}"
+                       th:each="error : ${#fields.globalErrors()}"
+                       th:text="${error}">
+                        환전 오류
+                    </p>
+
+                    <input type="hidden" th:field="*{securitiesCompanyCode}">
+
+                    <div class="table-scroll">
+                        <table class="records-table">
+                            <thead>
+                            <tr>
+                                <th>선택</th>
+                                <th>증권계좌</th>
+                                <th>예수금</th>
+                                <th>대표계좌</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="investment : ${investmentCurrencyExchangePageInfo.investments}">
+                                <td>
+                                    <input type="radio"
+                                           th:field="*{investmentId}"
+                                           th:value="${investment.id}"
+                                           th:attr="data-securities-company-code=${investment.securitiesCompanyCode.name()}">
+                                </td>
+                                <td>
+                                    <div class="account-cell">
+                                        <span class="primary-line" th:text="${investment.securitiesCompanyCode.displayName}">키움증권</span>
+                                        <span class="secondary-line" th:text="${investment.accountNumber}">000000-00-000000</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <ul class="compact-list">
+                                        <li th:each="cashBalance : ${investment.cashBalances}">
+                                            <span th:text="${#numbers.formatDecimal(cashBalance.availableBalance, 1, 'COMMA', cashBalance.currencyCode.fractionDigits, 'POINT')}">0</span>
+                                            <span th:text="${cashBalance.currencyCode.name()}">KRW</span>
+                                        </li>
+                                    </ul>
+                                </td>
+                                <td>
+                                    <span class="badge badge-submitted" th:if="${investment.primary}">대표계좌</span>
+                                    <span class="secondary-line" th:unless="${investment.primary}">-</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p th:if="${#fields.hasErrors('investmentId')}" th:errors="*{investmentId}">증권 계좌 오류</p>
+                    <p th:if="${#fields.hasErrors('securitiesCompanyCode')}" th:errors="*{securitiesCompanyCode}">증권사 오류</p>
+
+                    <div>
+                        <label for="fromCurrencyCode">환전 전 통화</label>
+                        <select id="fromCurrencyCode" th:field="*{fromCurrencyCode}">
+                            <option th:each="currencyCode : ${investmentCurrencyExchangePageInfo.currencyCodes}"
+                                    th:value="${currencyCode.name()}"
+                                    th:text="${currencyCode.displayName + ' (' + currencyCode.name() + ')'}"
+                                    th:attr="data-minimum-amount=${currencyCode.minimumAmount},data-input-step=${currencyCode.inputStep}">
+                                원화 (KRW)
+                            </option>
+                        </select>
+                        <p th:if="${#fields.hasErrors('fromCurrencyCode')}" th:errors="*{fromCurrencyCode}">환전 전 통화 오류</p>
+                    </div>
+
+                    <div>
+                        <label for="toCurrencyCode">환전 후 통화</label>
+                        <select id="toCurrencyCode" th:field="*{toCurrencyCode}">
+                            <option th:each="currencyCode : ${investmentCurrencyExchangePageInfo.currencyCodes}"
+                                    th:value="${currencyCode.name()}"
+                                    th:text="${currencyCode.displayName + ' (' + currencyCode.name() + ')'}">
+                                달러 (USD)
+                            </option>
+                        </select>
+                        <p th:if="${#fields.hasErrors('toCurrencyCode')}" th:errors="*{toCurrencyCode}">환전 후 통화 오류</p>
+                    </div>
+
+                    <div>
+                        <label for="fromAmount">환전 금액</label>
+                        <input id="fromAmount" th:field="*{fromAmount}" type="number" min="1" step="1" placeholder="환전 전 통화 기준 금액">
+                        <p th:if="${#fields.hasErrors('fromAmount')}" th:errors="*{fromAmount}">환전 금액 오류</p>
+                    </div>
+
+                    <button type="submit"
+                            th:disabled="${investmentCurrencyExchangePageInfo.usdKrwExchangeRate == null}">
+                        환전하기
+                    </button>
+                </form>
+            </section>
+
+            <p class="action-row">
+                <a th:href="@{/investments/currency-exchange/transactions}">환전 내역</a>
+                <a th:href="@{/investments/list}">내 증권 계좌 / 예수금</a>
+                <a th:href="@{/investments}">투자 홈</a>
+            </p>
+        </section>
+    </main>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const securitiesCompanyCodeInput = document.getElementById("securitiesCompanyCode");
+        const amountInput = document.getElementById("fromAmount");
+        const fromCurrencySelect = document.getElementById("fromCurrencyCode");
+        const investmentRadios = document.querySelectorAll("input[name='investmentId']");
+
+        const syncSecuritiesCompanyCode = function () {
+            const checked = document.querySelector("input[name='investmentId']:checked");
+            if (securitiesCompanyCodeInput) {
+                securitiesCompanyCodeInput.value = checked ? (checked.dataset.securitiesCompanyCode || "") : "";
+            }
+        };
+
+        const syncAmountStep = function () {
+            const selectedOption = fromCurrencySelect
+                ? fromCurrencySelect.options[fromCurrencySelect.selectedIndex]
+                : null;
+            if (amountInput && selectedOption) {
+                amountInput.min = selectedOption.dataset.minimumAmount || "1";
+                amountInput.step = selectedOption.dataset.inputStep || "1";
+            }
+        };
+
+        investmentRadios.forEach(function (radio) {
+            radio.addEventListener("change", syncSecuritiesCompanyCode);
+        });
+        if (fromCurrencySelect) {
+            fromCurrencySelect.addEventListener("change", syncAmountStep);
+        }
+
+        syncSecuritiesCompanyCode();
+        syncAmountStep();
+    });
+</script>
+</body>
+</html>

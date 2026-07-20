@@ -1,1119 +1,194 @@
 # FinMate
 
-> **은행 + 증권 + AI 분석을 결합한 금융권 IT 백엔드 포트폴리오 프로젝트**
+FinMate는 일반 은행 계좌와 모의 투자 계좌를 함께 관리하는 Spring Boot 기반 금융 포트폴리오 애플리케이션입니다.
 
-FinMate는 계좌 관리, 입출금, 계좌이체, 거래내역, 이상거래 탐지, 주식 시세 조회, 실시간 체결가, 모의투자, 뉴스 분석, AI 투자 리포트를 제공하는 통합 금융 플랫폼입니다.
+브라우저 화면은 Thymeleaf로 서버 렌더링하고, 한국투자증권(KIS) Open API는 종목 마스터·시세·랭킹·실시간 WebSocket 데이터 수집에 사용합니다. 실제 증권사 주문 전송은 하지 않으며, 주식 주문·체결·정산은 FinMate DB 안에서 처리되는 모의 거래입니다.
 
-실제 금융 거래를 수행하지 않으며, 학습 및 포트폴리오 목적의 가상 금융 서비스입니다.
+## 현재 구현 범위
 
----
+- 회원: 회원가입, 로그인, 로그아웃, HTTP Session 기반 사용자 상태 유지
+- 일반 계좌: 계좌 개설, 대표 계좌 설정, 다중 통화 잔액, 계좌이체, 이체 한도, 거래 내역
+- 투자 계좌: 증권계좌 개설, 대표 계좌 설정, 통화별 예수금, 일반 계좌와 투자 계좌 간 자금 이동
+- 환전: 증권계좌 안 KRW/USD 환전, 최신 USD/KRW 시세 기반 계산, 환전 내역 조회
+- 종목: 국내·NASDAQ 종목 마스터 동기화, 종목 검색, 관심 종목, 상세 차트, 마스터파일 기반 기업 정보 표시
+- 시장 데이터: KOSPI, KOSDAQ, USD/KRW, NASDAQ 지표 차트와 실시간 화면값
+- 모의 투자: 시장가·지정가·예약 주문, 주문 취소, 실시간 가격 기반 체결, 보유 종목·주문·체결 내역
+- 실시간: 브라우저 WebSocket, KIS WebSocket 구독, 실시간 체결가·호가·국내 지수 전파
+- 랭킹: 국내·해외 거래량/거래대금 TOP 10 조회와 Redis TTL 캐시
 
-## 목차
+## 기술 스택
 
-```text
-1. 프로젝트 소개
-2. 주요 기능
-3. 기술 스택
-4. 시스템 아키텍처
-5. 핵심 설계 포인트
-6. 도메인 설계
-7. API 명세
-8. Redis 설계
-9. Batch 설계
-10. 테스트 전략
-11. 인프라 및 배포
-12. 실행 방법
-13. 프로젝트 구조
-14. 개발 로드맵
-15. 주의사항
-```
+| 구분 | 사용 기술 |
+|---|---|
+| Language | Java 17 |
+| Framework | Spring Boot 3.5.15 |
+| Web | Spring MVC, Thymeleaf, Bean Validation |
+| Auth | Spring Security 의존성, BCrypt, 자체 MVC Interceptor, HTTP Session |
+| Persistence | Spring Data JPA, Hibernate, MySQL Connector/J |
+| Database | MySQL 8.4 |
+| Cache | Redis 7.2, `StringRedisTemplate` |
+| Realtime | Spring WebSocket, JDK `HttpClient` WebSocket |
+| External API | 한국투자증권(KIS) Open API |
+| Build/Test | Gradle Wrapper, JUnit 5, Spring Boot Test |
+| Utility | Lombok, Docker Compose |
 
----
-
-## 1. 프로젝트 소개
-
-FinMate는 금융권 IT 취업을 목표로 설계한 백엔드 중심 프로젝트입니다.
-
-단순 CRUD 서비스가 아니라 금융 시스템에서 중요한 다음 요소를 직접 구현하는 것을 목표로 합니다.
+## 애플리케이션 구조
 
 ```text
-거래 정합성
-동시성 제어
-이상거래 탐지
-실시간 시세 처리
-외부 금융 API 연동
-모의투자 주문/체결 로직
-뉴스 수집
-AI 기반 금융 데이터 분석
-Redis / Batch / WebSocket / Docker / AWS 기반 운영 구조
+src/main/java/com/finmate
+├─ controller
+│  ├─ home
+│  ├─ login
+│  ├─ normal.account
+│  ├─ investment
+│  ├─ stock
+│  └─ order
+├─ domain
+│  ├─ user
+│  ├─ normal.account
+│  ├─ normal.transfer
+│  ├─ investment
+│  ├─ investment.cash
+│  ├─ stock
+│  ├─ stock.metadata
+│  ├─ stock.price
+│  ├─ stock.trading
+│  └─ market
+├─ repository
+├─ service
+├─ infra.kis
+├─ global
+└─ exception
 ```
-
----
-
-## 2. 주요 기능
-
-## 회원 / 인증
 
 ```text
-회원가입
-로그인
-로그아웃
-JWT Access Token 발급
-Refresh Token 재발급
-내 정보 조회
-비밀번호 암호화
-권한 관리
-```
-
----
-
-## 계좌
-
-```text
-가상 계좌 생성
-계좌 목록 조회
-계좌 상세 조회
-잔고 조회
-입금
-출금
-계좌이체
-거래내역 조회
-```
-
----
-
-## 이상거래 탐지 FDS
-
-```text
-거래 요청 시점 Risk Score 계산
-1분 내 반복 송금 탐지
-하루 누적 송금액 탐지
-새벽 시간대 고액 송금 탐지
-최근 평균 거래금액 대비 이상 거래 탐지
-새 IP / 새 기기 로그인 후 즉시 송금 탐지
-정상 / 추가 인증 필요 / 거래 차단 판단
-```
-
----
-
-## 증권
-
-```text
-종목 검색
-현재가 조회
-등락률 조회
-거래량 조회
-일봉 / 주봉 / 월봉 / 분봉 차트 조회
-실시간 체결가 조회
-관심종목 등록 / 삭제 / 조회
-```
-
----
-
-## 모의투자
-
-```text
-가상 투자 계좌 생성
-초기 예수금 지급
-매수 주문
-매도 주문
-주문 내역 조회
-체결 내역 조회
-보유 종목 조회
-평균 매수가 계산
-평가 손익 계산
-수익률 계산
-포트폴리오 조회
-```
-
----
-
-## 뉴스 / AI
-
-```text
-종목별 뉴스 검색
-뉴스 중복 제거
-뉴스 저장
-뉴스 요약
-호재 / 악재 / 중립 감성 분석
-주요 키워드 추출
-AI 투자 리포트 생성
-투자 리스크 요약
-```
-
----
-
-## 3. 기술 스택
-
-## Backend
-
-```text
-Java 17
-Spring Boot 3.5.6
-Gradle
-Spring MVC
-Spring Security
-JWT
-Spring Data JPA
-QueryDSL
-Bean Validation
-MySQL
-Redis
-Spring Batch
-WebSocket / STOMP
-```
-
-## Frontend
-
-```text
-React
-TypeScript
-TanStack Query
-Zustand
-Tailwind CSS
-TradingView Lightweight Charts
-```
-
-## Infra
-
-```text
-Docker
-Docker Compose
-AWS EC2
-AWS RDS MySQL
-Nginx
-HTTPS
-GitHub Actions
-```
-
-## External API
-
-```text
-한국투자증권 Open API
-- 주식 현재가 조회
-- 주식 차트 데이터 조회
-- 실시간 체결가 WebSocket
-
-네이버 뉴스 검색 API
-- 종목별 뉴스 검색
-
-OpenAI API
-- 뉴스 요약
-- 감성 분석
-- AI 투자 리포트 생성
-```
-
----
-
-## 4. 시스템 아키텍처
-
-```text
-[React Frontend]
-        |
-        | REST API / WebSocket
-        v
-[Nginx]
-        |
-        v
-[Spring Boot Backend]
-        |
-        |---- MySQL / AWS RDS
-        |       - 회원
-        |       - 계좌
-        |       - 거래내역
-        |       - FDS 로그
-        |       - 주문
-        |       - 체결
-        |       - 보유 종목
-        |       - 뉴스
-        |       - AI 리포트
-        |
-        |---- Redis
-        |       - Refresh Token
-        |       - Access Token Blacklist
-        |       - 현재가 캐싱
-        |       - 뉴스 캐싱
-        |       - FDS 카운팅
-        |       - 실시간 시세 Pub/Sub
-        |
-        |---- 한국투자증권 Open API
-        |       - 현재가
-        |       - 차트
-        |       - 실시간 체결가
-        |
-        |---- 네이버 뉴스 API
-        |
-        |---- OpenAI API
-```
-
----
-
-## 5. 핵심 설계 포인트
-
-## 거래 정합성
-
-계좌이체는 하나의 트랜잭션으로 처리합니다.
-
-```text
-A 계좌 잔액 차감
-B 계좌 잔액 증가
-A 계좌 거래내역 생성
-B 계좌 거래내역 생성
-FDS 로그 생성
-```
-
-중간에 하나라도 실패하면 전체 작업을 rollback합니다.
-
----
-
-## 동시성 제어
-
-동일 계좌에 동시에 여러 요청이 들어와도 잔고가 꼬이지 않도록 비관적 락을 적용합니다.
-
-```java
-@Lock(LockModeType.PESSIMISTIC_WRITE)
-@Query("select a from Account a where a.id = :id")
-Optional<Account> findByIdForUpdate(@Param("id") Long id);
-```
-
----
-
-## 데드락 방지
-
-계좌이체는 두 계좌를 동시에 잠글 수 있으므로 항상 계좌 ID가 작은 계좌부터 lock을 획득합니다.
-
-```text
-fromAccountId < toAccountId:
-  fromAccount lock
-  toAccount lock
-
-fromAccountId > toAccountId:
-  toAccount lock
-  fromAccount lock
-```
-
----
-
-## 거래내역 감사 추적
-
-거래내역에는 거래 직후 잔액인 `balance_after`를 저장합니다.
-
-```text
-Account.balance = 현재 상태
-TransactionHistory = 상태 변경의 근거
-TransactionHistory.balance_after = 거래 직후 잔액
-```
-
----
-
-## FDS 준실시간 탐지
-
-거래 요청 시점에 Risk Score를 계산합니다.
-
-```text
-0 ~ 39   : 정상 거래
-40 ~ 79  : 추가 인증 필요
-80 ~ 100 : 거래 차단
-```
-
-짧은 시간 반복 송금은 Redis TTL 카운터로 탐지합니다.
-
-```text
-fds:transfer-count:{memberId}
-TTL 60초
-```
-
----
-
-## 실시간 시세 처리
-
-```text
-한국투자증권 WebSocket
-→ Spring Boot WebSocket Client
-→ Redis Pub/Sub
-→ Spring WebSocket/STOMP
-→ React Client
-```
-
----
-
-## 모의투자 엔진
-
-실제 주문 API를 사용하지 않고, 실제 시장 데이터만 활용하여 주문/체결/예수금/보유수량/평균단가/수익률 계산 로직을 직접 구현합니다.
-
----
-
-## 6. 도메인 설계
-
-## Member
-
-```text
-id
-email
-password
-name
-role
-created_at
-updated_at
-```
-
----
-
-## Account
-
-```text
-id
-member_id
-account_number
-balance
-account_type
-status
-created_at
-updated_at
-```
-
----
-
-## TransactionHistory
-
-```text
-id
-member_id
-account_id
-transaction_type
-amount
-balance_after
-target_account_number
-description
-created_at
-```
-
----
-
-## FdsLog
-
-```text
-id
-member_id
-account_id
-transaction_id
-risk_score
-risk_level
-reason
-request_ip
-device_id
-created_at
-```
-
----
-
-## Stock
-
-```text
-id
-stock_code
-stock_name
-market
-sector
-created_at
-```
-
----
-
-## Watchlist
-
-```text
-id
-member_id
-stock_code
-created_at
-```
-
----
-
-## VirtualInvestmentAccount
-
-```text
-id
-member_id
-cash_balance
-initial_cash
-created_at
-updated_at
-```
-
----
-
-## StockOrder
-
-```text
-id
-member_id
-stock_code
-order_type
-order_price
-quantity
-order_status
-created_at
-```
-
----
-
-## StockExecution
-
-```text
-id
-order_id
-execution_price
-executed_quantity
-executed_at
-```
-
----
-
-## StockHolding
-
-```text
-id
-member_id
-stock_code
-quantity
-avg_price
-total_buy_amount
-updated_at
-```
-
----
-
-## StockNews
-
-```text
-id
-stock_code
-keyword
-title
-original_link
-naver_link
-description
-summary
-sentiment
-sentiment_score
-published_at
-created_at
-```
-
----
-
-## AiReport
-
-```text
-id
-stock_code
-summary
-positive_ratio
-neutral_ratio
-negative_ratio
-keywords
-risk_factors
-created_at
-```
-
----
-
-## PortfolioSnapshot
-
-```text
-id
-member_id
-total_asset
-cash_balance
-stock_value
-profit_amount
-profit_rate
-snapshot_date
-```
-
----
-
-## 7. API 명세
-
-## Auth
-
-```http
-POST /api/auth/signup
-POST /api/auth/login
-POST /api/auth/logout
-POST /api/auth/reissue
-GET  /api/members/me
-```
-
----
-
-## Account
-
-```http
-POST /api/accounts
-GET  /api/accounts
-GET  /api/accounts/{accountId}
-POST /api/accounts/{accountId}/deposit
-POST /api/accounts/{accountId}/withdraw
-POST /api/transfers
-GET  /api/accounts/{accountId}/transactions
-```
-
----
-
-## FDS
-
-```http
-GET /api/fds/logs
-GET /api/fds/logs/{logId}
-```
+Browser
+  ├─ HTTP -> Controller -> Service -> Repository -> MySQL
+  ├─ /ws/stocks -> StockRealtimeWebSocketHandler
+  └─ /ws/market-data -> MarketRealtimeWebSocketHandler
 
----
+KIS REST API
+  -> KisRestClient
+  -> 일봉/지수/환율/랭킹/마스터파일 조회
+  -> MySQL 또는 Redis TTL 캐시
 
-## Stock
-
-```http
-GET /api/stocks/search?keyword=삼성전자
-GET /api/stocks/{stockCode}
-GET /api/stocks/{stockCode}/price
-GET /api/stocks/{stockCode}/candles?period=DAILY
-GET /api/stocks/{stockCode}/news
-GET /api/stocks/{stockCode}/report
-```
-
----
-
-## Watchlist
-
-```http
-POST   /api/watchlists/{stockCode}
-DELETE /api/watchlists/{stockCode}
-GET    /api/watchlists
-```
-
----
-
-## Order
-
-```http
-POST /api/orders/buy
-POST /api/orders/sell
-GET  /api/orders
-GET  /api/orders/{orderId}
-```
-
----
-
-## Portfolio
-
-```http
-GET /api/portfolio
-GET /api/portfolio/snapshots
-```
-
----
-
-## WebSocket
-
-```text
-/ws/stocks
-/topic/stocks/{stockCode}
-```
-
----
-
-## 8. Redis 설계
-
-## 인증
-
-```text
-auth:refresh:{memberId}
-- Refresh Token 저장
-
-auth:blacklist:{accessToken}
-- 로그아웃된 Access Token 저장
-- Access Token 만료 시간까지 TTL 설정
-```
-
----
-
-## 주식
-
-```text
-stock:price:{stockCode}
-- 현재가 캐싱
-- TTL 5~10초
-
-stock:news:{stockCode}
-- 뉴스 검색 결과 캐싱
-- TTL 30분
-
-stock:realtime:{stockCode}
-- 실시간 시세 Pub/Sub
-```
-
----
-
-## FDS
-
-```text
-fds:transfer-count:{memberId}
-- 1분 내 송금 횟수
-- TTL 60초
-
-fds:daily-amount:{memberId}:{yyyyMMdd}
-- 일일 송금 누적 금액
-- TTL 1~2일
-```
-
----
-
-## 9. Batch 설계
-
-## 장 마감 후 Batch
-
-```text
-관심종목 일별 시세 저장
-포트폴리오 스냅샷 저장
-일별 수익률 계산
-```
-
----
-
-## 새벽 Batch
-
-```text
-종목별 뉴스 수집
-뉴스 요약
-감성 분석
-AI 리포트 생성
-인기 종목 랭킹 생성
-```
-
----
-
-## Batch Job
-
-```text
-DailyPortfolioSnapshotJob
-- 보유 종목 조회
-- 현재가 조회
-- 평가금액 계산
-- 수익률 계산
-- snapshot 저장
-
-DailyNewsCollectJob
-- 관심종목 조회
-- 뉴스 검색 API 호출
-- 중복 제거
-- DB 저장
-
-DailyAiReportJob
-- 최근 뉴스 조회
-- 요약
-- 감성 분석
-- 리포트 저장
-```
-
----
-
-## 10. 테스트 전략
-
-## 단위 테스트
-
-```text
-FDS Rule Engine 테스트
-평균단가 계산 테스트
-수익률 계산 테스트
-잔고 검증 테스트
-거래 금액 검증 테스트
-```
-
----
-
-## 통합 테스트
-
-```text
-회원가입 / 로그인 테스트
-계좌 생성 테스트
-입금 테스트
-출금 테스트
-계좌이체 성공 테스트
-잔고 부족 이체 실패 테스트
-이체 중 예외 발생 시 rollback 테스트
-거래내역 생성 확인 테스트
-FDS 로그 생성 확인 테스트
-모의투자 매수 / 매도 테스트
-포트폴리오 수익률 계산 테스트
-```
-
----
-
-## 동시성 테스트
-
-```text
-동시에 100개의 출금 요청
-동시에 100개의 송금 요청
-동시에 같은 종목 매도 요청
-```
-
-예시 시나리오:
-
-```text
-계좌 잔고 100,000원
-10,000원 출금 요청 20개 동시 실행
-
-기대 결과:
-성공 10개
-실패 10개
-최종 잔고 0원
-거래내역 10개
-```
-
----
-
-## Testcontainers
-
-```text
-MySQL Testcontainer
-Redis Testcontainer
-```
-
----
-
-## 11. 인프라 및 배포
-
-## 로컬 개발 환경
-
-```text
-Docker Compose
-- Spring Boot
-- MySQL
-- Redis
-```
-
----
-
-## 운영 환경
-
-```text
-AWS EC2
-- Nginx
-- Spring Boot Docker Container
-
-AWS RDS
-- MySQL
-
-Redis
-- EC2 Docker Redis
-- 추후 ElastiCache 확장 가능
-```
-
----
-
-## Nginx 구조
-
-```text
-Client
-  |
-  v
-Nginx : 80 / 443
-  |
-  v
-Spring Boot : 8080
-```
-
----
-
-## CI/CD
-
-```text
-GitHub main push
-→ GitHub Actions 실행
-→ 테스트
-→ 빌드
-→ Docker image 생성
-→ EC2 접속
-→ 기존 컨테이너 종료
-→ 새 컨테이너 실행
-→ health check
-```
-
----
-
-## 운영 로그
-
-```text
-docker logs
-Nginx access log
-Nginx error log
-Spring Boot application log
-Actuator health check
-```
-
----
-
-## 12. 실행 방법
-
-## Repository Clone
-
-```bash
-git clone https://github.com/{username}/finmate.git
-cd finmate
-```
-
----
-
-## 환경 변수 설정
-
-```bash
-cp .env.example .env
-```
-
-`.env` 예시:
-
-```env
-MYSQL_DATABASE=finmate
-MYSQL_USER=finmate
-MYSQL_PASSWORD=finmate-password
-MYSQL_ROOT_PASSWORD=root-password
-
-REDIS_HOST=redis
-REDIS_PORT=6379
-
-JWT_SECRET=your-jwt-secret
-JWT_ACCESS_TOKEN_EXPIRE=1800000
-JWT_REFRESH_TOKEN_EXPIRE=1209600000
-
-KIS_APP_KEY=your-kis-app-key
-KIS_APP_SECRET=your-kis-app-secret
-
-NAVER_CLIENT_ID=your-naver-client-id
-NAVER_CLIENT_SECRET=your-naver-client-secret
-
-OPENAI_API_KEY=your-openai-api-key
+KIS WebSocket
+  -> KisRealtimeWebSocketClient
+  -> KisRealtimeStore
+  -> Spring Event
+  ├─ 브라우저 실시간 전파
+  └─ 활성 주문·예약 주문 체결 판단
 ```
 
----
+## 핵심 도메인
 
-## Docker Compose 실행
+### 일반 계좌
 
-```bash
-docker-compose up -d
-```
+- `Account`: 사용자 소유 은행 계좌, 계좌번호, 통화, 잔액, 대표 계좌 여부를 관리합니다.
+- `AccountTransaction`: 입금·출금·이체·투자 계좌 입출금 등 일반 계좌 기준 거래 내역입니다.
+- `Transfer`: 일반 계좌 간 이체 원장입니다.
+- `DailyTransferUsage`: 일일 이체 한도 사용량입니다.
 
----
+계좌이체는 하나의 트랜잭션에서 출금 계좌와 입금 계좌를 함께 잠그고, 계좌 ID 오름차순으로 비관적 락을 획득해 데드락 가능성을 낮춥니다.
 
-## Spring Boot 실행
+### 투자 계좌와 예수금
 
-```bash
-./gradlew bootRun
-```
+- `Investment`: 사용자 소유 증권계좌입니다.
+- `InvestmentCashBalance`: 증권계좌별·통화별 예수금과 주문 잠금 예수금을 관리합니다.
+- `SecuritiesCashTransaction`: 일반 계좌와 증권계좌 사이의 입출금 내역입니다.
+- `InvestmentCurrencyExchangeTransaction`: 증권계좌 안 KRW/USD 환전 내역입니다.
 
----
+환전은 `Investment`를 먼저 잠근 뒤, 환전 방향과 관계없이 항상 KRW 예수금 → USD 예수금 순서로 비관적 락을 획득합니다.
 
-## 테스트 실행
+### 종목과 마스터파일
 
-```bash
-./gradlew test
-```
+- `Stock`: 종목의 공통 기준 정보입니다.
+- `DomesticStockMetadata`: 국내 종목 마스터파일의 업종, ETF/ETN/우선주/관리종목/거래정지, 액면가, 상장주식수, 기초 재무 등 상세 메타데이터입니다.
+- `OverseasStockMetadata`: 해외 종목 마스터파일의 거래소, 산업 코드, 상품 유형, 기준가, 매매 수량 단위 등 상세 메타데이터입니다.
+- `StockDailyPrice`: 종목별 일봉 차트 데이터입니다.
+- `FavoriteStock`: 사용자 관심 종목입니다.
 
----
+종목 상세 화면은 상단에 차트를 먼저 보여주고, 하단에 종목 기본 정보와 마스터파일 기반 기업 정보를 표시합니다. 국내 종목은 KRX 섹터 플래그가 있으면 자동차·반도체·바이오 같은 업종명을 함께 표시하고, 국내 기초 재무는 시가총액·손익 항목을 억 원 단위로, 자본금·가격 항목을 원 단위로, 상장주식수는 주 단위로 환산해 표시합니다.
 
-## 빌드
+### 모의 주식 거래
 
-```bash
-./gradlew clean build
-```
+- `StockOrder`: 시장가·지정가 주문입니다.
+- `StockOrderReservation`: 조건 충족 시 일반 주문으로 전환되는 예약 주문입니다.
+- `StockTradeTransaction`: 체결 내역입니다.
+- `StockHolding`: 보유 수량, 잠금 수량, 평균 매수가입니다.
 
----
-
-## 13. 프로젝트 구조
-
-```text
-com.finmate
-
-domain
-  member
-    controller
-    service
-    repository
-    entity
-    dto
-
-  auth
-    controller
-    service
-    jwt
-    dto
-
-  account
-    controller
-    service
-    repository
-    entity
-    dto
-
-  transaction
-    controller
-    service
-    repository
-    entity
-    dto
-
-  fds
-    service
-    rule
-    repository
-    entity
-    dto
-
-  stock
-    controller
-    service
-    repository
-    entity
-    dto
-
-  watchlist
-    controller
-    service
-    repository
-    entity
-    dto
-
-  order
-    controller
-    service
-    repository
-    entity
-    dto
-
-  portfolio
-    controller
-    service
-    repository
-    entity
-    dto
-
-  news
-    controller
-    service
-    repository
-    entity
-    dto
-
-  ai
-    controller
-    service
-    repository
-    entity
-    dto
-
-global
-  config
-  security
-  exception
-  redis
-  external
-  batch
-  websocket
-  common
-```
+주문 접수와 실시간 체결은 시장별 거래 가능 시간에만 허용됩니다.
 
----
-
-## 14. 개발 로드맵
-
-## Phase 1. 금융 핵심 기능
-
-```text
-회원가입 / 로그인
-JWT 인증
-계좌 생성
-입금
-출금
-계좌이체
-거래내역
-@Transactional 적용
-비관적 락 적용
-동시성 테스트
-FDS Rule Engine 1차 구현
-```
+| 시장 | 거래 가능 시간 |
+|---|---|
+| KOSPI/KOSDAQ | 대한민국 09:00~15:30, 15:40~18:00 |
+| NASDAQ | America/New_York 09:30~16:00, 16:00~20:00 |
 
----
-
-## Phase 2. 증권 기본 기능
-
-```text
-한국투자증권 API 연동
-종목 검색
-현재가 조회
-일봉 / 주봉 / 월봉 차트
-관심종목
-가상 투자 계좌
-모의 매수
-모의 매도
-보유 종목 조회
-포트폴리오 수익률 계산
-```
+NASDAQ의 대한민국 시간은 미국 서머타임 여부에 따라 달라지며, 화면에는 현지 기준과 대한민국 기준 시간이 함께 표시됩니다. 현재 거래시간 정책은 주말만 제외하고, 공휴일·조기폐장은 반영하지 않습니다.
 
----
+## 주요 화면 경로
 
-## Phase 3. 뉴스 / AI 기능
+| 기능 | 경로 |
+|---|---|
+| 홈 | `/`, `/home` |
+| 회원가입/로그인 | `/signup`, `/login` |
+| 일반 계좌 홈 | `/accounts` |
+| 일반 계좌 개설/목록 | `/accounts/open`, `/accounts/list` |
+| 계좌이체/한도/내역 | `/accounts/transfer`, `/accounts/transfer-limit`, `/accounts/transactions` |
+| 투자 홈 | `/investments` |
+| 투자 계좌 개설/목록 | `/investments/open`, `/investments/list` |
+| 증권계좌 입출금/내역 | `/investments/transfer`, `/investments/securityCashTransaction` |
+| 환전/환전 내역 | `/investments/currency-exchange`, `/investments/currency-exchange/transactions` |
+| 포트폴리오/주문 내역 | `/investments/portfolio`, `/investments/orders` |
+| 시장 지표 | `/investments/market-data`, `/investments/exchanges`, `/investments/indices` |
+| 종목 검색/관심 종목 | `/investments/stocks/search`, `/investments/stocks/watchlist` |
+| 종목 상세/랭킹 | `/investments/stocks/detail`, `/investments/stocks/market-movers` |
+| 주문 화면 | `/investments/stocks/order/{stockId}` |
 
-```text
-네이버 뉴스 API 연동
-종목별 뉴스 수집
-뉴스 중복 제거
-뉴스 요약
-호재 / 악재 / 중립 감성 분석
-AI 투자 리포트 생성
-```
+## KIS 연동
 
----
-
-## Phase 4. 실시간 / 인프라 고도화
-
-```text
-한국투자증권 WebSocket 연동
-Spring WebSocket / STOMP
-Redis Pub/Sub
-Spring Batch
-Docker Compose
-AWS EC2 / RDS 배포
-GitHub Actions CI/CD
-Nginx
-HTTPS
-```
+### REST
 
----
+현재 코드에서 사용하는 KIS REST 범위입니다.
 
-## 15. 주의사항
+| 용도 | 경로 | TR ID |
+|---|---|---|
+| 국내 종목 일봉 | `/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice` | `FHKST03010100` |
+| 해외 종목 일봉 | `/uapi/overseas-price/v1/quotations/dailyprice` | `HHDFS76240000` |
+| 환율·해외 지수 일봉 | `/uapi/overseas-price/v1/quotations/inquire-daily-chartprice` | `FHKST03030100` |
+| 환율·해외 지수 분봉 | `/uapi/overseas-price/v1/quotations/inquire-time-indexchartprice` | `FHKST03030200` |
+| 국내 지수 일봉 | `/uapi/domestic-stock/v1/quotations/inquire-daily-indexchartprice` | `FHKUP03500100` |
+| 국내 거래량/거래대금 랭킹 | `/uapi/domestic-stock/v1/quotations/volume-rank` | `FHPST01710000` |
+| 해외 거래량 랭킹 | `/uapi/overseas-stock/v1/ranking/trade-vol` | `HHDFS76310010` |
+| 해외 거래대금 랭킹 | `/uapi/overseas-stock/v1/ranking/trade-pbmn` | `HHDFS76320010` |
 
-```text
-본 프로젝트는 학습 및 포트폴리오 목적의 프로젝트입니다.
-실제 금융 거래를 수행하지 않습니다.
-실제 주식 주문을 실행하지 않습니다.
-투자 추천이나 투자 자문을 목적으로 하지 않습니다.
-모의투자는 가상머니 기반으로만 동작합니다.
-AI 분석 결과는 투자 판단 보조 정보로만 사용됩니다.
-```
+종목 랭킹은 각 시장의 정규장과 시간외 거래 가능 시간 동안 갱신하며, 거래 가능 시간이 아니면 Redis에 남아 있는 마지막 랭킹을 표시합니다.
 
----
+REST access token은 JVM 메모리에 캐시합니다. Redis 토큰 공유, 다중 인스턴스 토큰 동기화, 인증 실패 시 자동 토큰 clear 후 재발급은 현재 구현하지 않았습니다.
 
-## 16. 최종 목표
+### WebSocket
 
-FinMate는 금융권 IT 취업을 목표로 한 백엔드 중심 통합 금융 플랫폼입니다.
+- 서버는 KIS WebSocket에 지연 연결하고, 필요한 종목·지수만 구독합니다.
+- 브라우저는 `/ws/stocks`, `/ws/market-data` raw WebSocket endpoint를 사용합니다.
+- 종목 실시간 데이터는 상세 화면 전파와 모의 주문 체결 판단에 함께 사용됩니다.
+- 구독 참조 수가 0이 되면 즉시 해제하지 않고 기본 60초 유예 후 해제합니다.
 
-은행 도메인에서는 계좌, 입출금, 송금, 거래내역을 구현하고, 트랜잭션과 락을 통해 잔고 정합성과 동시성 문제를 해결합니다.
+## Redis 사용
 
-FDS 도메인에서는 거래 요청 시점에 Risk Score를 계산하여 반복 송금, 고액 송금, 비정상 패턴을 준실시간으로 탐지합니다.
+| 용도 | 키 | TTL |
+|---|---|---|
+| 종목 랭킹 | `stock:ranking:{market}:{type}` | 장중 기본 30초, 장외 기본 86,400초 |
+| 환율·해외 지수 실시간 화면값 | `market:realtime:{indicator}` | 기본 120초 |
 
-증권 도메인에서는 한국투자증권 API를 이용해 실제 시세와 차트 데이터를 조회하고, 실제 주문 대신 가상머니 기반 모의투자 엔진을 직접 구현합니다.
+KIS WebSocket 최신 payload, 브라우저 세션, 구독 참조 수는 Redis가 아니라 단일 JVM 메모리에 있습니다.
 
-뉴스/AI 도메인에서는 종목별 뉴스를 수집하고, 요약·감성분석·투자 리스크 요약 리포트를 제공합니다.
+## 현재 한계
 
-인프라 측면에서는 Redis, Spring Batch, WebSocket, Docker, AWS EC2/RDS, Nginx, HTTPS, GitHub Actions CI/CD를 적용하여 실제 배포 가능한 실무형 백엔드 시스템으로 완성하는 것을 목표로 합니다.
+- 실제 은행·증권사 거래는 수행하지 않습니다.
+- 주식 주문은 모의 거래이며, KIS에는 주문을 전송하지 않습니다.
+- DB 스키마는 `spring.jpa.hibernate.ddl-auto=update`로 반영하며 Flyway/Liquibase는 없습니다.
+- 부분 체결 상태 enum은 있으나 실제 체결 로직은 남은 수량 전체 체결 기준입니다.
+- 공휴일, 조기폐장, 종목별 특수 거래 제한 캘린더는 반영하지 않았습니다.
+- KIS token, WebSocket 연결 상태, 실시간 최신 payload는 단일 JVM 메모리 기준입니다.
+- 다중 서버 fan-out, leader election, 중복 체결 방지 구조는 없습니다.
+- JWT, Refresh Token, FDS, 뉴스 수집, AI 리포트, React 프론트엔드, Spring Batch, QueryDSL, CI/CD, AWS 배포는 현재 소스 기준 구현 범위가 아닙니다.

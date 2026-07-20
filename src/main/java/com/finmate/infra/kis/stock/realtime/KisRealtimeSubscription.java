@@ -14,6 +14,12 @@ public record KisRealtimeSubscription(
     }
 
     public String id() {
-        return api.getTrId() + ":" + trKey;
+        return id(api, trKey);
+    }
+
+    public static String id(KisRealtimeApi api, String trKey) {
+        validateRequired(api, "KIS realtime api is required.");
+        validateRequired(trKey, "KIS realtime trKey is required.");
+        return api.getTrId() + ":" + trKey.trim();
     }
 }

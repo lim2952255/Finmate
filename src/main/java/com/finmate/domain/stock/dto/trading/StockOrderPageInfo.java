@@ -7,12 +7,11 @@ import com.finmate.domain.stock.trading.StockHolding;
 import com.finmate.domain.stock.trading.StockOrderSide;
 import com.finmate.domain.stock.trading.StockOrderTriggerCondition;
 import com.finmate.domain.stock.trading.StockOrderType;
+import com.finmate.global.format.DisplayFormatUtils;
 import lombok.Getter;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -30,6 +29,10 @@ public class StockOrderPageInfo {
     private final BigDecimal buyExecutablePrice;
     private final BigDecimal sellExecutablePrice;
     private final BigDecimal tradePrice;
+    // 현재 종목 거래가 가능한지
+    private final boolean stockTradingAvailable;
+    // 종목 거래시간에 대한 설명
+    private final String stockTradingTimeDescription;
     private final StockOrderSide[] sides = StockOrderSide.values();
     private final StockOrderType[] orderTypes = StockOrderType.values();
     private final StockOrderTriggerCondition[] triggerConditions = StockOrderTriggerCondition.values();
@@ -42,7 +45,9 @@ public class StockOrderPageInfo {
                               List<StockHolding> holdings,
                               BigDecimal buyExecutablePrice,
                               BigDecimal sellExecutablePrice,
-                              BigDecimal tradePrice) {
+                              BigDecimal tradePrice,
+                              boolean stockTradingAvailable,
+                              String stockTradingTimeDescription) {
         this.stock = stock;
         this.currencyCode = currencyCode;
         this.investments = investments;
@@ -67,6 +72,8 @@ public class StockOrderPageInfo {
         this.buyExecutablePrice = buyExecutablePrice;
         this.sellExecutablePrice = sellExecutablePrice;
         this.tradePrice = tradePrice;
+        this.stockTradingAvailable = stockTradingAvailable;
+        this.stockTradingTimeDescription = stockTradingTimeDescription;
     }
 
     public StockOrderAccountSummary getAccountSummary(Long investmentId) {
@@ -74,24 +81,10 @@ public class StockOrderPageInfo {
     }
 
     public String formatPrice(BigDecimal value) {
-        if (value == null) {
-            return "-";
-        }
-
-        NumberFormat formatter = NumberFormat.getNumberInstance(Locale.KOREA);
-        formatter.setMinimumFractionDigits(0);
-        formatter.setMaximumFractionDigits(currencyCode.getFractionDigits());
-        return formatter.format(value);
+        return DisplayFormatUtils.formatDecimal(value, currencyCode.getFractionDigits());
     }
 
     public String formatQuantity(BigDecimal value) {
-        if (value == null) {
-            return "-";
-        }
-
-        NumberFormat formatter = NumberFormat.getNumberInstance(Locale.KOREA);
-        formatter.setMinimumFractionDigits(0);
-        formatter.setMaximumFractionDigits(6);
-        return formatter.format(value);
+        return DisplayFormatUtils.formatDecimal(value, 6);
     }
 }

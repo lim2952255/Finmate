@@ -52,7 +52,6 @@ SUMMARY.md
 
 ### Local AI assistant files ###
 *.md
-.codex/
 .omx/
 .claude/
 .claude.json*

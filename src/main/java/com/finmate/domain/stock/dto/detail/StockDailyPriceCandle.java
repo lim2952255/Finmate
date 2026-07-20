@@ -1,11 +1,11 @@
 package com.finmate.domain.stock.dto.detail;
 
 import com.finmate.domain.stock.price.StockDailyPrice;
+import com.finmate.global.format.DisplayFormatUtils;
 import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
 // 일봉 하나를 SVG 캔들 하나로 그리기 위한 좌표 DTO
 @Getter
@@ -121,6 +121,6 @@ public class StockDailyPriceCandle {
     }
 
     private String formatCoordinate(double value) {
-        return String.format(Locale.US, "%.2f", value);
+        return DisplayFormatUtils.formatCoordinate(value);
     }
 }

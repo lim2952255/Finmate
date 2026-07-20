@@ -1,9 +1,12 @@
 package com.finmate.infra.kis.parser;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.finmate.global.validation.RequiredValidator.validateRequired;
@@ -72,6 +75,81 @@ public final class KisValueParser {
         }
 
         return Long.parseLong(normalizeNumber(value));
+    }
+
+    public static Long parseNullableLongOrNull(String value) {
+        try {
+            return parseNullableLong(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public static BigDecimal applyChangeSign(BigDecimal value, String changeSign) {
+        if (value == null) {
+            return null;
+        }
+
+        return switch (changeSign == null ? "" : changeSign.trim()) {
+            case "1", "2" -> value.abs();
+            case "3" -> BigDecimal.ZERO;
+            case "4", "5" -> value.abs().negate();
+            default -> value;
+        };
+    }
+
+    public static JsonNode firstObject(JsonNode node) {
+        if (node == null || node.isNull() || node.isMissingNode()) {
+            return null;
+        }
+
+        if (node.isObject()) {
+            return node;
+        }
+
+        if (node.isArray() && !node.isEmpty()) {
+            JsonNode firstNode = node.get(0);
+            return firstNode != null && firstNode.isObject() ? firstNode : null;
+        }
+
+        return null;
+    }
+
+    public static String firstPresentText(JsonNode node, String... keys) {
+        if (node == null) {
+            return null;
+        }
+
+        for (String key : keys) {
+            JsonNode value = node.get(key);
+            if (value != null && !value.isNull()) {
+                String textValue = value.asText();
+                if (textValue != null && !textValue.isBlank()) {
+                    return textValue.trim();
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public static String firstPresentValue(Map<String, String> values, String... keys) {
+        if (values == null || keys == null) {
+            return null;
+        }
+
+        for (String key : keys) {
+            if (key == null) {
+                continue;
+            }
+
+            String value = values.get(key);
+            if (value != null && !value.isBlank()) {
+                return value.trim();
+            }
+        }
+
+        return null;
     }
 
     public static boolean parseYesNo(String value) {

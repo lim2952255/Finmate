@@ -2,18 +2,17 @@ package com.finmate.domain.stock.dto.detail;
 
 import com.finmate.domain.stock.Stock;
 import com.finmate.domain.stock.price.StockDailyPrice;
+import com.finmate.global.format.DisplayFormatUtils;
 import lombok.Getter;
 
-import java.math.RoundingMode;
-import java.text.NumberFormat;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.StringJoiner;
 
@@ -77,6 +76,11 @@ public class StockDetailPageInfo {
     private final List<StockMovingAverageLine> movingAverageLines;
     private final StockPriceMarker highestPriceMarker;
     private final StockPriceMarker lowestPriceMarker;
+    private final StockMetadataDisplayInfo metadataDisplayInfo;
+    // 현재 종목 거래가 가능한지
+    private final boolean stockTradingAvailable;
+    // 종목 거래시간에 대한 설명
+    private final String stockTradingTimeDescription;
 
     public StockDetailPageInfo(Stock stock,
                                StockChartPeriod selectedPeriod,
@@ -84,7 +88,10 @@ public class StockDetailPageInfo {
                                LocalDate chartEndDate,
                                LocalDate expectedLatestTradeDate,
                                int savedDailyPriceCount,
-                               List<StockDailyPrice> dailyPrices) {
+                               List<StockDailyPrice> dailyPrices,
+                               StockMetadataDisplayInfo metadataDisplayInfo,
+                               boolean stockTradingAvailable,
+                               String stockTradingTimeDescription) {
         this.stock = stock;
         this.selectedPeriod = selectedPeriod;
         this.chartPeriods = StockChartPeriod.values();
@@ -144,6 +151,9 @@ public class StockDetailPageInfo {
         this.movingAverageLines = createMovingAverageLines(this.dailyPrices, maxPrice, minPrice);
         this.highestPriceMarker = createHighestPriceMarker(this.dailyPrices, maxPrice, minPrice);
         this.lowestPriceMarker = createLowestPriceMarker(this.dailyPrices, maxPrice, minPrice);
+        this.metadataDisplayInfo = metadataDisplayInfo;
+        this.stockTradingAvailable = stockTradingAvailable;
+        this.stockTradingTimeDescription = stockTradingTimeDescription;
     }
 
     public boolean hasDailyPrices() {
@@ -159,12 +169,7 @@ public class StockDetailPageInfo {
     }
 
     public String formatVolume(Long value) {
-        if (value == null) {
-            return "-";
-        }
-
-        NumberFormat numberFormat = NumberFormat.getIntegerInstance(Locale.KOREA);
-        return numberFormat.format(value);
+        return DisplayFormatUtils.formatInteger(value);
     }
 
     public String formatLatestChangeAmount() {
@@ -494,37 +499,15 @@ public class StockDetailPageInfo {
     }
 
     private String formatDecimal(BigDecimal value, int decimalDigits) {
-        if (value == null) {
-            return "-";
-        }
-
-        NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.KOREA);
-        numberFormat.setMinimumFractionDigits(0);
-
-        numberFormat.setMaximumFractionDigits(decimalDigits);
-
-        return numberFormat.format(value);
+        return DisplayFormatUtils.formatDecimal(value, decimalDigits);
     }
 
     private String formatSignedPrice(BigDecimal value) {
-        if (value == null) {
-            return "-";
-        }
-
-        String sign = value.signum() > 0 ? "+" : value.signum() < 0 ? "-" : "";
-        return sign + formatPrice(value.abs());
+        return DisplayFormatUtils.formatSignedDecimal(value, priceDecimalDigits);
     }
 
     private String formatSignedRate(BigDecimal value) {
-        if (value == null) {
-            return "-";
-        }
-
-        NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.KOREA);
-        numberFormat.setMinimumFractionDigits(2);
-        numberFormat.setMaximumFractionDigits(2);
-        String sign = value.signum() > 0 ? "+" : value.signum() < 0 ? "-" : "";
-        return sign + numberFormat.format(value.abs()) + "%";
+        return DisplayFormatUtils.formatSignedPercent(value, 2);
     }
 
     private String priceChangeClass(BigDecimal changeAmount) {
@@ -643,11 +626,7 @@ public class StockDetailPageInfo {
         BigDecimal rate = latestClosePrice.subtract(markerPrice)
                 .divide(markerPrice, 6, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100));
-        NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.KOREA);
-        numberFormat.setMinimumFractionDigits(2);
-        numberFormat.setMaximumFractionDigits(2);
-        String sign = rate.signum() > 0 ? "+" : "";
-        return " (" + sign + numberFormat.format(rate) + "%)";
+        return " (" + DisplayFormatUtils.formatSignedPercent(rate, 2) + ")";
     }
 
     private double clamp(double value, double min, double max) {
@@ -655,6 +634,6 @@ public class StockDetailPageInfo {
     }
 
     private String formatCoordinate(double value) {
-        return String.format(Locale.US, "%.2f", value);
+        return DisplayFormatUtils.formatCoordinate(value);
     }
 }

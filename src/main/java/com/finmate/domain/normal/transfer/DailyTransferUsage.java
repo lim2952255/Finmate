@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import static com.finmate.global.validation.NumericValidator.validatePositive;
+
 // 각 계좌별로 일일 이체한도를 저장하고 관리하기 위한 엔티티
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -47,9 +49,7 @@ public class DailyTransferUsage {
 
     // 일일 이체한도 검사 + 오늘 사용금액 증가
     public void use(BigDecimal amount, BigDecimal dailyTransferLimit) {
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("이체 금액은 0보다 커야 합니다.");
-        }
+        validatePositive(amount, "이체 금액은 0보다 커야 합니다.");
 
         BigDecimal nextUsedAmount = this.usedAmount.add(amount);
         if (nextUsedAmount.compareTo(dailyTransferLimit) > 0) {

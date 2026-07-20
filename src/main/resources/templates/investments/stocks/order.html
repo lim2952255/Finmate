@@ -137,7 +137,21 @@
                     <strong>매도 기준가</strong>
                     <span th:text="${stockOrderPageInfo.formatPrice(stockOrderPageInfo.sellExecutablePrice)}">-</span>
                 </div>
+                <div class="summary-item">
+                    <strong>거래 가능 시간</strong>
+                    <span th:text="${stockOrderPageInfo.stockTradingTimeDescription}">대한민국 시간 기준 09:00~15:30, 15:40~18:00</span>
+                </div>
+                <div class="summary-item">
+                    <strong>거래 상태</strong>
+                    <span th:if="${stockOrderPageInfo.stockTradingAvailable}">거래 가능</span>
+                    <span th:unless="${stockOrderPageInfo.stockTradingAvailable}">거래 시간 아님</span>
+                </div>
             </div>
+
+            <p th:unless="${stockOrderPageInfo.stockTradingAvailable}"
+               th:text="|현재 ${stockOrderPageInfo.stock.marketType} 거래 가능 시간이 아니어서 주문 접수 버튼이 비활성화됩니다.|">
+                현재 거래 가능 시간이 아니어서 주문 접수 버튼이 비활성화됩니다.
+            </p>
 
             <p th:if="${#lists.isEmpty(stockOrderPageInfo.investments)}">
                 증권 계좌가 없습니다.
@@ -225,7 +239,11 @@
                         </label>
 
                         <div class="actions">
-                            <button type="submit">주문 접수</button>
+                            <button type="submit"
+                                    th:disabled="${!stockOrderPageInfo.stockTradingAvailable}"
+                                    th:title="|거래 가능 시간: ${stockOrderPageInfo.stockTradingTimeDescription}|">
+                                주문 접수
+                            </button>
                             <a th:href="@{/investments/stocks/detail(stockId=${stockOrderPageInfo.stock.id})}">상세</a>
                             <a th:href="@{/investments/orders(investmentId=${stockOrderRequest.investmentId})}">주문 내역</a>
                         </div>
@@ -334,7 +352,11 @@
                             <span class="field-hint">실행 주문 유형이 지정가이면 필수입니다.</span>
                         </label>
 
-                        <button type="submit">예약 접수</button>
+                        <button type="submit"
+                                th:disabled="${!stockOrderPageInfo.stockTradingAvailable}"
+                                th:title="|거래 가능 시간: ${stockOrderPageInfo.stockTradingTimeDescription}|">
+                            예약 접수
+                        </button>
                     </form>
                 </section>
             </div>

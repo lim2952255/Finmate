@@ -1,29 +1,27 @@
 package com.finmate.service.stock.realtime;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.finmate.domain.stock.dto.realtime.RealtimeSubscriptionState;
 import com.finmate.domain.stock.dto.realtime.StockRealtimeClientMessage;
 import com.finmate.domain.stock.dto.realtime.StockRealtimeOrderbookClientMessage;
 import com.finmate.domain.stock.dto.realtime.StockRealtimeOrderbookClientMessage.OrderbookLevel;
+import com.finmate.global.websocket.WebSocketJsonMessageSender;
 import com.finmate.infra.kis.stock.realtime.KisRealtimeApi;
 import com.finmate.infra.kis.stock.realtime.KisRealtimePayload;
 import com.finmate.infra.kis.stock.realtime.KisRealtimePayloadReceivedEvent;
+import com.finmate.infra.kis.stock.realtime.KisRealtimeSubscription;
 import com.finmate.infra.kis.stock.realtime.KisRealtimeStore;
+import com.finmate.service.realtime.RealtimeClientSessionRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
-import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static com.finmate.infra.kis.parser.KisValueParser.parseNullableBigDecimal;
 import static com.finmate.infra.kis.parser.KisValueParser.parseNullableBigDecimalOrNull;
@@ -43,17 +41,13 @@ public class StockRealtimeClientSessionService {
 
     private final StockRealtimeSubscriptionManager subscriptionManager; // 실제 KIS 실시간 구독(종목 구독)을 관리하는 매니저
     private final KisRealtimeStore realtimeStore; // KIS 서버로부터 전달받은 실시간 시세 데이터 저장소
-    private final ObjectMapper objectMapper; // 자바 객체를 Json 문자열로 변환하는데 사용되는 객체
-
-    private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>(); // 현재 서버 WebSocket으로 연결되어 있는 클라이언트들 저장
-    private final Map<String, Set<ClientSubscription>> subscriptionsBySession = new ConcurrentHashMap<>(); // 특정 세션이 구독중인 종목목록을 저장하는 Map
-    private final Map<String, Set<String>> sessionIdsByRealtimeKey = new ConcurrentHashMap<>(); // 종목 기준으로 해당 종목을 구독중인 세션 목록을 저장하는 Map
+    private final WebSocketJsonMessageSender messageSender;
+    private final RealtimeClientSessionRegistry<ClientSubscription> sessionRegistry =
+            new RealtimeClientSessionRegistry<>();
 
     // 클라이언트 WebSocket 연결되었을 때, 세션을 세션보관서에 저장하는 메서드
     public void register(WebSocketSession session) {
-        sessions.put(session.getId(), session);
-        // subscriptionsBySession에 새로 들어온 세션을 등록
-        subscriptionsBySession.computeIfAbsent(session.getId(), ignored -> ConcurrentHashMap.newKeySet());
+        sessionRegistry.register(session);
     }
 
     // 클라이언트가 특정 목적의 종목 구독을 요청하는 메서드
@@ -66,8 +60,7 @@ public class StockRealtimeClientSessionService {
         // 구독 목적 정규화
         StockRealtimeSubscriptionPurpose normalizedPurpose = normalizePurpose(purpose);
         // 현재 세션이 구독중인 목록을 받는다.
-        Set<ClientSubscription> sessionSubscriptions =
-                subscriptionsBySession.computeIfAbsent(session.getId(), ignored -> ConcurrentHashMap.newKeySet());
+        Set<ClientSubscription> sessionSubscriptions = sessionRegistry.subscriptions(session);
         // 현재 세션이 이미 해당 종목을 구독중이고, 현재 구독하고자 하는 목적으로 구독중이였다면 별다른 작업없이 바로 return
         if (sessionSubscriptions.stream()
                 .anyMatch(subscription -> subscription.stockId().equals(stockId)
@@ -81,14 +74,10 @@ public class StockRealtimeClientSessionService {
             // client가 구독한 종목에 대한 정보를 담은 record 생성
             List<ClientSubscription> subscriptions = states.stream()
                     .map(state -> new ClientSubscription(stockId, state.api(), state.trKey(), normalizedPurpose))
-                    .toList();
+                .toList();
             subscriptions.forEach(subscription -> {
                 // 현재 세션이 구독중인 구독목록에 새로운 구독정보를 추가
-                sessionSubscriptions.add(subscription);
-                // 해당 종목을 구독중인 세션 목록에 현재 세션을 등록
-                sessionIdsByRealtimeKey
-                        .computeIfAbsent(subscription.realtimeKey(), ignored -> ConcurrentHashMap.newKeySet())
-                        .add(session.getId());
+                sessionRegistry.addSubscription(session, subscription, subscription.realtimeKey());
                 // 세션에게 구독 성공 메세지를 전송
                 sendStatus(session, SUBSCRIBED_MESSAGE_TYPE, subscription);
                 // realtimeStore에서 실시간 종목 데이터를 꺼내서 session에 전달한다.
@@ -109,7 +98,7 @@ public class StockRealtimeClientSessionService {
         }
         StockRealtimeSubscriptionPurpose normalizedPurpose = normalizePurpose(purpose);
         // 현재 세션이 구독중인 종목 목록을 받는다.
-        Set<ClientSubscription> sessionSubscriptions = subscriptionsBySession.get(session.getId());
+        Set<ClientSubscription> sessionSubscriptions = sessionRegistry.subscriptions(session.getId());
         if (sessionSubscriptions == null) {
             // 만약 구독중인 종목이 없다면 바로 리턴
             return;
@@ -126,17 +115,10 @@ public class StockRealtimeClientSessionService {
 
     // 현재 세션에 대한 연결을 종료하는 메서드
     public void unregister(WebSocketSession session) {
-        // 세션 저장소에서 현재 세션을 제거
-        sessions.remove(session.getId());
-        // subscriptionsBySession에서 현재 세션을 제거하면서, 현재 세션이 구독중이던 종목 목록을 받는다.
-        Set<ClientSubscription> subscriptions = subscriptionsBySession.remove(session.getId());
+        Set<ClientSubscription> subscriptions = sessionRegistry.unregister(session, ClientSubscription::realtimeKey);
         if (subscriptions == null || subscriptions.isEmpty()) {
             return;
         }
-        // 현재 세션이 구독중이던 종목에 대해서 subscriptionManager를 호출해서 구독을 해제한다.(counter를 감소시킨다)
-        subscriptions.forEach(subscription ->
-            // sessionIdsByRealtimeKey 특정 종목을 구독하고 있던 session목록에서 현재 세션을 제거한다.
-            removeSessionFromRealtimeKey(session.getId(), subscription));
         subscriptions.stream()
                 .map(subscription -> new ClientSubscriptionKey(subscription.stockId(), subscription.purpose()))
                 .distinct()
@@ -154,28 +136,19 @@ public class StockRealtimeClientSessionService {
             return;
         }
         // KIS로부터 받은 종목을 구독하고 있는 세션목록을 조회한다.
-        Set<String> sessionIds = sessionIdsByRealtimeKey.get(realtimeKey(payload.api(), payload.trKey()));
+        Set<String> sessionIds = sessionRegistry.sessionIds(KisRealtimeSubscription.id(payload.api(), payload.trKey()));
         if (sessionIds == null || sessionIds.isEmpty()) {
             // 해당 종목을 구독중인 세션이 하나도 없으면 바로 return
             return;
         }
         // 세션 목록을 하나씩 조회하면서,각 세션에 종목 정보(payload)를 전송한다.
         sessionIds.forEach(sessionId -> {
-            WebSocketSession session = sessions.get(sessionId);
-            if (session == null || !session.isOpen()) {
-                return;
-            }
-            // 해당 세션이 구독하고 있는 종목 목록들을 받는다.
-            Set<ClientSubscription> subscriptions = subscriptionsBySession.get(sessionId);
-            if (subscriptions == null) {
-                return;
-            }
-            // 해당 세션이 구독하고 있는 종목들중, 현재 이벤트를 통해 전달받은 종목에 해당하는 종목이 실제로 존재하는지를 확인후 payload를 전송한다.
-            subscriptions.stream()
-                    .filter(subscription -> subscription.api() == payload.api())
-                    .filter(subscription -> subscription.trKey().equals(payload.trKey()))
-                    .findFirst()
-                    .ifPresent(subscription -> sendPayload(session, subscription, payload));
+            sessionRegistry.session(sessionId)
+                    .ifPresent(session -> sessionRegistry.findSubscription(
+                                    sessionId,
+                                    subscription -> subscription.api() == payload.api()
+                                            && subscription.trKey().equals(payload.trKey()))
+                            .ifPresent(subscription -> sendPayload(session, subscription, payload)));
         });
     }
 
@@ -185,80 +158,34 @@ public class StockRealtimeClientSessionService {
                              StockRealtimeSubscriptionPurpose purpose,
                              List<ClientSubscription> subscriptions) {
         // 현재 세션이 구독하고 있던 종목 목록을 조회
-        Set<ClientSubscription> sessionSubscriptions = subscriptionsBySession.get(session.getId());
-        if (sessionSubscriptions != null) {
-            // 현재 세션이 구독하고 있던 종목 목록에서 종목을 제거
-            sessionSubscriptions.removeAll(subscriptions);
-        }
         // 제거하고자 하는 종목을 구독하고 있는 세션 목록에서 현재 세션 제거
-        subscriptions.forEach(subscription -> removeSessionFromRealtimeKey(session.getId(), subscription));
+        sessionRegistry.removeSubscriptions(session, subscriptions, ClientSubscription::realtimeKey);
         // subscriptionManager의 unsubscribeStock을 호출해서 해당 종목에 대한 subscribe Counter를 감소시킨다.
         subscriptionManager.unsubscribeStock(stockId, purpose);
         // 구독 취소가 성공했다는 메세지를 세션에 전송한다.
         subscriptions.forEach(subscription -> sendStatus(session, UNSUBSCRIBED_MESSAGE_TYPE, subscription));
     }
 
-    // 특정 종목을 구독하고 있는 세션 목록을 조회하고, 해당 목록에서 현재 세션을 제거하는 메서드
-    private void removeSessionFromRealtimeKey(String sessionId, ClientSubscription subscription) {
-        Set<ClientSubscription> currentSubscriptions = subscriptionsBySession.get(sessionId);
-        if (currentSubscriptions != null
-                && currentSubscriptions.stream().anyMatch(current -> current.realtimeKey().equals(subscription.realtimeKey()))) {
-            return;
-        }
-
-        Set<String> sessionIds = sessionIdsByRealtimeKey.get(subscription.realtimeKey());
-        if (sessionIds == null) {
-            return;
-        }
-
-        sessionIds.remove(sessionId);
-        if (sessionIds.isEmpty()) {
-            sessionIdsByRealtimeKey.remove(subscription.realtimeKey());
-        }
-    }
-
     // 현재 세션에게 실시간 데이터(payload 데이터)를 Json형태로 전달하는 메서드
     private void sendPayload(WebSocketSession session, ClientSubscription subscription, KisRealtimePayload payload) {
-        sendJson(session, toClientMessage(subscription, payload));
+        messageSender.send(session, toClientMessage(subscription, payload), "실시간 시세");
     }
 
     // 세션에게 구독 성공 / 구독 취소와 같은 상태 메세지를 전달하는 메서드
     private void sendStatus(WebSocketSession session, String type, ClientSubscription subscription) {
-        sendJson(session, Map.of(
+        messageSender.send(session, Map.of(
                 "type", type,
                 "stockId", subscription.stockId(),
                 "api", subscription.api(),
                 "trKey", subscription.trKey(),
-                "purpose", subscription.purpose()));
+                "purpose", subscription.purpose()), "실시간 시세");
     }
 
     // 세션에게 오류를 전달하는 메서드
     private void sendError(WebSocketSession session, String message) {
-        sendJson(session, Map.of(
+        messageSender.send(session, Map.of(
                 "type", ERROR_MESSAGE_TYPE,
-                "message", message));
-    }
-
-    // 세션을 통해 데이터를 전송할때에는 Json문자열 형식으로 전송해야 하기 때문에, 자바 객체를 Json 문자열로 변환하는 작업을 수행해야 한다.
-    private void sendJson(WebSocketSession session, Object message) {
-        if (session == null || !session.isOpen()) {
-            return;
-        }
-
-        try {
-            // session에 메세지를 전송하기 위해 자바 객체를 Json 문자열로 변환한다.
-            String payload = objectMapper.writeValueAsString(message);
-            synchronized (session) {
-                if (session.isOpen()) {
-                    // 세션에 변환된 Json 문자열을 전송한다.
-                    session.sendMessage(new TextMessage(payload));
-                }
-            }
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("실시간 시세 메시지 직렬화에 실패했습니다.", e);
-        } catch (IOException e) {
-            log.warn("실시간 시세 메시지 전송에 실패했습니다. sessionId={}", session.getId(), e);
-        }
+                "message", message), "실시간 시세");
     }
 
     // KIS payload를 클라이언트 DTO로 변환하여 리턴한다.
@@ -394,11 +321,6 @@ public class StockRealtimeClientSessionService {
 
         return "flat";
     }
-    // RealtimeStore에서 실시간 데이터를 꺼내기 위한 키 설정
-    private String realtimeKey(KisRealtimeApi api, String trKey) {
-        return api.getTrId() + ":" + trKey;
-    }
-
     // purpose가 없으면 기본값으로 상세페이지 구독으로 설정
     private StockRealtimeSubscriptionPurpose normalizePurpose(StockRealtimeSubscriptionPurpose purpose) {
         return purpose == null ? StockRealtimeSubscriptionPurpose.DETAIL_PAGE : purpose;
@@ -412,7 +334,7 @@ public class StockRealtimeClientSessionService {
             StockRealtimeSubscriptionPurpose purpose // 클라이언트가 어떤 종목을 어떤 목적으로 구독하였는지
     ) {
         private String realtimeKey() {
-            return api.getTrId() + ":" + trKey;
+            return KisRealtimeSubscription.id(api, trKey);
         }
     }
 

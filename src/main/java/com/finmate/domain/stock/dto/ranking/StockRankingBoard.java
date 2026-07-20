@@ -1,6 +1,7 @@
 package com.finmate.domain.stock.dto.ranking;
 
 import com.finmate.domain.stock.StockMarketType;
+import com.finmate.global.format.DisplayFormatUtils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,10 +34,6 @@ public class StockRankingBoard {
     }
 
     public String getDisplayRefreshedAt() {
-        if (refreshedAt == null) {
-            return "-";
-        }
-
-        return refreshedAt.format(REFRESHED_AT_FORMATTER);
+        return DisplayFormatUtils.formatDate(refreshedAt, REFRESHED_AT_FORMATTER);
     }
 }

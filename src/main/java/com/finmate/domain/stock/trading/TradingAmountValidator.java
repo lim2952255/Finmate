@@ -6,26 +6,21 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
+import static com.finmate.global.validation.NumericValidator.validatePositive;
 import static com.finmate.global.validation.RequiredValidator.validateRequired;
 
 public final class TradingAmountValidator {
     public static final int QUANTITY_SCALE = 6;
 
     public static void validatePositiveQuantity(BigDecimal quantity) {
-        validateRequired(quantity, "수량은 필수입니다.");
-        if (quantity.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("수량은 0보다 커야 합니다.");
-        }
+        validatePositive(quantity, "수량은 필수입니다.", "수량은 0보다 커야 합니다.");
     }
 
     public static void validatePositivePrice(CurrencyCode currencyCode, BigDecimal price, String errorMessage) {
         validateRequired(currencyCode, "통화는 필수입니다.");
         validateRequired(price, errorMessage);
         currencyCode.validateAmountScale(price);
-
-        if (price.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException(errorMessage);
-        }
+        validatePositive(price, errorMessage);
     }
 
     public static void validateOrderPrice(StockOrderType orderType,

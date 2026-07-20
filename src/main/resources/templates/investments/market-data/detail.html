@@ -92,6 +92,33 @@
             font-weight: 700;
         }
 
+        .market-realtime-status {
+            display: inline-flex;
+            align-items: center;
+            min-height: 26px;
+            padding: 0 10px;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .market-realtime-status.connected {
+            background: #ecfdf5;
+            color: #047857;
+        }
+
+        .market-realtime-status.waiting {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .market-realtime-status.error {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
         .market-hero-stats {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -675,7 +702,11 @@
     <div th:replace="~{/layout/header :: header}"></div>
 
     <main class="main">
-        <section class="content">
+        <section class="content market-realtime-page"
+                 th:data-market-indicator="${marketIndicatorPageInfo.selectedIndicator.name()}"
+                 th:data-realtime-mode="${marketRealtimeMode}"
+                 th:data-price-fraction-digits="${marketIndicatorPageInfo.selectedIndicator.fractionDigits}"
+                 th:data-realtime-url="@{/investments/market-data/realtime(indicator=${marketIndicatorPageInfo.selectedIndicator.name()})}">
             <section class="market-hero">
                 <div class="market-hero-main">
                     <div>
@@ -696,22 +727,28 @@
                     </div>
 
                     <div class="market-price-row">
-                        <strong class="market-current-price"
+                        <strong class="market-current-price market-realtime-price-value"
                                 th:text="${marketIndicatorPageInfo.formatLatestClosePrice()}">1,506.70</strong>
-                        <span class="chart-price-change"
+                        <span class="chart-price-change market-realtime-change"
                               th:classappend="${marketIndicatorPageInfo.priceChangeClass()}">
-                            <span th:text="${marketIndicatorPageInfo.formatSignedChangeAmount()}">-</span>
-                            <span th:text="${marketIndicatorPageInfo.formatSignedChangeRate()}">-</span>
+                            <span class="market-realtime-change-amount"
+                                  th:text="${marketIndicatorPageInfo.formatSignedChangeAmount()}">-</span>
+                            <span class="market-realtime-change-rate"
+                                  th:text="${marketIndicatorPageInfo.formatSignedChangeRate()}">-</span>
                         </span>
-                        <span class="market-latest-date"
+                        <span class="market-latest-date market-realtime-time"
                               th:text="|기준 ${marketIndicatorPageInfo.formatDate(marketIndicatorPageInfo.latestTradeDate())}|">기준 2026-07-10</span>
+                        <span id="market-realtime-status"
+                              class="market-realtime-status waiting"
+                              th:text="${marketRealtimeMode == 'WEBSOCKET' ? '실시간 연결 준비' : '1분 캐시 준비'}">실시간 연결 준비</span>
                     </div>
                 </div>
 
                 <div class="market-hero-stats">
                     <div class="market-stat featured">
-                        <span>최근 종가</span>
-                        <strong th:text="${marketIndicatorPageInfo.formatLatestClosePrice()}">1,506.70</strong>
+                        <span>현재가</span>
+                        <strong class="market-realtime-price-value"
+                                th:text="${marketIndicatorPageInfo.formatLatestClosePrice()}">1,506.70</strong>
                     </div>
                     <div class="market-stat">
                         <span>단위</span>
@@ -783,13 +820,16 @@
                     <div class="chart-card">
                         <div class="chart-main-header">
                             <div class="chart-price">
-                                <strong th:text="${marketIndicatorPageInfo.formatLatestClosePrice()}">1,506.70</strong>
-                                <span class="chart-price-change"
+                                <strong class="market-realtime-price-value"
+                                        th:text="${marketIndicatorPageInfo.formatLatestClosePrice()}">1,506.70</strong>
+                                <span class="chart-price-change market-realtime-change"
                                       th:classappend="${marketIndicatorPageInfo.priceChangeClass()}">
-                                    <span th:text="${marketIndicatorPageInfo.formatSignedChangeAmount()}">-</span>
-                                    <span th:text="${marketIndicatorPageInfo.formatSignedChangeRate()}">-</span>
+                                    <span class="market-realtime-change-amount"
+                                          th:text="${marketIndicatorPageInfo.formatSignedChangeAmount()}">-</span>
+                                    <span class="market-realtime-change-rate"
+                                          th:text="${marketIndicatorPageInfo.formatSignedChangeRate()}">-</span>
                                 </span>
-                                <span class="chart-price-time"
+                                <span class="chart-price-time market-realtime-time"
                                       th:text="${marketIndicatorPageInfo.formatDate(marketIndicatorPageInfo.latestTradeDate())}">2026-07-10</span>
                             </div>
 
@@ -839,21 +879,26 @@
                                       th:each="dateLabel : ${marketIndicatorPageInfo.dateAxisLabels()}"
                                       th:attr="x=${dateLabel.x()},y=${marketIndicatorPageInfo.dateAxisLabelY()},text-anchor=${dateLabel.textAnchor()}"
                                       th:text="${dateLabel.displayValue()}">2026.07.10</text>
-                                <polyline class="market-line"
+                                <polyline id="market-chart-line"
+                                          class="market-line"
                                           th:attr="points=${marketIndicatorPageInfo.chartPolylinePoints()}"></polyline>
 
                                 <g th:if="${marketIndicatorPageInfo.hasLatestPriceLine()}">
-                                    <line class="chart-current-line"
+                                    <line id="market-chart-current-line"
+                                          class="chart-current-line"
                                           th:classappend="${marketIndicatorPageInfo.priceChangeClass()}"
                                           th:attr="x1=${marketIndicatorPageInfo.chartLeft()},y1=${marketIndicatorPageInfo.latestPriceLineY()},x2=${marketIndicatorPageInfo.chartRight()},y2=${marketIndicatorPageInfo.latestPriceLineY()}"></line>
-                                    <rect class="chart-current-badge"
+                                    <rect id="market-chart-current-badge"
+                                          class="chart-current-badge"
                                           th:classappend="${marketIndicatorPageInfo.priceChangeClass()}"
                                           th:attr="x=${marketIndicatorPageInfo.chartRight() + 2},y=${marketIndicatorPageInfo.latestPriceBadgeY()},width=80,height=34"></rect>
-                                    <text class="chart-current-badge-text"
+                                    <text id="market-chart-current-price-text"
+                                          class="chart-current-badge-text"
                                           text-anchor="middle"
                                           th:attr="x=${marketIndicatorPageInfo.chartRight() + 42},y=${marketIndicatorPageInfo.latestPriceBadgePriceY()}"
                                           th:text="${marketIndicatorPageInfo.formatLatestClosePrice()}">1,506.70</text>
-                                    <text class="chart-current-badge-text"
+                                    <text id="market-chart-current-rate-text"
+                                          class="chart-current-badge-text"
                                           text-anchor="middle"
                                           th:attr="x=${marketIndicatorPageInfo.chartRight() + 42},y=${marketIndicatorPageInfo.latestPriceBadgeRateY()}"
                                           th:text="${marketIndicatorPageInfo.formatSignedChangeRate()}">-</text>
@@ -1012,6 +1057,351 @@
     </main>
 </div>
 <script>
+    (() => {
+        const page = document.querySelector('.market-realtime-page');
+        if (!page) {
+            return;
+        }
+
+        const indicator = page.dataset.marketIndicator;
+        const realtimeMode = page.dataset.realtimeMode;
+        const realtimeUrl = page.dataset.realtimeUrl;
+        const priceFractionDigits = Number(page.dataset.priceFractionDigits || 2);
+        const priceElements = Array.from(document.querySelectorAll('.market-realtime-price-value'));
+        const changeElements = Array.from(document.querySelectorAll('.market-realtime-change'));
+        const changeAmountElements = Array.from(document.querySelectorAll('.market-realtime-change-amount'));
+        const changeRateElements = Array.from(document.querySelectorAll('.market-realtime-change-rate'));
+        const timeElements = Array.from(document.querySelectorAll('.market-realtime-time'));
+        const statusElement = document.getElementById('market-realtime-status');
+        const chartDataLayer = document.getElementById('market-chart-data-layer');
+        const chartLine = document.getElementById('market-chart-line');
+        const chartCurrentLine = document.getElementById('market-chart-current-line');
+        const chartCurrentBadge = document.getElementById('market-chart-current-badge');
+        const chartCurrentPriceText = document.getElementById('market-chart-current-price-text');
+        const chartCurrentRateText = document.getElementById('market-chart-current-rate-text');
+        let marketSocket = null;
+        let pollingTimer = null;
+
+        if (!indicator) {
+            return;
+        }
+
+        fetchLatestQuote();
+        if (realtimeMode === 'WEBSOCKET') {
+            connectMarketSocket();
+        } else {
+            pollingTimer = window.setInterval(fetchLatestQuote, 60000);
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (pollingTimer) {
+                window.clearInterval(pollingTimer);
+            }
+
+            if (marketSocket && marketSocket.readyState === WebSocket.OPEN) {
+                marketSocket.send(JSON.stringify({
+                    type: 'UNSUBSCRIBE_MARKET_INDICATOR',
+                    indicator
+                }));
+                marketSocket.close();
+            }
+        });
+
+        function connectMarketSocket() {
+            if (!window.WebSocket) {
+                setStatus('error', 'WebSocket 미지원');
+                return;
+            }
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            marketSocket = new WebSocket(`${protocol}//${window.location.host}/ws/market-data`);
+            marketSocket.addEventListener('open', () => {
+                setStatus('connected', '실시간 연결됨');
+                marketSocket.send(JSON.stringify({
+                    type: 'SUBSCRIBE_MARKET_INDICATOR',
+                    indicator
+                }));
+            });
+            marketSocket.addEventListener('message', (event) => {
+                const message = parseMessage(event.data);
+                if (!message) {
+                    return;
+                }
+
+                if (message.type === 'MARKET_REALTIME') {
+                    applyQuote(message);
+                    setStatus('connected', '실시간 반영중');
+                    return;
+                }
+
+                if (message.type === 'ERROR') {
+                    setStatus('error', message.message || '실시간 오류');
+                }
+            });
+            marketSocket.addEventListener('close', () => setStatus('waiting', '실시간 연결 종료'));
+            marketSocket.addEventListener('error', () => setStatus('error', '실시간 연결 오류'));
+        }
+
+        function fetchLatestQuote() {
+            if (!realtimeUrl) {
+                return;
+            }
+
+            if (realtimeMode !== 'WEBSOCKET') {
+                setStatus('waiting', '1분 캐시 조회중');
+            }
+
+            fetch(realtimeUrl, {
+                headers: {
+                    Accept: 'application/json'
+                }
+            })
+                    .then((response) => {
+                        if (response.status === 204) {
+                            setStatus('waiting', '실시간 데이터 대기');
+                            return null;
+                        }
+                        if (!response.ok) {
+                            throw new Error(`status=${response.status}`);
+                        }
+
+                        return response.json();
+                    })
+                    .then((quote) => {
+                        if (!quote) {
+                            return;
+                        }
+
+                        applyQuote(quote);
+                        if (realtimeMode !== 'WEBSOCKET') {
+                            setStatus('connected', '1분 캐시 반영');
+                        }
+                    })
+                    .catch(() => {
+                        if (realtimeMode !== 'WEBSOCKET') {
+                            setStatus('error', '실시간 데이터 조회 실패');
+                        }
+                    });
+        }
+
+        function applyQuote(quote) {
+            const currentPrice = toNumber(quote.currentPrice);
+            if (Number.isFinite(currentPrice)) {
+                priceElements.forEach((element) => {
+                    element.textContent = formatNumber(currentPrice, priceFractionDigits);
+                });
+            }
+
+            const change = toNumber(quote.change);
+            const changeRate = toNumber(quote.changeRate);
+            const priceChangeClass = quote.priceChangeClass || changeClass(change);
+            changeElements.forEach((element) => {
+                element.classList.remove('bullish', 'bearish', 'flat');
+                element.classList.add(priceChangeClass);
+            });
+            changeAmountElements.forEach((element) => {
+                element.textContent = formatSignedNumber(change, priceFractionDigits);
+            });
+            changeRateElements.forEach((element) => {
+                element.textContent = Number.isFinite(changeRate)
+                        ? `${formatSignedNumber(changeRate, 2)}%`
+                        : '-';
+            });
+
+            const timeText = realtimeTimeText(quote);
+            timeElements.forEach((element) => {
+                element.textContent = timeText;
+            });
+
+            updateChartCurrentMarker(currentPrice, changeRate, priceChangeClass);
+        }
+
+        function updateChartCurrentMarker(currentPrice, changeRate, priceChangeClass) {
+            if (!chartDataLayer
+                    || !chartCurrentLine
+                    || !chartCurrentBadge
+                    || !chartCurrentPriceText
+                    || !chartCurrentRateText
+                    || !Number.isFinite(currentPrice)) {
+                return;
+            }
+
+            const chartMaxPrice = toNumber(chartDataLayer.dataset.chartMaxPrice);
+            const chartMinPrice = toNumber(chartDataLayer.dataset.chartMinPrice);
+            const priceAreaTop = toNumber(chartDataLayer.dataset.priceAreaTop);
+            const priceAreaBottom = toNumber(chartDataLayer.dataset.priceAreaBottom);
+            const priceAreaHeight = priceAreaBottom - priceAreaTop;
+            if (![chartMaxPrice, chartMinPrice, priceAreaTop, priceAreaBottom].every(Number.isFinite)
+                    || chartMaxPrice <= chartMinPrice
+                    || priceAreaHeight <= 0) {
+                return;
+            }
+
+            const priceRatio = (chartMaxPrice - currentPrice) / (chartMaxPrice - chartMinPrice);
+            const currentY = clamp(priceAreaTop + priceAreaHeight * priceRatio, priceAreaTop, priceAreaBottom);
+            const badgeY = clamp(currentY - 18, priceAreaTop, priceAreaBottom - 34);
+            updateChartLineLastPoint(currentPrice, currentY);
+            chartCurrentLine.setAttribute('y1', formatCoordinate(currentY));
+            chartCurrentLine.setAttribute('y2', formatCoordinate(currentY));
+            chartCurrentBadge.setAttribute('y', formatCoordinate(badgeY));
+            chartCurrentPriceText.setAttribute('y', formatCoordinate(badgeY + 14));
+            chartCurrentRateText.setAttribute('y', formatCoordinate(badgeY + 29));
+            chartCurrentPriceText.textContent = formatNumber(currentPrice, priceFractionDigits);
+            chartCurrentRateText.textContent = Number.isFinite(changeRate)
+                    ? `${formatSignedNumber(changeRate, 2)}%`
+                    : '-';
+            [chartCurrentLine, chartCurrentBadge].forEach((element) => {
+                element.classList.remove('bullish', 'bearish', 'flat');
+                element.classList.add(priceChangeClass);
+            });
+        }
+
+        function updateChartLineLastPoint(currentPrice, currentY) {
+            if (!chartLine) {
+                return;
+            }
+
+            const points = String(chartLine.getAttribute('points') || '').trim().split(/\s+/).filter(Boolean);
+            if (points.length === 0) {
+                return;
+            }
+
+            const lastPoint = points[points.length - 1].split(',');
+            if (lastPoint.length < 2 || lastPoint[0] === '') {
+                return;
+            }
+
+            points[points.length - 1] = `${lastPoint[0]},${formatCoordinate(currentY)}`;
+            chartLine.setAttribute('points', points.join(' '));
+
+            const hoverTargets = chartDataLayer
+                    ? Array.from(chartDataLayer.querySelectorAll('.chart-hover-target'))
+                    : [];
+            const latestHoverTarget = hoverTargets[hoverTargets.length - 1];
+            if (latestHoverTarget) {
+                latestHoverTarget.dataset.close = formatNumber(currentPrice, priceFractionDigits);
+                latestHoverTarget.dataset.closeRaw = String(currentPrice);
+            }
+        }
+
+        function realtimeTimeText(quote) {
+            if (quote.receivedAt) {
+                const receivedAt = new Date(quote.receivedAt);
+                if (!Number.isNaN(receivedAt.getTime())) {
+                    return `실시간 ${receivedAt.toLocaleTimeString('ko-KR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    })}`;
+                }
+            }
+
+            if (quote.tradeDate || quote.tradeTime) {
+                return `실시간 ${[formatCompactDate(quote.tradeDate), formatCompactTime(quote.tradeTime)]
+                        .filter(Boolean)
+                        .join(' ')}`;
+            }
+
+            return '실시간 갱신';
+        }
+
+        function setStatus(status, text) {
+            if (!statusElement) {
+                return;
+            }
+
+            statusElement.classList.remove('connected', 'waiting', 'error');
+            statusElement.classList.add(status);
+            statusElement.textContent = text;
+        }
+
+        function parseMessage(payload) {
+            try {
+                return JSON.parse(payload);
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function formatNumber(value, fractionDigits) {
+            if (!Number.isFinite(value)) {
+                return '-';
+            }
+
+            return new Intl.NumberFormat('ko-KR', {
+                minimumFractionDigits: fractionDigits,
+                maximumFractionDigits: fractionDigits
+            }).format(value);
+        }
+
+        function formatSignedNumber(value, fractionDigits) {
+            if (!Number.isFinite(value)) {
+                return '-';
+            }
+
+            const formatted = formatNumber(Math.abs(value), fractionDigits);
+            if (value > 0) {
+                return `+${formatted}`;
+            }
+            if (value < 0) {
+                return `-${formatted}`;
+            }
+
+            return formatted;
+        }
+
+        function formatCompactDate(value) {
+            if (!value) {
+                return null;
+            }
+
+            const normalized = String(value).trim();
+            if (/^\d{8}$/.test(normalized)) {
+                return `${normalized.substring(0, 4)}-${normalized.substring(4, 6)}-${normalized.substring(6, 8)}`;
+            }
+
+            return normalized;
+        }
+
+        function formatCompactTime(value) {
+            if (!value) {
+                return null;
+            }
+
+            const normalized = String(value).trim();
+            if (/^\d{6}$/.test(normalized)) {
+                return `${normalized.substring(0, 2)}:${normalized.substring(2, 4)}:${normalized.substring(4, 6)}`;
+            }
+
+            return normalized;
+        }
+
+        function changeClass(change) {
+            if (!Number.isFinite(change) || change === 0) {
+                return 'flat';
+            }
+
+            return change > 0 ? 'bullish' : 'bearish';
+        }
+
+        function clamp(value, min, max) {
+            return Math.max(min, Math.min(max, value));
+        }
+
+        function formatCoordinate(value) {
+            return Number(value).toFixed(2);
+        }
+
+        function toNumber(value) {
+            if (value == null || value === '') {
+                return Number.NaN;
+            }
+
+            return Number(String(value).replace(/,/g, ''));
+        }
+    })();
+
     (() => {
         const dataLayer = document.getElementById('market-chart-data-layer');
         if (!dataLayer) {

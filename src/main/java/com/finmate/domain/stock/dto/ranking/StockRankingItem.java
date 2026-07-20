@@ -1,14 +1,13 @@
 package com.finmate.domain.stock.dto.ranking;
 
 import com.finmate.domain.stock.StockMarketType;
+import com.finmate.global.format.DisplayFormatUtils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
-import java.util.Locale;
 
 // 랭킹 목록에서 한 줄(row)에 표시될 종목 정보를 담는 DTO
 @Getter
@@ -51,7 +50,7 @@ public class StockRankingItem {
             return "-";
         }
 
-        return currencyPrefix() + formatDecimal(currentPrice, isKrw() ? 0 : 2);
+        return currencyPrefix() + DisplayFormatUtils.formatFixedDecimal(currentPrice, isKrw() ? 0 : 2);
     }
 
     public String getDisplayChangeRate() {
@@ -59,8 +58,7 @@ public class StockRankingItem {
             return "-";
         }
 
-        String sign = changeRate.signum() > 0 ? "+" : "";
-        return sign + formatDecimal(changeRate, 2) + "%";
+        return DisplayFormatUtils.formatSignedPercent(changeRate, 2);
     }
 
     public String getChangeRateClass() {
@@ -76,7 +74,7 @@ public class StockRankingItem {
             return "-";
         }
 
-        return NumberFormat.getIntegerInstance(Locale.KOREA).format(accumulatedVolume);
+        return DisplayFormatUtils.formatInteger(accumulatedVolume);
     }
 
     public String getDisplayAccumulatedTradeAmount() {
@@ -85,7 +83,7 @@ public class StockRankingItem {
         }
 
         String suffix = isKrw() ? "원" : "";
-        return currencyPrefix() + formatDecimal(accumulatedTradeAmount, isKrw() ? 0 : 2) + suffix;
+        return currencyPrefix() + DisplayFormatUtils.formatFixedDecimal(accumulatedTradeAmount, isKrw() ? 0 : 2) + suffix;
     }
 
     private boolean isKrw() {
@@ -100,10 +98,4 @@ public class StockRankingItem {
         return "";
     }
 
-    private String formatDecimal(BigDecimal value, int fractionDigits) {
-        NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.KOREA);
-        numberFormat.setMinimumFractionDigits(fractionDigits);
-        numberFormat.setMaximumFractionDigits(fractionDigits);
-        return numberFormat.format(value);
-    }
 }

@@ -274,6 +274,8 @@ public class DomesticStockMetadata {
 
     // 증거금 비율 원본값이다. 주문 시 필요한 현금/담보 비율을 나타내며 미수·신용 가능성과 연관된다.
     // 위험도가 높은 종목일수록 증거금률이 높아질 수 있어 주문 가능 금액 계산에 영향을 준다.
+    // 주식을 거래할때, 해당 주식 가격 전부를 내는것이 아니라, 증거금만 우선적으로 내서 거래할 수 있다.
+    // 위험도가 높은 종목일 수록 증거금 비율이 높다.
     @Column(name = "margin_rate", length = 3)
     private String marginRate;
 

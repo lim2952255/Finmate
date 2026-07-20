@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+import static com.finmate.global.validation.RequiredValidator.validateRequired;
+
 // 고유한 계좌번호 생성용 엔티티(테이블)
 // 계좌번호 생성 후 발급시, 우선적으로 해당 테이블에 저장한 후에 계좌번호를 발급함으로서 계좌번호가 중복되는 문제를 방지한다.
 @Entity
@@ -36,13 +38,8 @@ public class AccountNumberRegistry {
     private LocalDateTime createdAt;
 
     public static AccountNumberRegistry create(String accountNumber, AccountType accountType) {
-        if (accountNumber == null || accountNumber.isBlank()) {
-            throw new RuntimeException("계좌번호는 필수입니다.");
-        }
-
-        if (accountType == null) {
-            throw new RuntimeException("계좌 타입은 필수입니다.");
-        }
+        validateRequired(accountNumber, "계좌번호는 필수입니다.");
+        validateRequired(accountType, "계좌 타입은 필수입니다.");
 
         AccountNumberRegistry registry = new AccountNumberRegistry();
         registry.accountNumber = accountNumber;

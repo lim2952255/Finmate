@@ -3,6 +3,7 @@ package com.finmate.service.stock.trading;
 import com.finmate.domain.investment.CurrencyCode;
 import com.finmate.domain.investment.InvestmentCashBalance;
 import com.finmate.domain.stock.Stock;
+import com.finmate.domain.stock.market.StockMarketSchedules;
 import com.finmate.domain.stock.trading.StockHolding;
 import com.finmate.domain.stock.trading.StockOrder;
 import com.finmate.domain.stock.trading.StockOrderReservation;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -51,12 +53,13 @@ public class StockTradingExecutionService {
     @Transactional
     public void processRealtimeUpdate(Long stockId) {
         Stock stock = lookupService.findStock(stockId);
-        processReservations(stock); // 종목의 예약주문 체결 여부를 결정
-        processOrders(stock); // 종목의 지정가 주문 체결 여부를 결정
+        boolean tradingTime = isTradingTime(stock);
+        processReservations(stock, tradingTime); // 종목의 예약주문 체결 여부를 결정
+        processOrders(stock, tradingTime); // 종목의 지정가 주문 체결 여부를 결정
     }
 
     // 종목의 예약주문 체결 여부를 결정한다.
-    private void processReservations(Stock stock) {
+    private void processReservations(Stock stock, boolean tradingTime) {
         // 해당 종목과 관련하여 활성상태의 예약주문들을 조회
         List<StockOrderReservation> reservations = stockOrderReservationRepository.findByStockIdAndStatusForUpdate(
                 stock.getId(),
@@ -70,6 +73,10 @@ public class StockTradingExecutionService {
                 reservation.expire(); // 예약 만료 처리
                 // 예약 주문 취소 이벤트를 발생시킨다. (이벤트 리스너가 해당 예약종목에 대한 구독을 취소한다.)
                 eventPublisher.publishEvent(new StockReservationClosedEvent(stock.getId()));
+                continue;
+            }
+
+            if (!tradingTime) {
                 continue;
             }
 
@@ -98,7 +105,7 @@ public class StockTradingExecutionService {
     }
 
     // 종목의 일반 주문 체결 여부를 결정한다. (지정가 주문)
-    private void processOrders(Stock stock) {
+    private void processOrders(Stock stock, boolean tradingTime) {
         // 해당 종목과 관련하여 활성 상태의 일반주문들을 조회
         List<StockOrder> orders = stockOrderRepository.findActiveByStockIdForUpdate(stock.getId(), ACTIVE_ORDER_STATUSES);
         LocalDateTime now = LocalDateTime.now();
@@ -110,6 +117,10 @@ public class StockTradingExecutionService {
                 order.expireRemaining(); // 지정가 주문을 만료시킨다.
                 // 지정가 주문이 만료되었으므로, 일반 주문 취소 이벤트를 발생시킨다.
                 eventPublisher.publishEvent(new StockOrderClosedEvent(order.getStock().getId()));
+                continue;
+            }
+
+            if (!tradingTime) {
                 continue;
             }
 
@@ -142,6 +153,10 @@ public class StockTradingExecutionService {
     // closeActiveSubscript가 true인 경우에는 종목구독을 한 상태에서 주문을 체결하는 것이기 때문에, 주문을 체결하고 난 다음에 구독해제 이벤트를 발생시켜야 한다.
     // 반면 closeActiveSubscript가 false인 경우에는 종목구독을 하지 않은 상태에서 주문을 체결하는 것이기 때문에, 주문을 체결하고 난 다음에도 구독해제 이벤트를 발생시키지 않는다.
     boolean executeOrderIfPossible(StockOrder order, boolean closeActiveSubscription) {
+        if (!isTradingTime(order.getStock())) {
+            return false;
+        }
+
         // 실시간 체결 기준 가격(실시간 체결가 / 실시간 호가 기반)
         BigDecimal executionPrice = realtimePriceService
                 .findExecutablePrice(order.getStock(), order.getSide())
@@ -160,6 +175,11 @@ public class StockTradingExecutionService {
             eventPublisher.publishEvent(new StockOrderClosedEvent(order.getStock().getId()));
         }
         return true;
+    }
+
+    // 현재 시간이 종목을 거래할 수 있는 시간인지 확인
+    private boolean isTradingTime(Stock stock) {
+        return StockMarketSchedules.isTradingTime(stock.getMarketType(), ZonedDateTime.now());
     }
 
     // 주문이 체결가능한지 여부를 체결 기준 가격을 기반으로 검사한다.

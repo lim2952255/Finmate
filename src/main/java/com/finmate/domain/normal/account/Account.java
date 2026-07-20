@@ -14,6 +14,9 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 
+import static com.finmate.global.validation.NumericValidator.validatePositive;
+import static com.finmate.global.validation.RequiredValidator.validateRequired;
+
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(
@@ -67,13 +70,8 @@ public class Account {
 
     // Account 엔티티는 외부에서 함부로 수정하면 안되기 때문에 setter를 제거하고 별도의 메서드를 추가
     public static Account create(String accountNumber, BankCode bankCode, CurrencyCode currencyCode) {
-        if (accountNumber == null || accountNumber.isBlank()) {
-            throw new RuntimeException("계좌번호는 필수입니다.");
-        }
-
-        if (bankCode == null) {
-            throw new RuntimeException("은행은 필수입니다.");
-        }
+        validateRequired(accountNumber, "계좌번호는 필수입니다.");
+        validateRequired(bankCode, "은행은 필수입니다.");
 
         CurrencyCode accountCurrencyCode = currencyCode == null ? CurrencyCode.DEFAULT : currencyCode;
 
@@ -90,9 +88,7 @@ public class Account {
 
     // 연관관계를 설정하는 용도
     public void assignUser(User user) {
-        if (user == null) {
-            throw new RuntimeException("사용자는 필수입니다.");
-        }
+        validateRequired(user, "사용자는 필수입니다.");
 
         this.user = user;
     }
@@ -108,10 +104,7 @@ public class Account {
     // 계좌 출금 메서드
     public void withdraw(BigDecimal amount) {
         validateCurrencyAmountScale(amount);
-
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("출금 금액은 0보다 커야 합니다.");
-        }
+        validatePositive(amount, "출금 금액은 0보다 커야 합니다.");
 
         if (this.balance.compareTo(amount) < 0) {
             throw new RuntimeException("잔액이 부족합니다.");
@@ -123,26 +116,19 @@ public class Account {
     // 계좌 입금 메서드
     public void deposit(BigDecimal amount) {
         validateCurrencyAmountScale(amount);
-
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("입금 금액은 0보다 커야 합니다.");
-        }
+        validatePositive(amount, "입금 금액은 0보다 커야 합니다.");
 
         this.balance = this.balance.add(amount);
     }
 
     // 이체한도를 update하는 메서드
     public void updateTransferLimit(BigDecimal dailyTransferLimit, BigDecimal singleTransferLimit) {
-        if (dailyTransferLimit == null || singleTransferLimit == null) {
-            throw new RuntimeException("이체한도를 입력해주세요.");
-        }
-
+        validateRequired(dailyTransferLimit, "이체한도를 입력해주세요.");
+        validateRequired(singleTransferLimit, "이체한도를 입력해주세요.");
         validateCurrencyAmountScale(dailyTransferLimit);
         validateCurrencyAmountScale(singleTransferLimit);
-
-        if (dailyTransferLimit.compareTo(BigDecimal.ZERO) <= 0 || singleTransferLimit.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("이체한도는 0보다 커야 합니다.");
-        }
+        validatePositive(dailyTransferLimit, "이체한도는 0보다 커야 합니다.");
+        validatePositive(singleTransferLimit, "이체한도는 0보다 커야 합니다.");
 
         if (singleTransferLimit.compareTo(dailyTransferLimit) > 0) {
             throw new RuntimeException("1회 이체한도는 일일 이체한도보다 클 수 없습니다.");

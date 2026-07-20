@@ -33,6 +33,7 @@
                         <th>예수금</th>
                         <th>대표계좌</th>
                         <th>투자금 이체</th>
+                        <th>환전</th>
                         <th>포트폴리오</th>
                         <th>설정</th>
                     </tr>
@@ -61,6 +62,9 @@
                             <a th:href="@{/investments/transfer(from=${investment.accountNumber}, fromSecuritiesCompanyCode=${investment.securitiesCompanyCode})}">이체</a>
                         </td>
                         <td>
+                            <a th:href="@{/investments/currency-exchange(investmentNumber=${investment.accountNumber}, securitiesCompanyCode=${investment.securitiesCompanyCode})}">환전</a>
+                        </td>
+                        <td>
                             <a th:href="@{/investments/portfolio(investmentId=${investment.id})}">포트폴리오</a>
                         </td>
                         <td>
@@ -79,6 +83,7 @@
 
             <p>
                 <a th:href="@{/investments/open}">증권 계좌 개설</a>
+                <a th:href="@{/investments/currency-exchange}">증권계좌 환전</a>
                 <a th:href="@{/investments}">투자 홈</a>
             </p>
         </section>

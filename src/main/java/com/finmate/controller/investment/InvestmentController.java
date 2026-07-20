@@ -3,6 +3,9 @@ package com.finmate.controller.investment;
 import com.finmate.domain.investment.SecuritiesCompanyCode;
 import com.finmate.domain.investment.dto.InvestmentHomeInfo;
 import com.finmate.domain.investment.dto.OpenInvestment;
+import com.finmate.domain.investment.dto.exchange.InvestmentCurrencyExchangePageInfo;
+import com.finmate.domain.investment.dto.exchange.InvestmentCurrencyExchangeRequest;
+import com.finmate.domain.investment.dto.exchange.InvestmentCurrencyExchangeTransactionPageInfo;
 import com.finmate.domain.investment.dto.cash.InvestmentWithdrawalRequest;
 import com.finmate.domain.investment.dto.cash.InvestmentWithdrawalPageInfo;
 import com.finmate.domain.investment.dto.cash.SecuritiesCashTransactionPageInfo;
@@ -11,19 +14,23 @@ import com.finmate.domain.market.MarketIndicatorSymbol;
 import com.finmate.domain.market.MarketIndicatorType;
 import com.finmate.domain.market.dto.MarketDataChartPeriod;
 import com.finmate.domain.market.dto.MarketIndicatorPageInfo;
+import com.finmate.domain.market.dto.MarketRealtimeMessage;
 import com.finmate.domain.normal.account.transaction.TransactionPeriod;
 import com.finmate.domain.stock.dto.trading.StockPortfolioPageInfo;
 import com.finmate.domain.stock.dto.trading.StockTradingHistoryPageInfo;
 import com.finmate.domain.user.User;
 import com.finmate.domain.user.dto.SessionUser;
 import com.finmate.global.constant.Const;
+import com.finmate.service.investment.InvestmentCurrencyExchangeService;
 import com.finmate.service.investment.InvestmentService;
 import com.finmate.service.market.MarketDataService;
+import com.finmate.service.market.MarketRealtimeQuoteService;
 import com.finmate.service.stock.trading.StockTradingQueryService;
 import com.finmate.service.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -37,9 +44,11 @@ import java.util.List;
 @RequestMapping("/investments")
 public class InvestmentController {
     private final InvestmentService investmentService;
+    private final InvestmentCurrencyExchangeService investmentCurrencyExchangeService;
     private final UserService userService;
     private final StockTradingQueryService stockTradingQueryService;
     private final MarketDataService marketDataService;
+    private final MarketRealtimeQuoteService marketRealtimeQuoteService;
 
     @GetMapping
     public String investmentHome(Model model,
@@ -180,6 +189,71 @@ public class InvestmentController {
         model.addAttribute("securitiesCashTransactionPageInfo", pageInfo);
         return "investments/cash/transactions";
     }
+
+    // 통화 환전 페이지 이동
+    @GetMapping("/currency-exchange")
+    public String currencyExchange(@RequestParam(required = false) String investmentNumber,
+                                   @RequestParam(required = false) SecuritiesCompanyCode securitiesCompanyCode,
+                                   Model model,
+                                   @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+        InvestmentCurrencyExchangeRequest request = new InvestmentCurrencyExchangeRequest();
+
+        // 사용자가 특정 증권계좌를 선택한 경우, 해당 정보를 InvestmentCurrencyExchangeRequest에 담는다.
+        if (investmentNumber != null && !investmentNumber.isBlank() && securitiesCompanyCode != null) {
+            try {
+                request = investmentCurrencyExchangeService.prepareCurrencyExchange(
+                        sessionUser.getId(),
+                        investmentNumber,
+                        securitiesCompanyCode);
+            } catch (Exception e) {
+                model.addAttribute("errorMessage", e.getMessage());
+            }
+        }
+
+        addCurrencyExchangeModel(sessionUser.getId(), request, model);
+        return "investments/cash/exchange";
+    }
+
+    // 통화 환전 기능 처리
+    @PostMapping("/currency-exchange")
+    public String currencyExchange(@Valid @ModelAttribute("investmentCurrencyExchangeRequest") InvestmentCurrencyExchangeRequest request,
+                                   BindingResult bindingResult,
+                                   Model model,
+                                   @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+        if (bindingResult.hasErrors()) {
+            addCurrencyExchangeModel(sessionUser.getId(), request, model);
+            return "investments/cash/exchange";
+        }
+
+        try {
+            // 환전 처리
+            investmentCurrencyExchangeService.exchangeCurrency(sessionUser.getId(), request);
+        } catch (Exception e) {
+            bindingResult.reject("errorMessage", e.getMessage());
+            addCurrencyExchangeModel(sessionUser.getId(), request, model);
+            return "investments/cash/exchange";
+        }
+
+        return "redirect:/investments/currency-exchange/transactions?investmentId=" + request.getInvestmentId();
+    }
+
+    // 통화 환전 내역 출력 페이지 이동
+    @GetMapping("/currency-exchange/transactions")
+    public String currencyExchangeTransactions(@RequestParam(required = false) Long investmentId,
+                                               @RequestParam(required = false, defaultValue = "ONE_MONTH") TransactionPeriod period,
+                                               @RequestParam(required = false, defaultValue = "0") int page,
+                                               Model model,
+                                               @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+        InvestmentCurrencyExchangeTransactionPageInfo pageInfo =
+                investmentCurrencyExchangeService.getCurrencyExchangeTransactionPageInfo(
+                        sessionUser.getId(),
+                        investmentId,
+                        period,
+                        page);
+        model.addAttribute("investmentCurrencyExchangeTransactionPageInfo", pageInfo);
+        return "investments/cash/exchange-transactions";
+    }
+
     // 사용자의 포트폴리오, 또는 특정 증권계좌의 포트폴리오 출력
     @GetMapping("/portfolio")
     public String portfolio(@RequestParam(required = false) Long investmentId,
@@ -232,6 +306,14 @@ public class InvestmentController {
         return "investments/market-data/detail";
     }
 
+    @ResponseBody
+    @GetMapping("/market-data/realtime")
+    public ResponseEntity<MarketRealtimeMessage> marketDataRealtime(@RequestParam MarketIndicatorSymbol indicator) {
+        return marketRealtimeQuoteService.getLatest(indicator)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
     private void addMarketDataDetailModel(Model model,
                                           MarketIndicatorPageInfo pageInfo,
                                           String pageTitle,
@@ -240,5 +322,15 @@ public class InvestmentController {
         model.addAttribute("marketDataPeriods", MarketDataChartPeriod.values());
         model.addAttribute("marketDataPageTitle", pageTitle);
         model.addAttribute("marketDataActionPath", actionPath);
+        model.addAttribute("marketRealtimeMode", pageInfo.selectedIndicator().getRealtimeMode());
+    }
+
+    private void addCurrencyExchangeModel(Long userId,
+                                          InvestmentCurrencyExchangeRequest request,
+                                          Model model) {
+        InvestmentCurrencyExchangePageInfo pageInfo =
+                investmentCurrencyExchangeService.getCurrencyExchangePageInfo(userId, request);
+        model.addAttribute("investmentCurrencyExchangePageInfo", pageInfo);
+        model.addAttribute("investmentCurrencyExchangeRequest", pageInfo.getInvestmentCurrencyExchangeRequest());
     }
 }

@@ -2,6 +2,7 @@ package com.finmate.domain.market;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 // USD/KRW, 코스피, 코스닥, 나스닥 종합, 나스닥 100 같은 실제 조회 대상을 설정
 public enum MarketIndicatorSymbol {
@@ -123,11 +124,36 @@ public enum MarketIndicatorSymbol {
         return fractionDigits;
     }
 
+    public boolean isDomesticRealtimeIndex() {
+        return this == KOSPI || this == KOSDAQ;
+    }
+
+    public boolean isPollingRealtimeIndicator() {
+        return this == USD_KRW || this == NASDAQ_COMPOSITE || this == NASDAQ_100;
+    }
+
+    public String getRealtimeMode() {
+        return isDomesticRealtimeIndex() ? "WEBSOCKET" : "POLLING";
+    }
+
     public static List<MarketIndicatorSymbol> findByType(MarketIndicatorType type) {
         return Arrays.stream(values())
                 .filter(symbol -> symbol.type == type)
                 .toList();
     }
+
+    public static Optional<MarketIndicatorSymbol> parse(String value) {
+        if (value == null || value.isBlank()) {
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.of(valueOf(value.trim()));
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
+    }
+
     // 기본값 설정
     public static MarketIndicatorSymbol defaultFor(MarketIndicatorType type) {
         return switch (type) {

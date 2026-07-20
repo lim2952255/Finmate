@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.finmate.global.validation.RequiredValidator.validateRequired;
+
 // 증권 계좌도 외부에서 함부로 수정하면 안되기 때문에 Setter를 설정하지 않는다.
 /*
 * 관심종목 = 사용자별
@@ -66,17 +68,9 @@ public class Investment {
     public static Investment create(User user,
                                     String accountNumber,
                                     SecuritiesCompanyCode securitiesCompanyCode) {
-        if (user == null) {
-            throw new RuntimeException("사용자는 필수입니다.");
-        }
-
-        if (accountNumber == null || accountNumber.isBlank()) {
-            throw new RuntimeException("증권 계좌번호는 필수입니다.");
-        }
-
-        if (securitiesCompanyCode == null) {
-            throw new RuntimeException("증권사는 필수입니다.");
-        }
+        validateRequired(user, "사용자는 필수입니다.");
+        validateRequired(accountNumber, "증권 계좌번호는 필수입니다.");
+        validateRequired(securitiesCompanyCode, "증권사는 필수입니다.");
 
         Investment investment = new Investment();
         investment.user = user;
@@ -97,9 +91,7 @@ public class Investment {
 
     // 증권 계좌에 특정 통화의 예수금 잔고를 하나 추가하는 메서드
     public InvestmentCashBalance addCashBalance(CurrencyCode currencyCode) {
-        if (currencyCode == null) {
-            throw new RuntimeException("통화는 필수입니다.");
-        }
+        validateRequired(currencyCode, "통화는 필수입니다.");
         // 이미 해당 증권 계좌에 해당 예수금 통화가 등록되어 있으면 오류 출력
         boolean exists = this.cashBalances.stream()
                 .anyMatch(cashBalance -> cashBalance.getCurrencyCode() == currencyCode);

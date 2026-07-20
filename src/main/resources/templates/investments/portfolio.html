@@ -227,8 +227,22 @@
                         <td class="portfolio-market-value money-cell">-</td>
                         <td class="portfolio-profit money-cell">-</td>
                         <td class="portfolio-profit-rate">-</td>
-                        <td>
-                            <a th:href="@{/investments/stocks/order/{stockId}(stockId=${holding.stock.id},investmentId=${holding.investment.id})}">주문</a>
+                        <td th:with="tradingAvailable=${stockPortfolioPageInfo.isStockTradingAvailable(holding.stock.marketType)},
+                                     tradingTimeDescription=${stockPortfolioPageInfo.getStockTradingTimeDescription(holding.stock.marketType)}">
+                            <a th:if="${tradingAvailable}"
+                               th:title="|거래 가능 시간: ${tradingTimeDescription}|"
+                               th:href="@{/investments/stocks/order/{stockId}(stockId=${holding.stock.id},investmentId=${holding.investment.id})}">
+                                주문
+                            </a>
+                            <span th:unless="${tradingAvailable}"
+                                  class="secondary-line"
+                                  th:title="|거래 가능 시간: ${tradingTimeDescription}|">
+                                거래 시간 아님
+                            </span>
+                            <span class="secondary-line"
+                                  th:text="${tradingTimeDescription}">
+                                대한민국 시간 기준 09:00~15:30, 15:40~18:00
+                            </span>
                         </td>
                     </tr>
                     </tbody>

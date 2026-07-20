@@ -16,13 +16,13 @@ import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import static com.finmate.global.validation.NumericValidator.validateNonNegative;
+import static com.finmate.global.validation.NumericValidator.validateNullableNonNegative;
 import static com.finmate.global.validation.RequiredValidator.validateRequired;
 
 // 주가 지수 / 환율 정보를 저장하는 엔티티
@@ -135,19 +135,4 @@ public class MarketDailyPrice {
         }
     }
 
-    private static void validateNonNegative(BigDecimal value, String message) {
-        if (value == null || value.signum() < 0) {
-            throw new RuntimeException(message);
-        }
-    }
-
-    private static void validateNullableNonNegative(Long value, String message) {
-        if (value == null) {
-            return;
-        }
-
-        if (value < 0) {
-            throw new RuntimeException(message);
-        }
-    }
 }

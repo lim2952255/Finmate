@@ -4,10 +4,15 @@ import com.finmate.domain.stock.Stock;
 import com.finmate.domain.stock.StockMarketType;
 import com.finmate.domain.stock.dto.detail.StockChartPeriod;
 import com.finmate.domain.stock.dto.detail.StockDetailPageInfo;
+import com.finmate.domain.stock.dto.detail.StockMetadataDisplayInfo;
+import com.finmate.domain.stock.metadata.DomesticStockMetadata;
+import com.finmate.domain.stock.metadata.OverseasStockMetadata;
 import com.finmate.domain.stock.market.StockMarketSchedule;
 import com.finmate.domain.stock.market.StockMarketSchedules;
 import com.finmate.domain.stock.price.StockDailyPrice;
 import com.finmate.repository.stock.StockRepository;
+import com.finmate.repository.stock.metadata.DomesticStockMetadataRepository;
+import com.finmate.repository.stock.metadata.OverseasStockMetadataRepository;
 import com.finmate.repository.stock.price.StockDailyPriceRepository;
 import com.finmate.service.stock.price.StockDailyPriceSyncService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +32,8 @@ public class StockDetailService {
     private final StockRepository stockRepository;
     private final StockDailyPriceRepository stockDailyPriceRepository;
     private final StockDailyPriceSyncService stockDailyPriceSyncService;
+    private final DomesticStockMetadataRepository domesticStockMetadataRepository;
+    private final OverseasStockMetadataRepository overseasStockMetadataRepository;
 
     // 특정 기간동안의 특정 종목의 일봉 데이터들을 조회
     public StockDetailPageInfo getStockDetailPageInfo(Long stockId, StockChartPeriod period) {
@@ -57,6 +64,7 @@ public class StockDetailService {
                         DEFAULT_ADJUSTED_PRICE,
                         chartStartDate,
                         expectedLatestTradeDate);
+        StockMetadataDisplayInfo metadataDisplayInfo = getMetadataDisplayInfo(stock);
 
         // StockDetailPageInfo라는 DTO에 dailyPrices 리스트를 담아서 리턴한다.
         return new StockDetailPageInfo(
@@ -66,7 +74,10 @@ public class StockDetailService {
                 expectedLatestTradeDate,
                 expectedLatestTradeDate,
                 savedDailyPriceCount,
-                dailyPrices);
+                dailyPrices,
+                metadataDisplayInfo,
+                StockMarketSchedules.isTradingTimeNow(stock.getMarketType()),
+                StockMarketSchedules.tradingTimeDescription(stock.getMarketType()));
     }
     // 종목 상세 페이지를 조회하는 순간
     // 필요한 경우에만 KIS API를 호출하고
@@ -110,6 +121,18 @@ public class StockDetailService {
                 expectedLatestTradeDate,
                 DEFAULT_ADJUSTED_PRICE);
     }
+
+    private StockMetadataDisplayInfo getMetadataDisplayInfo(Stock stock) {
+        DomesticStockMetadata domesticMetadata = domesticStockMetadataRepository
+                .findByStock_Id(stock.getId())
+                .orElse(null);
+        OverseasStockMetadata overseasMetadata = domesticMetadata == null
+                ? overseasStockMetadataRepository.findByStock_Id(stock.getId()).orElse(null)
+                : null;
+
+        return StockMetadataDisplayInfo.from(stock, domesticMetadata, overseasMetadata);
+    }
+
     // 만약 금일 일봉 반영 기준 시간이 지났다면 오늘 날짜까지를 ExpectedLatestTradeDate로 설정하고,
     // 그렇지 않다면 전날까지의 날짜를 ExpectedLatestTradeDate로 설정한다.
     private LocalDate getExpectedLatestTradeDate(StockMarketType marketType) {

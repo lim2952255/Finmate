@@ -26,6 +26,150 @@
             font-weight: 700;
         }
 
+        .metadata-card {
+            margin-top: 18px;
+            padding: 18px;
+            border: 1px solid #dbe3ef;
+            border-radius: 14px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+        }
+
+        .metadata-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .metadata-eyebrow {
+            display: inline-flex;
+            margin-bottom: 6px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #2563eb;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .metadata-title {
+            margin: 0;
+            color: #0f172a;
+            font-size: 20px;
+        }
+
+        .metadata-description {
+            margin: 6px 0 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .metadata-badges {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 6px;
+            max-width: 50%;
+        }
+
+        .metadata-badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 26px;
+            padding: 0 9px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #3730a3;
+            font-size: 12px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .metadata-badge.neutral {
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .metadata-badge.warning {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
+        .metadata-badge.danger {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .metadata-section-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 12px;
+        }
+
+        .metadata-section {
+            padding: 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background: #ffffff;
+        }
+
+        .metadata-section h3 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 16px;
+        }
+
+        .metadata-section p {
+            margin: 5px 0 12px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .metadata-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .metadata-row {
+            display: grid;
+            grid-template-columns: minmax(96px, 0.75fr) minmax(0, 1fr);
+            gap: 12px;
+            align-items: baseline;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #e5e7eb;
+        }
+
+        .metadata-row:last-child {
+            padding-bottom: 0;
+            border-bottom: 0;
+        }
+
+        .metadata-label {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .metadata-value {
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 800;
+            text-align: right;
+            word-break: keep-all;
+        }
+
+        .metadata-empty {
+            margin: 0;
+            padding: 14px;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 14px;
+        }
+
         .chart-control-form {
             display: flex;
             flex-direction: row;
@@ -580,9 +724,41 @@
             color: #ffffff;
         }
 
+        .stock-action-button.disabled {
+            border-color: #cbd5e1;
+            background: #eef2f6;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .stock-action-note {
+            margin: 6px 0 0;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
         @media (max-width: 900px) {
             .chart-panel {
                 grid-template-columns: 1fr;
+            }
+
+            .metadata-header {
+                flex-direction: column;
+            }
+
+            .metadata-badges {
+                justify-content: flex-start;
+                max-width: none;
+            }
+
+            .metadata-row {
+                grid-template-columns: 1fr;
+                gap: 3px;
+            }
+
+            .metadata-value {
+                text-align: left;
             }
 
             .chart-main-header {
@@ -616,41 +792,6 @@
                 <span th:if="${stockDetailPageInfo.stock.nameEn != null and !#strings.isEmpty(stockDetailPageInfo.stock.nameEn)}"
                       th:text="|(${stockDetailPageInfo.stock.nameEn})|">(Samsung Electronics)</span>
             </h1>
-
-            <section>
-                <h2>종목 정보</h2>
-
-                <div class="stock-summary">
-                    <div class="summary-item">
-                        <strong>종목코드</strong>
-                        <span th:text="${stockDetailPageInfo.stock.symbol}">005930</span>
-                    </div>
-                    <div class="summary-item">
-                        <strong>시장</strong>
-                        <span th:text="${stockDetailPageInfo.stock.marketType}">KOSPI</span>
-                    </div>
-                    <div class="summary-item">
-                        <strong>상품유형</strong>
-                        <span th:text="${stockDetailPageInfo.stock.securityType}">COMMON_STOCK</span>
-                    </div>
-                    <div class="summary-item">
-                        <strong>통화</strong>
-                        <span th:text="${stockDetailPageInfo.stock.currency}">KRW</span>
-                    </div>
-                    <div class="summary-item">
-                        <strong>최근 거래일</strong>
-                        <span th:if="${stockDetailPageInfo.latestTradeDate != null}"
-                              th:text="${#temporals.format(stockDetailPageInfo.latestTradeDate, 'yyyy-MM-dd')}">2026-07-02</span>
-                        <span th:unless="${stockDetailPageInfo.latestTradeDate != null}">데이터 없음</span>
-                    </div>
-                    <div class="summary-item">
-                        <strong>최근 종가</strong>
-                        <span th:if="${stockDetailPageInfo.latestClosePrice != null}"
-                              th:text="${stockDetailPageInfo.formatPrice(stockDetailPageInfo.latestClosePrice)}">70,500</span>
-                        <span th:unless="${stockDetailPageInfo.latestClosePrice != null}">데이터 없음</span>
-                    </div>
-                </div>
-            </section>
 
             <section>
                 <h2>일봉 차트</h2>
@@ -977,11 +1118,99 @@
                 </div>
             </section>
 
+            <section>
+                <h2>종목 정보</h2>
+
+                <div class="stock-summary">
+                    <div class="summary-item">
+                        <strong>종목코드</strong>
+                        <span th:text="${stockDetailPageInfo.stock.symbol}">005930</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>시장</strong>
+                        <span th:text="${stockDetailPageInfo.stock.marketType}">KOSPI</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>상품유형</strong>
+                        <span th:text="${stockDetailPageInfo.stock.securityType}">COMMON_STOCK</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>통화</strong>
+                        <span th:text="${stockDetailPageInfo.stock.currency}">KRW</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>최근 거래일</strong>
+                        <span th:if="${stockDetailPageInfo.latestTradeDate != null}"
+                              th:text="${#temporals.format(stockDetailPageInfo.latestTradeDate, 'yyyy-MM-dd')}">2026-07-02</span>
+                        <span th:unless="${stockDetailPageInfo.latestTradeDate != null}">데이터 없음</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>최근 종가</strong>
+                        <span th:if="${stockDetailPageInfo.latestClosePrice != null}"
+                              th:text="${stockDetailPageInfo.formatPrice(stockDetailPageInfo.latestClosePrice)}">70,500</span>
+                        <span th:unless="${stockDetailPageInfo.latestClosePrice != null}">데이터 없음</span>
+                    </div>
+                </div>
+
+                <div class="metadata-card">
+                    <div class="metadata-header">
+                        <div>
+                            <span class="metadata-eyebrow"
+                                  th:text="${stockDetailPageInfo.metadataDisplayInfo.sourceLabel}">국내 마스터파일</span>
+                            <h3 class="metadata-title"
+                                th:text="${stockDetailPageInfo.metadataDisplayInfo.title}">국내 종목 마스터 정보</h3>
+                            <p class="metadata-description"
+                               th:text="${stockDetailPageInfo.metadataDisplayInfo.description}">
+                                KIS 종목 마스터파일에서 저장한 부가정보입니다.
+                            </p>
+                        </div>
+                        <div class="metadata-badges"
+                             th:if="${stockDetailPageInfo.metadataDisplayInfo.hasBadges()}">
+                            <span class="metadata-badge"
+                                  th:each="badge : ${stockDetailPageInfo.metadataDisplayInfo.badges}"
+                                  th:classappend="${badge.type}"
+                                  th:text="${badge.label}">KOSPI200</span>
+                        </div>
+                    </div>
+
+                    <div class="metadata-section-grid"
+                         th:if="${stockDetailPageInfo.metadataDisplayInfo.hasContent()}">
+                        <article class="metadata-section"
+                                 th:each="section : ${stockDetailPageInfo.metadataDisplayInfo.sections}">
+                            <h3 th:text="${section.title}">기업 분류</h3>
+                            <p th:text="${section.description}">마스터파일 기준 분류입니다.</p>
+                            <div class="metadata-list">
+                                <div class="metadata-row" th:each="item : ${section.items}">
+                                    <span class="metadata-label" th:text="${item.label}">업종</span>
+                                    <strong class="metadata-value" th:text="${item.value}">반도체</strong>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                    <p class="metadata-empty"
+                       th:unless="${stockDetailPageInfo.metadataDisplayInfo.hasContent()}">
+                        아직 이 종목에 저장된 마스터파일 부가정보가 없습니다.
+                    </p>
+                </div>
+            </section>
+
             <section class="stock-action-section">
-                <a class="stock-action-button primary"
-                   th:href="@{/investments/stocks/order/{stockId}(stockId=${stockDetailPageInfo.stock.id})}">
-                    주식 매수 / 매도
-                </a>
+                <div>
+                    <a th:if="${stockDetailPageInfo.stockTradingAvailable}"
+                       class="stock-action-button primary"
+                       th:href="@{/investments/stocks/order/{stockId}(stockId=${stockDetailPageInfo.stock.id})}">
+                        주식 매수 / 매도
+                    </a>
+                    <span th:unless="${stockDetailPageInfo.stockTradingAvailable}"
+                          class="stock-action-button primary disabled"
+                          aria-disabled="true">
+                        거래 시간 아님
+                    </span>
+                    <p class="stock-action-note"
+                       th:text="|거래 가능 시간: ${stockDetailPageInfo.stockTradingTimeDescription}|">
+                        거래 가능 시간
+                    </p>
+                </div>
                 <div class="stock-action-links">
                     <a class="stock-action-button" th:href="@{/investments/stocks/search}">종목 검색</a>
                     <a class="stock-action-button" th:href="@{/investments/stocks/watchlist}">관심 종목</a>

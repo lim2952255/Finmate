@@ -54,6 +54,7 @@ public class StockTradingCommandService {
         Investment investment = lookupService.findOwnedInvestmentForUpdate(userId, request.getInvestmentId()); // 주문할때 사용된 증권 계좌
         CurrencyCode currencyCode = lookupService.currencyCode(stock);
         lookupService.validateTradable(stock);
+        lookupService.validateTradingTime(stock); // 거래가능 시간대인지 확인
 
         BigDecimal quantity = normalizeRequiredQuantity(request.getQuantity()); // 주문 수량
         StockOrderSide side = lookupService.requireSide(request.getSide()); // 매수 주문 or 매도 주문
@@ -101,6 +102,7 @@ public class StockTradingCommandService {
         Investment investment = lookupService.findOwnedInvestmentForUpdate(userId, request.getInvestmentId());
         CurrencyCode currencyCode = lookupService.currencyCode(stock);
         lookupService.validateTradable(stock);
+        lookupService.validateTradingTime(stock);
 
         BigDecimal quantity = normalizeRequiredQuantity(request.getQuantity());
         StockOrderSide side = lookupService.requireSide(request.getSide()); // 매수 or 매도

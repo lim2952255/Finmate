@@ -3,17 +3,16 @@ package com.finmate.domain.market.dto;
 import com.finmate.domain.market.MarketIndicatorSymbol;
 import com.finmate.domain.market.MarketIndicatorType;
 import com.finmate.domain.market.price.MarketDailyPrice;
+import com.finmate.global.format.DisplayFormatUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 
 public record MarketIndicatorPageInfo(
@@ -266,69 +265,23 @@ public record MarketIndicatorPageInfo(
     }
 
     public String formatPrice(BigDecimal value) {
-        if (value == null) {
-            return "-";
-        }
-
-        NumberFormat formatter = NumberFormat.getNumberInstance(Locale.KOREA);
-        formatter.setMinimumFractionDigits(selectedIndicator.getFractionDigits());
-        formatter.setMaximumFractionDigits(selectedIndicator.getFractionDigits());
-        return formatter.format(value);
+        return DisplayFormatUtils.formatFixedDecimal(value, selectedIndicator.getFractionDigits());
     }
 
     public String formatSignedChangeAmount() {
-        BigDecimal changeAmount = changeAmount();
-        if (changeAmount == null) {
-            return "-";
-        }
-
-        String formattedAmount = formatPrice(changeAmount.abs());
-        if (changeAmount.signum() > 0) {
-            return "+" + formattedAmount;
-        }
-
-        if (changeAmount.signum() < 0) {
-            return "-" + formattedAmount;
-        }
-
-        return formattedAmount;
+        return DisplayFormatUtils.formatSignedFixedDecimal(changeAmount(), selectedIndicator.getFractionDigits());
     }
 
     public String formatSignedChangeRate() {
-        BigDecimal changeRate = changeRate();
-        if (changeRate == null) {
-            return "-";
-        }
-
-        NumberFormat formatter = NumberFormat.getNumberInstance(Locale.KOREA);
-        formatter.setMinimumFractionDigits(2);
-        formatter.setMaximumFractionDigits(2);
-        String formattedRate = formatter.format(changeRate.abs()) + "%";
-        if (changeRate.signum() > 0) {
-            return "+" + formattedRate;
-        }
-
-        if (changeRate.signum() < 0) {
-            return "-" + formattedRate;
-        }
-
-        return formattedRate;
+        return DisplayFormatUtils.formatSignedPercent(changeRate(), 2);
     }
 
     public String formatVolume(Long value) {
-        if (value == null) {
-            return "-";
-        }
-
-        return NumberFormat.getIntegerInstance(Locale.KOREA).format(value);
+        return DisplayFormatUtils.formatInteger(value);
     }
 
     public String formatDate(LocalDate value) {
-        if (value == null) {
-            return "-";
-        }
-
-        return value.format(DATE_FORMATTER);
+        return DisplayFormatUtils.formatDate(value, DATE_FORMATTER);
     }
 
     public int chartWidth() {
@@ -410,7 +363,7 @@ public record MarketIndicatorPageInfo(
     }
 
     private String formatCoordinate(double value) {
-        return String.format(Locale.US, "%.2f", value);
+        return DisplayFormatUtils.formatCoordinate(value);
     }
 
     public record MarketChartPoint(

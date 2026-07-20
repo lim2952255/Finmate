@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+import static com.finmate.global.validation.NumericValidator.validatePositive;
+import static com.finmate.global.validation.RequiredValidator.validateRequired;
+
 // 각 증권 계좌별로 여러 종류의 통화를 관리하는 엔티티
 // 각 증권 계좌가 보유중인 통화별 잔고를 관리하며, 매수 주문에 의해 예수금에 lock을 걸거나 해제하는 로직을 담당한다.
 @Getter
@@ -42,13 +45,8 @@ public class InvestmentCashBalance {
     private BigDecimal lockedBalance = BigDecimal.ZERO;
 
     public static InvestmentCashBalance create(Investment investmentAccount, CurrencyCode currencyCode) {
-        if (investmentAccount == null) {
-            throw new RuntimeException("증권 계좌는 필수입니다.");
-        }
-
-        if (currencyCode == null) {
-            throw new RuntimeException("통화는 필수입니다.");
-        }
+        validateRequired(investmentAccount, "증권 계좌는 필수입니다.");
+        validateRequired(currencyCode, "통화는 필수입니다.");
 
         InvestmentCashBalance cashBalance = new InvestmentCashBalance();
         cashBalance.investmentAccount = investmentAccount;
@@ -61,14 +59,14 @@ public class InvestmentCashBalance {
     // 일반 계좌 -> 증권 계좌로 예수금 입금
     public void deposit(BigDecimal amount) {
         this.currencyCode.validateAmountScale(amount);
-        validatePositiveAmount(amount, "입금 금액은 0보다 커야 합니다.");
+        validatePositive(amount, "입금 금액은 0보다 커야 합니다.");
         this.availableBalance = this.availableBalance.add(amount);
     }
 
     // 증권 계좌 -> 일반 계좌로 투자금 출금
     public void withdraw(BigDecimal amount) {
         this.currencyCode.validateAmountScale(amount);
-        validatePositiveAmount(amount, "출금 금액은 0보다 커야 합니다.");
+        validatePositive(amount, "출금 금액은 0보다 커야 합니다.");
 
         if (this.availableBalance.compareTo(amount) < 0) {
             throw new RuntimeException("예수금이 부족합니다.");
@@ -80,7 +78,7 @@ public class InvestmentCashBalance {
     // 주식 매수 주문/예약을 위해 예수금에 lock을 거는 메서드.
     public void lock(BigDecimal amount) {
         this.currencyCode.validateAmountScale(amount);
-        validatePositiveAmount(amount, "잠금 금액은 0보다 커야 합니다.");
+        validatePositive(amount, "잠금 금액은 0보다 커야 합니다.");
 
         if (this.availableBalance.compareTo(amount) < 0) {
             throw new RuntimeException("주문 가능 예수금이 부족합니다.");
@@ -93,7 +91,7 @@ public class InvestmentCashBalance {
     // 매수 주문/예약이 취소되거나 만료된 경우, lock이 걸려있는 예수금의 lock을 해제하는 메서드
     public void releaseLocked(BigDecimal amount) {
         this.currencyCode.validateAmountScale(amount);
-        validatePositiveAmount(amount, "잠금 해제 금액은 0보다 커야 합니다.");
+        validatePositive(amount, "잠금 해제 금액은 0보다 커야 합니다.");
 
         if (this.lockedBalance.compareTo(amount) < 0) {
             throw new RuntimeException("잠금 예수금이 부족합니다.");
@@ -107,8 +105,8 @@ public class InvestmentCashBalance {
     public void settleBuyFromLocked(BigDecimal lockedAmount, BigDecimal settlementAmount) {
         this.currencyCode.validateAmountScale(lockedAmount);
         this.currencyCode.validateAmountScale(settlementAmount);
-        validatePositiveAmount(lockedAmount, "잠금 금액은 0보다 커야 합니다.");
-        validatePositiveAmount(settlementAmount, "정산 금액은 0보다 커야 합니다.");
+        validatePositive(lockedAmount, "잠금 금액은 0보다 커야 합니다.");
+        validatePositive(settlementAmount, "정산 금액은 0보다 커야 합니다.");
 
         if (this.lockedBalance.compareTo(lockedAmount) < 0) {
             throw new RuntimeException("잠금 예수금이 부족합니다.");
@@ -136,13 +134,4 @@ public class InvestmentCashBalance {
         return this.availableBalance.add(this.lockedBalance);
     }
 
-    private void validatePositiveAmount(BigDecimal amount, String errorMessage) {
-        if (amount == null) {
-            throw new RuntimeException("금액은 필수입니다.");
-        }
-
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException(errorMessage);
-        }
-    }
 }

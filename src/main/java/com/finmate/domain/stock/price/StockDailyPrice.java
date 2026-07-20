@@ -10,6 +10,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import static com.finmate.global.validation.NumericValidator.validateNonNegative;
+import static com.finmate.global.validation.NumericValidator.validateNullableNonNegative;
 import static com.finmate.global.validation.RequiredValidator.validateRequired;
 
 @Getter
@@ -170,33 +172,4 @@ public class StockDailyPrice {
         }
     }
 
-    private static void validateNonNegative(BigDecimal value, String message) {
-        if (value == null) {
-            throw new RuntimeException(message);
-        }
-
-        if (value.signum() < 0) {
-            throw new RuntimeException(message);
-        }
-    }
-
-    private static void validateNullableNonNegative(BigDecimal value, String message) {
-        if (value == null) {
-            return;
-        }
-
-        if (value.signum() < 0) {
-            throw new RuntimeException(message);
-        }
-    }
-
-    private static void validateNonNegative(Long value, String message) {
-        if (value == null) {
-            throw new RuntimeException(message);
-        }
-
-        if (value < 0) {
-            throw new RuntimeException(message);
-        }
-    }
 }

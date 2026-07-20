@@ -4,12 +4,11 @@ import com.finmate.domain.investment.Investment;
 import com.finmate.domain.stock.trading.StockOrder;
 import com.finmate.domain.stock.trading.StockOrderReservation;
 import com.finmate.domain.stock.trading.StockTradeTransaction;
+import com.finmate.global.format.DisplayFormatUtils;
 import lombok.Getter;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.util.List;
-import java.util.Locale;
 
 // 주식거래내역 페이지에 전달할 데이터를 모아놓은 dto
 @Getter
@@ -36,13 +35,6 @@ public class StockTradingHistoryPageInfo {
     }
 
     public String formatDecimal(BigDecimal value, int fractionDigits) {
-        if (value == null) {
-            return "-";
-        }
-
-        NumberFormat formatter = NumberFormat.getNumberInstance(Locale.KOREA);
-        formatter.setMinimumFractionDigits(0);
-        formatter.setMaximumFractionDigits(fractionDigits);
-        return formatter.format(value);
+        return DisplayFormatUtils.formatDecimal(value, fractionDigits);
     }
 }
