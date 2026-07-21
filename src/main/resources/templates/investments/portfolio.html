@@ -31,10 +31,10 @@
             display: grid;
             gap: 12px;
             padding: 18px;
-            background: #ffffff;
-            border: 1px solid #dbe3ef;
-            border-radius: 8px;
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
         }
 
         .portfolio-summary-heading {
@@ -51,6 +51,7 @@
             padding: 3px 8px;
             color: #0f172a;
             background: #eef2ff;
+            border: 1px solid #c7d2fe;
             border-radius: 999px;
             font-size: 12px;
         }
@@ -83,8 +84,80 @@
             font-size: 13px;
         }
 
+        .industry-allocation {
+            margin-bottom: 18px;
+        }
+
+        .industry-allocation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .industry-allocation-card {
+            display: grid;
+            gap: 8px;
+            padding: 14px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.045);
+        }
+
+        .industry-allocation-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .industry-allocation-currency {
+            padding: 3px 8px;
+            color: #334155;
+            background: #f1f5f9;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .industry-allocation-tags {
+            display: inline-flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 5px;
+        }
+
+        .industry-allocation-bar {
+            height: 8px;
+            overflow: hidden;
+            background: #e2e8f0;
+            border-radius: 999px;
+        }
+
+        .industry-allocation-bar span {
+            display: block;
+            height: 100%;
+            background: linear-gradient(90deg, #2563eb 0%, #0ea5e9 100%);
+            border-radius: inherit;
+        }
+
+        .industry-allocation-value {
+            margin: 0;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
         .portfolio-account {
             min-width: 160px;
+        }
+
+        .portfolio-table {
+            min-width: 1120px;
+        }
+
+        .portfolio-table .portfolio-stock {
+            min-width: 150px;
         }
 
         .portfolio-account small,
@@ -184,13 +257,44 @@
                 </article>
             </div>
 
+            <section class="industry-allocation"
+                     th:if="${!#lists.isEmpty(stockPortfolioPageInfo.industryAllocations)}">
+                <h2>업종별 비중</h2>
+                <div class="industry-allocation-grid">
+                    <article class="industry-allocation-card"
+                             th:each="allocation : ${stockPortfolioPageInfo.industryAllocations}">
+                        <div class="industry-allocation-heading">
+                            <span class="industry-chip"
+                                  th:classappend="${allocation.industryName == '없음'} ? ' is-empty' : ''"
+                                  th:text="${allocation.industryName}">반도체</span>
+                            <span class="industry-allocation-tags">
+                                <span class="industry-allocation-currency"
+                                      th:text="${allocation.groupName}">국내</span>
+                                <span class="industry-allocation-currency"
+                                      th:text="${allocation.currencyCode.name()}">KRW</span>
+                            </span>
+                        </div>
+                        <div class="industry-allocation-bar" aria-hidden="true">
+                            <span th:style="|width: ${allocation.percentage}%|"></span>
+                        </div>
+                        <p class="industry-allocation-value">
+                            <span th:text="${stockPortfolioPageInfo.formatPercent(allocation.percentage)}">50.00%</span>
+                            <span> · 매입금액 </span>
+                            <span th:text="${stockPortfolioPageInfo.formatDecimal(allocation.purchaseAmount, allocation.currencyCode.fractionDigits)}">0</span>
+                            <span th:text="${allocation.currencyCode.name()}">KRW</span>
+                        </p>
+                    </article>
+                </div>
+            </section>
+
             <div class="table-scroll" th:if="${!#lists.isEmpty(stockPortfolioPageInfo.holdings)}">
-                <table>
+                <table class="records-table portfolio-table">
                     <thead>
                     <tr>
                         <th th:if="${stockPortfolioPageInfo.allAccounts}">계좌</th>
                         <th>종목</th>
                         <th>시장</th>
+                        <th>업종</th>
                         <th>수량</th>
                         <th>평균단가</th>
                         <th>현재가</th>
@@ -203,39 +307,69 @@
                     <tbody>
                     <tr class="portfolio-row"
                         th:each="holding : ${stockPortfolioPageInfo.holdings}"
+                        th:with="industryName=${stockPortfolioPageInfo.getIndustryName(holding.stock.id)}"
                         th:attr="data-stock-id=${holding.stock.id},
                                  data-currency=${holding.currencyCode.name()},
                                  data-quantity=${holding.quantity},
                                  data-average-price=${holding.averagePurchasePrice},
+                                 data-current-price=${stockPortfolioPageInfo.getValuationPrice(holding.stock.id)},
                                  data-fraction-digits=${holding.currencyCode.fractionDigits}">
                         <td class="portfolio-account" th:if="${stockPortfolioPageInfo.allAccounts}">
-                            <span th:text="${holding.investment.securitiesCompanyCode.displayName}">증권사</span>
-                            <small th:text="${holding.investment.accountNumber}">00000000</small>
+                            <div class="account-cell">
+                                <span class="primary-line" th:text="${holding.investment.securitiesCompanyCode.displayName}">증권사</span>
+                                <span class="secondary-line" th:text="${holding.investment.accountNumber}">00000000</span>
+                            </div>
                         </td>
                         <td class="portfolio-stock">
-                            <a th:href="@{/investments/stocks/detail(stockId=${holding.stock.id})}"
-                               th:text="${holding.stock.nameKo}">종목</a>
-                            <small th:text="${holding.stock.symbol}">005930</small>
+                            <div class="stock-cell">
+                                <a class="primary-line"
+                                   th:href="@{/investments/stocks/detail(stockId=${holding.stock.id})}"
+                                   th:text="${holding.stock.nameKo}">종목</a>
+                                <span class="secondary-line" th:text="${holding.stock.symbol}">005930</span>
+                            </div>
                         </td>
-                        <td th:text="${holding.stock.marketType}">KOSPI</td>
-                        <td th:text="${stockPortfolioPageInfo.formatQuantity(holding.quantity)}">0</td>
+                        <td>
+                            <span class="market-chip" th:text="${holding.stock.marketType}">KOSPI</span>
+                        </td>
+                        <td>
+                            <span class="industry-chip"
+                                  th:classappend="${industryName == '없음'} ? ' is-empty' : ''"
+                                  th:text="${industryName}">반도체</span>
+                        </td>
+                        <td class="money-cell" th:text="${stockPortfolioPageInfo.formatQuantity(holding.quantity)}">0</td>
                         <td class="money-cell">
                             <span th:text="${stockPortfolioPageInfo.formatDecimal(holding.averagePurchasePrice, holding.currencyCode.fractionDigits)}">0</span>
                             <small th:text="${holding.currencyCode.name()}">KRW</small>
                         </td>
-                        <td class="portfolio-current-price money-cell">수신 대기</td>
+                        <td class="portfolio-current-price money-cell">
+                            <span class="portfolio-current-price-value"
+                                  th:if="${stockPortfolioPageInfo.hasValuationPrice(holding.stock.id)}"
+                                  th:text="|${stockPortfolioPageInfo.formatDecimal(stockPortfolioPageInfo.getValuationPrice(holding.stock.id), holding.currencyCode.fractionDigits)} ${holding.currencyCode.name()}|">
+                                0 KRW
+                            </span>
+                            <span class="portfolio-current-price-value"
+                                  th:unless="${stockPortfolioPageInfo.hasValuationPrice(holding.stock.id)}">
+                                수신 대기
+                            </span>
+                            <small class="portfolio-price-source"
+                                   th:if="${stockPortfolioPageInfo.hasValuationPrice(holding.stock.id)}"
+                                   th:text="${stockPortfolioPageInfo.getValuationPriceSource(holding.stock.id)}">
+                                최근 종가
+                            </small>
+                        </td>
                         <td class="portfolio-market-value money-cell">-</td>
                         <td class="portfolio-profit money-cell">-</td>
                         <td class="portfolio-profit-rate">-</td>
                         <td th:with="tradingAvailable=${stockPortfolioPageInfo.isStockTradingAvailable(holding.stock.marketType)},
                                      tradingTimeDescription=${stockPortfolioPageInfo.getStockTradingTimeDescription(holding.stock.marketType)}">
                             <a th:if="${tradingAvailable}"
+                               class="table-action-link"
                                th:title="|거래 가능 시간: ${tradingTimeDescription}|"
                                th:href="@{/investments/stocks/order/{stockId}(stockId=${holding.stock.id},investmentId=${holding.investment.id})}">
                                 주문
                             </a>
                             <span th:unless="${tradingAvailable}"
-                                  class="secondary-line"
+                                  class="status-chip is-closed"
                                   th:title="|거래 가능 시간: ${tradingTimeDescription}|">
                                 거래 시간 아님
                             </span>
@@ -259,7 +393,7 @@
 <script>
     (() => {
         const rows = Array.from(document.querySelectorAll('.portfolio-row'));
-        if (rows.length === 0 || !window.WebSocket) {
+        if (rows.length === 0) {
             return;
         }
 
@@ -271,7 +405,12 @@
             rowsByStockId.set(stockId, stockRows);
         });
         const subscribedStockIds = Array.from(rowsByStockId.keys());
+        rows.forEach((row) => updateRowFromCurrentPrice(row));
         recalculateSummary();
+
+        if (!window.WebSocket) {
+            return;
+        }
 
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const socket = new WebSocket(`${protocol}://${window.location.host}/ws/stocks`);
@@ -325,13 +464,27 @@
             }
 
             row.dataset.currentPrice = String(price);
+            setText(row, '.portfolio-price-source', '실시간 시세');
+            updateRowFromCurrentPrice(row);
+        }
+
+        function updateRowFromCurrentPrice(row) {
+            const price = toNumber(row.dataset.currentPrice);
+            const quantity = toNumber(row.dataset.quantity);
+            const averagePrice = toNumber(row.dataset.averagePrice);
+            const fractionDigits = Number(row.dataset.fractionDigits || 0);
+            const currency = row.dataset.currency || '';
+            if (![price, quantity, averagePrice].every(isFinite)) {
+                return;
+            }
+
             const marketValue = price * quantity;
             const purchaseValue = averagePrice * quantity;
             const profit = marketValue - purchaseValue;
             const profitRate = purchaseValue === 0 ? 0 : (profit / purchaseValue) * 100;
             const direction = profit > 0 ? 'positive' : profit < 0 ? 'negative' : 'flat';
 
-            setText(row, '.portfolio-current-price', `${formatNumber(price, fractionDigits)} ${currency}`);
+            setText(row, '.portfolio-current-price-value', `${formatNumber(price, fractionDigits)} ${currency}`);
             setText(row, '.portfolio-market-value', `${formatNumber(marketValue, fractionDigits)} ${currency}`);
             setDirectionalText(row, '.portfolio-profit', `${formatSignedNumber(profit, fractionDigits)} ${currency}`, direction);
             setDirectionalText(row, '.portfolio-profit-rate', `${profitRate.toFixed(2)}%`, direction);

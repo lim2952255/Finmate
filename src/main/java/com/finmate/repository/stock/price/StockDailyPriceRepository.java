@@ -17,6 +17,10 @@ public interface StockDailyPriceRepository extends JpaRepository<StockDailyPrice
     Optional<StockDailyPrice> findTopByStock_IdAndAdjustedPriceOrderByTradeDateDesc(Long stockId,
                                                                                     boolean adjustedPrice);
 
+    Optional<StockDailyPrice> findTopByStock_IdAndAdjustedPriceAndTradeDateLessThanEqualOrderByTradeDateDesc(Long stockId,
+                                                                                                             boolean adjustedPrice,
+                                                                                                             LocalDate tradeDate);
+
     List<StockDailyPrice> findByStock_IdAndAdjustedPriceAndTradeDateBetweenOrderByTradeDateAsc(Long stockId,
                                                                                                 boolean adjustedPrice,
                                                                                                 LocalDate startDate,

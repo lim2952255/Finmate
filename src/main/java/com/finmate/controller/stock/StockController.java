@@ -1,10 +1,12 @@
 package com.finmate.controller.stock;
 
+import com.finmate.domain.stock.StockMarketType;
 import com.finmate.domain.stock.dto.favorite.FavoriteStockPageInfo;
 import com.finmate.domain.stock.dto.detail.StockChartPeriod;
 import com.finmate.domain.stock.dto.detail.StockDetailPageInfo;
 import com.finmate.domain.stock.dto.ranking.StockMarketMoversPageInfo;
 import com.finmate.domain.stock.dto.search.StockSearchPageInfo;
+import com.finmate.domain.stock.dto.search.StockSearchType;
 import com.finmate.domain.user.dto.SessionUser;
 import com.finmate.global.constant.Const;
 import com.finmate.service.stock.StockDetailService;
@@ -32,10 +34,17 @@ public class StockController {
 
     @GetMapping("/search")
     public String searchStock(@RequestParam(required = false) String keyword,
+                              @RequestParam(required = false, defaultValue = "STOCK") StockSearchType searchType,
+                              @RequestParam(required = false) StockMarketType marketType,
                               @RequestParam(required = false, defaultValue = "0") int page,
                               Model model,
                               @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
-        StockSearchPageInfo pageInfo = stockService.getStockSearchPageInfo(sessionUser.getId(), keyword, page);
+        StockSearchPageInfo pageInfo = stockService.getStockSearchPageInfo(
+                sessionUser.getId(),
+                keyword,
+                searchType, // 검색시 업종 / 종목으로 나눌 수 있다.
+                marketType,
+                page);
         model.addAttribute("stockSearchPageInfo", pageInfo);
         model.addAttribute("watchlistStockIds", stockService.findFavoriteStockIds(sessionUser.getId()));
 

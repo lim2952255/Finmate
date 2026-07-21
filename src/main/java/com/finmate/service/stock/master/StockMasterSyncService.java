@@ -22,10 +22,12 @@ public class StockMasterSyncService {
     private final KisStockMasterFileClient kisStockMasterFileClient;
     private final StockMasterParser stockMasterParser;
     private final StockMasterApplyService stockMasterApplyService;
+    private final StockSectorCodeSyncService stockSectorCodeSyncService;
 
     // 국내 장 시작 전에 KOSPI/KOSDAQ 마스터파일을 동기화한다.
     @Scheduled(
             cron = "${finmate.stock-master.domestic-sync-cron:0 0 8 * * MON-FRI}",
+            //cron = "0 24 14 * * MON-FRI",
             zone = "${finmate.stock-master.domestic-sync-zone:Asia/Seoul}"
     )
     public void syncDailyDomesticStockMasters() {
@@ -34,6 +36,7 @@ public class StockMasterSyncService {
                 List.of(
                         StockMasterFileSource.KOSPI,
                         StockMasterFileSource.KOSDAQ));
+        syncDomesticSectorCodes();
     }
 
     // 나스닥 장 시작 전에 NASDAQ 마스터파일을 동기화한다. 미국 서머타임은 America/New_York zone에서 처리한다.
@@ -55,6 +58,14 @@ public class StockMasterSyncService {
             }
         }
         log.info("{} 종목 마스터 동기화를 종료합니다.", groupName);
+    }
+
+    private void syncDomesticSectorCodes() {
+        try {
+            stockSectorCodeSyncService.syncDomesticSectorCodes();
+        } catch (Exception e) {
+            log.error("국내 업종코드 동기화에 실패했습니다.", e);
+        }
     }
 
     public void sync(StockMasterFileSource source) {

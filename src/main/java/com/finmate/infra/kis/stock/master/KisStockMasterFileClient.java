@@ -12,6 +12,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -25,16 +26,27 @@ public class KisStockMasterFileClient {
     // 한국투자증권에서 마스터파일을 다운로드명
     // source에는 코스피 / 코스닥/ 나스닥의 마스터파일 경로와 마스터파일명이 저장되어 있다.
     public Path downloadAndExtract(StockMasterFileSource source, Path workingDirectory) {
+        return downloadAndExtract(
+                source.name(),
+                source.getZipUrl(),
+                source.getExtractedFileName(),
+                workingDirectory);
+    }
+
+    public Path downloadAndExtract(String sourceName,
+                                   String zipUrl,
+                                   String extractedFileName,
+                                   Path workingDirectory) {
         try {
             // 임시 디렉터리 생성
             Files.createDirectories(workingDirectory);
             // zip file 저장 경로 생성
-            Path zipPath = workingDirectory.resolve(source.name().toLowerCase() + ".zip");
-            download(source.getZipUrl(), zipPath); // zip file을 다운로드한 다음, zip file 저장경로에 저장한다.
+            Path zipPath = workingDirectory.resolve(sourceName.toLowerCase(Locale.ROOT) + ".zip");
+            download(zipUrl, zipPath); // zip file을 다운로드한 다음, zip file 저장경로에 저장한다.
             extract(zipPath, workingDirectory); // zip file을 압축 해제
 
             // 압축해제한 파일명을 찾고, 없으면 오류 출력. 있으면 압축해제한 파일명 리턴 (kosdaq_code.mst)
-            Path extractedFile = workingDirectory.resolve(source.getExtractedFileName());
+            Path extractedFile = workingDirectory.resolve(extractedFileName);
             if (!Files.exists(extractedFile)) {
                 throw new RuntimeException("종목 마스터 파일을 찾을 수 없습니다: " + extractedFile);
             }
@@ -48,7 +60,7 @@ public class KisStockMasterFileClient {
                 Thread.currentThread().interrupt();
             }
 
-            throw new RuntimeException("종목 마스터 파일 다운로드에 실패했습니다: " + source.name(), e);
+            throw new RuntimeException("종목 마스터 파일 다운로드에 실패했습니다: " + sourceName, e);
         }
     }
 

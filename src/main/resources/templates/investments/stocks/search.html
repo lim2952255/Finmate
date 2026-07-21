@@ -17,84 +17,141 @@
             <section>
                 <h2>검색</h2>
 
-                <form th:action="@{/investments/stocks/search}" method="get">
-                    <label for="keyword">검색어</label>
-                    <input id="keyword"
-                           name="keyword"
-                           type="search"
-                           placeholder="종목명 또는 종목코드"
-                           th:value="${stockSearchPageInfo != null and stockSearchPageInfo.keyword != null ? stockSearchPageInfo.keyword : ''}"
-                           required>
+                <form class="filter-form" th:action="@{/investments/stocks/search}" method="get">
+                    <label for="searchType">
+                        검색 기준
+                        <select id="searchType" name="searchType">
+                            <option th:each="type : ${stockSearchPageInfo.searchTypes}"
+                                    th:value="${type.name()}"
+                                    th:selected="${type == stockSearchPageInfo.searchType}"
+                                    th:text="${type.displayName}">
+                                종목
+                            </option>
+                        </select>
+                    </label>
+                    <label for="marketType">
+                        시장
+                        <select id="marketType" name="marketType">
+                            <option value="" th:selected="${stockSearchPageInfo.marketType == null}">전체 시장</option>
+                            <option th:each="marketType : ${stockSearchPageInfo.marketTypes}"
+                                    th:value="${marketType.name()}"
+                                    th:selected="${marketType == stockSearchPageInfo.marketType}"
+                                    th:text="${marketType.name()}">
+                                KOSPI
+                            </option>
+                        </select>
+                    </label>
+                    <label for="keyword">
+                        검색어
+                        <input id="keyword"
+                               name="keyword"
+                               type="search"
+                               th:placeholder="${stockSearchPageInfo.searchPlaceholder}"
+                               th:value="${stockSearchPageInfo != null and stockSearchPageInfo.keyword != null ? stockSearchPageInfo.keyword : ''}"
+                               required>
+                    </label>
                     <button type="submit">검색</button>
                 </form>
             </section>
 
             <section th:if="${stockSearchPageInfo != null and stockSearchPageInfo.keyword != null and !#strings.isEmpty(stockSearchPageInfo.keyword)}">
                 <h2>검색 결과</h2>
-                <p>
-                    <strong>검색어</strong>
-                    <span th:text="${stockSearchPageInfo.keyword}">삼성전자</span>
-                </p>
-                <p th:if="${stockSearchPageInfo.stockPage != null}">
-                    <strong>검색 결과</strong>
-                    <span th:text="${stockSearchPageInfo.stockPage.totalElements}">0</span>건
-                </p>
+                <div class="result-meta-list">
+                    <span>
+                        <strong>검색 기준</strong>
+                        <span th:text="${stockSearchPageInfo.searchType.displayName}">종목</span>
+                    </span>
+                    <span>
+                        <strong>시장</strong>
+                        <span th:text="${stockSearchPageInfo.marketTypeDisplayName}">전체 시장</span>
+                    </span>
+                    <span>
+                        <strong>검색어</strong>
+                        <span th:text="${stockSearchPageInfo.keyword}">삼성전자</span>
+                    </span>
+                    <span th:if="${stockSearchPageInfo.stockPage != null}">
+                        <strong>검색 결과</strong>
+                        <span th:text="|${stockSearchPageInfo.stockPage.totalElements}건|">0건</span>
+                    </span>
+                </div>
 
                 <p th:if="${stockSearchPageInfo.stocks != null and #lists.isEmpty(stockSearchPageInfo.stocks)}">
                     검색 결과가 없습니다.
                 </p>
 
-                <table th:if="${stockSearchPageInfo.stocks != null and !#lists.isEmpty(stockSearchPageInfo.stocks)}">
-                    <thead>
-                    <tr>
-                        <th>관심</th>
-                        <th>종목코드</th>
-                        <th>종목명</th>
-                        <th>시장</th>
-                        <th>상품유형</th>
-                        <th>통화</th>
-                        <th>거래 상태</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="stock : ${stockSearchPageInfo.stocks}">
-                        <td th:with="watched=${watchlistStockIds != null and #lists.contains(watchlistStockIds, stock.id)}">
-                            <form th:action="@{/investments/stocks/favorite}" method="post">
-                                <input type="hidden" name="stockId" th:value="${stock.id}">
-                                <input type="hidden"
-                                       name="redirectUrl"
-                                       th:value="@{/investments/stocks/search(keyword=${stockSearchPageInfo.keyword}, page=${stockSearchPageInfo.stockPage.number})}">
-                                <button type="submit"
-                                        th:text="${watched ? '★' : '☆'}"
-                                        th:title="${watched ? '관심 종목 해제' : '관심 종목 등록'}"
-                                        th:aria-label="${watched ? '관심 종목 해제' : '관심 종목 등록'}">
-                                    ☆
-                                </button>
-                            </form>
-                        </td>
-                        <td>
-                            <a th:href="@{/investments/stocks/detail(stockId=${stock.id})}"
-                               th:text="${stock.symbol}">005930</a>
-                        </td>
-                        <td>
-                            <a th:href="@{/investments/stocks/detail(stockId=${stock.id})}">
-                                <span th:text="${stock.nameKo}">삼성전자</span>
-                                <span th:if="${stock.nameEn != null and !#strings.isEmpty(stock.nameEn)}"
-                                      th:text="|(${stock.nameEn})|">
-                                    (Samsung Electronics)
-                                </span>
-                            </a>
-                        </td>
-                        <td th:text="${stock.marketType}">KOSPI</td>
-                        <td th:text="${stock.securityType}">COMMON_STOCK</td>
-                        <td th:text="${stock.currency}">KRW</td>
-                        <td>
-                            <span th:if="${stock.tradable}">거래 가능</span>
-                            <span th:unless="${stock.tradable}">거래 불가</span>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+                <div class="table-scroll"
+                     th:if="${stockSearchPageInfo.stocks != null and !#lists.isEmpty(stockSearchPageInfo.stocks)}">
+                    <table class="records-table stock-list-table">
+                        <thead>
+                        <tr>
+                            <th>관심</th>
+                            <th>종목코드</th>
+                            <th>종목명</th>
+                            <th>시장</th>
+                            <th>업종</th>
+                            <th>상품유형</th>
+                            <th>통화</th>
+                            <th>거래 상태</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="stock : ${stockSearchPageInfo.stocks}"
+                            th:with="industryName=${stockSearchPageInfo.getIndustryName(stock.id)}">
+                            <td th:with="watched=${watchlistStockIds != null and #lists.contains(watchlistStockIds, stock.id)}">
+                                <form class="table-actions" th:action="@{/investments/stocks/favorite}" method="post">
+                                    <input type="hidden" name="stockId" th:value="${stock.id}">
+                                    <input type="hidden"
+                                           name="redirectUrl"
+                                           th:value="@{/investments/stocks/search(searchType=${stockSearchPageInfo.searchType.name()}, marketType=${stockSearchPageInfo.marketType}, keyword=${stockSearchPageInfo.keyword}, page=${stockSearchPageInfo.stockPage.number})}">
+                                    <button class="favorite-button"
+                                            th:classappend="${watched} ? ' active' : ''"
+                                            type="submit"
+                                            th:text="${watched ? '★' : '☆'}"
+                                            th:title="${watched ? '관심 종목 해제' : '관심 종목 등록'}"
+                                            th:aria-label="${watched ? '관심 종목 해제' : '관심 종목 등록'}">
+                                        ☆
+                                    </button>
+                                </form>
+                            </td>
+                            <td>
+                                <a class="code-chip"
+                                   th:href="@{/investments/stocks/detail(stockId=${stock.id})}"
+                                   th:text="${stock.symbol}">005930</a>
+                            </td>
+                            <td>
+                                <div class="stock-cell">
+                                    <a class="primary-line" th:href="@{/investments/stocks/detail(stockId=${stock.id})}">
+                                        <span th:text="${stock.nameKo}">삼성전자</span>
+                                    </a>
+                                    <span class="secondary-line"
+                                          th:if="${stock.nameEn != null and !#strings.isEmpty(stock.nameEn)}"
+                                          th:text="${stock.nameEn}">
+                                        Samsung Electronics
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="market-chip" th:text="${stock.marketType}">KOSPI</span>
+                            </td>
+                            <td>
+                                <span class="industry-chip"
+                                      th:classappend="${industryName == '없음'} ? ' is-empty' : ''"
+                                      th:text="${industryName}">반도체</span>
+                            </td>
+                            <td>
+                                <span class="security-chip" th:text="${stock.securityType}">COMMON_STOCK</span>
+                            </td>
+                            <td>
+                                <span class="currency-chip" th:text="${stock.currency}">KRW</span>
+                            </td>
+                            <td>
+                                <span class="status-chip" th:if="${stock.tradable}">거래 가능</span>
+                                <span class="status-chip is-closed" th:unless="${stock.tradable}">거래 불가</span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
 
                 <nav class="pagination-nav"
                      th:if="${stockSearchPageInfo.stockPage != null && stockSearchPageInfo.stockPage.totalPages > 1}"
@@ -107,22 +164,22 @@
                     </p>
 
                     <a th:if="${!stockSearchPageInfo.stockPage.first}"
-                       th:href="@{/investments/stocks/search(keyword=${stockSearchPageInfo.keyword}, page=0)}">처음</a>
+                       th:href="@{/investments/stocks/search(searchType=${stockSearchPageInfo.searchType.name()}, marketType=${stockSearchPageInfo.marketType}, keyword=${stockSearchPageInfo.keyword}, page=0)}">처음</a>
                     <a th:if="${stockSearchPageInfo.stockPage.hasPrevious()}"
-                       th:href="@{/investments/stocks/search(keyword=${stockSearchPageInfo.keyword}, page=${stockSearchPageInfo.stockPage.number - 1})}">이전</a>
+                       th:href="@{/investments/stocks/search(searchType=${stockSearchPageInfo.searchType.name()}, marketType=${stockSearchPageInfo.marketType}, keyword=${stockSearchPageInfo.keyword}, page=${stockSearchPageInfo.stockPage.number - 1})}">이전</a>
 
                     <span th:each="pageNumber : ${stockSearchPageInfo.pagination.pageNumbers}">
                         <strong th:if="${pageNumber == stockSearchPageInfo.stockPage.number}"
                                 th:text="${pageNumber + 1}">1</strong>
                         <a th:if="${pageNumber != stockSearchPageInfo.stockPage.number}"
-                           th:href="@{/investments/stocks/search(keyword=${stockSearchPageInfo.keyword}, page=${pageNumber})}"
+                           th:href="@{/investments/stocks/search(searchType=${stockSearchPageInfo.searchType.name()}, marketType=${stockSearchPageInfo.marketType}, keyword=${stockSearchPageInfo.keyword}, page=${pageNumber})}"
                            th:text="${pageNumber + 1}">1</a>
                     </span>
 
                     <a th:if="${stockSearchPageInfo.stockPage.hasNext()}"
-                       th:href="@{/investments/stocks/search(keyword=${stockSearchPageInfo.keyword}, page=${stockSearchPageInfo.stockPage.number + 1})}">다음</a>
+                       th:href="@{/investments/stocks/search(searchType=${stockSearchPageInfo.searchType.name()}, marketType=${stockSearchPageInfo.marketType}, keyword=${stockSearchPageInfo.keyword}, page=${stockSearchPageInfo.stockPage.number + 1})}">다음</a>
                     <a th:if="${!stockSearchPageInfo.stockPage.last}"
-                       th:href="@{/investments/stocks/search(keyword=${stockSearchPageInfo.keyword}, page=${stockSearchPageInfo.stockPage.totalPages - 1})}">마지막</a>
+                       th:href="@{/investments/stocks/search(searchType=${stockSearchPageInfo.searchType.name()}, marketType=${stockSearchPageInfo.marketType}, keyword=${stockSearchPageInfo.keyword}, page=${stockSearchPageInfo.stockPage.totalPages - 1})}">마지막</a>
                 </nav>
             </section>
 

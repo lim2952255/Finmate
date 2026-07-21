@@ -70,6 +70,15 @@ public final class StockMarketSchedules {
         return tradingTimeDescription(marketType, ZonedDateTime.now());
     }
 
+    public static LocalDate expectedLatestDailyPriceTradeDate(StockMarketType marketType) {
+        StockMarketSchedule schedule = get(marketType);
+        LocalDate today = LocalDate.now(schedule.zoneId());
+        LocalTime now = LocalTime.now(schedule.zoneId());
+
+        LocalDate candidate = now.isBefore(schedule.dailyPriceAvailableTime()) ? today.minusDays(1) : today;
+        return previousWeekday(candidate);
+    }
+
     public static String tradingTimeDescription(StockMarketType marketType, ZonedDateTime referenceDateTime) {
         StockMarketSchedule schedule = get(marketType);
         if (schedule.zoneId().equals(KOREA_ZONE)) {

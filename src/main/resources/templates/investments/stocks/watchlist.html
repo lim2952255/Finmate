@@ -21,59 +21,79 @@
                     등록된 관심 종목이 없습니다.
                 </p>
 
-                <table th:if="${favoriteStockPageInfo.favoriteStocks != null and !#lists.isEmpty(favoriteStockPageInfo.favoriteStocks)}">
-                    <thead>
-                    <tr>
-                        <th>관심</th>
-                        <th>종목코드</th>
-                        <th>종목명</th>
-                        <th>시장</th>
-                        <th>상품유형</th>
-                        <th>통화</th>
-                        <th>거래 상태</th>
-                        <th>등록일시</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="favoriteStock : ${favoriteStockPageInfo.favoriteStocks}"
-                        th:with="stock=${favoriteStock.stock}">
-                        <td>
-                            <form th:action="@{/investments/stocks/favorite}" method="post">
-                                <input type="hidden" name="stockId" th:value="${stock.id}">
-                                <input type="hidden"
-                                       name="redirectUrl"
-                                       th:value="@{/investments/stocks/watchlist(page=${favoriteStockPageInfo.favoriteStockPage.number})}">
-                                <button type="submit"
-                                        title="관심 종목 해제"
-                                        aria-label="관심 종목 해제">★</button>
-                            </form>
-                        </td>
-                        <td>
-                            <a th:href="@{/investments/stocks/detail(stockId=${stock.id})}"
-                               th:text="${stock.symbol}">005930</a>
-                        </td>
-                        <td>
-                            <a th:href="@{/investments/stocks/detail(stockId=${stock.id})}">
-                                <span th:text="${stock.nameKo}">삼성전자</span>
-                                <span th:if="${stock.nameEn != null and !#strings.isEmpty(stock.nameEn)}"
-                                      th:text="|(${stock.nameEn})|">
-                                    (Samsung Electronics)
-                                </span>
-                            </a>
-                        </td>
-                        <td th:text="${stock.marketType}">KOSPI</td>
-                        <td th:text="${stock.securityType}">COMMON_STOCK</td>
-                        <td th:text="${stock.currency}">KRW</td>
-                        <td>
-                            <span th:if="${stock.tradable}">거래 가능</span>
-                            <span th:unless="${stock.tradable}">거래 불가</span>
-                        </td>
-                        <td th:text="${#temporals.format(favoriteStock.createdAt, 'yyyy-MM-dd HH:mm:ss')}">
-                            2026-07-02 12:00:00
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+                <div class="table-scroll"
+                     th:if="${favoriteStockPageInfo.favoriteStocks != null and !#lists.isEmpty(favoriteStockPageInfo.favoriteStocks)}">
+                    <table class="records-table stock-list-table">
+                        <thead>
+                        <tr>
+                            <th>관심</th>
+                            <th>종목코드</th>
+                            <th>종목명</th>
+                            <th>시장</th>
+                            <th>업종</th>
+                            <th>상품유형</th>
+                            <th>통화</th>
+                            <th>거래 상태</th>
+                            <th>등록일시</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="favoriteStock : ${favoriteStockPageInfo.favoriteStocks}"
+                            th:with="stock=${favoriteStock.stock}, industryName=${favoriteStockPageInfo.getIndustryName(favoriteStock.stock.id)}">
+                            <td>
+                                <form class="table-actions" th:action="@{/investments/stocks/favorite}" method="post">
+                                    <input type="hidden" name="stockId" th:value="${stock.id}">
+                                    <input type="hidden"
+                                           name="redirectUrl"
+                                           th:value="@{/investments/stocks/watchlist(page=${favoriteStockPageInfo.favoriteStockPage.number})}">
+                                    <button class="favorite-button active"
+                                            type="submit"
+                                            title="관심 종목 해제"
+                                            aria-label="관심 종목 해제">★</button>
+                                </form>
+                            </td>
+                            <td>
+                                <a class="code-chip"
+                                   th:href="@{/investments/stocks/detail(stockId=${stock.id})}"
+                                   th:text="${stock.symbol}">005930</a>
+                            </td>
+                            <td>
+                                <div class="stock-cell">
+                                    <a class="primary-line" th:href="@{/investments/stocks/detail(stockId=${stock.id})}">
+                                        <span th:text="${stock.nameKo}">삼성전자</span>
+                                    </a>
+                                    <span class="secondary-line"
+                                          th:if="${stock.nameEn != null and !#strings.isEmpty(stock.nameEn)}"
+                                          th:text="${stock.nameEn}">
+                                        Samsung Electronics
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="market-chip" th:text="${stock.marketType}">KOSPI</span>
+                            </td>
+                            <td>
+                                <span class="industry-chip"
+                                      th:classappend="${industryName == '없음'} ? ' is-empty' : ''"
+                                      th:text="${industryName}">반도체</span>
+                            </td>
+                            <td>
+                                <span class="security-chip" th:text="${stock.securityType}">COMMON_STOCK</span>
+                            </td>
+                            <td>
+                                <span class="currency-chip" th:text="${stock.currency}">KRW</span>
+                            </td>
+                            <td>
+                                <span class="status-chip" th:if="${stock.tradable}">거래 가능</span>
+                                <span class="status-chip is-closed" th:unless="${stock.tradable}">거래 불가</span>
+                            </td>
+                            <td class="date-cell" th:text="${#temporals.format(favoriteStock.createdAt, 'yyyy-MM-dd HH:mm')}">
+                                2026-07-02 12:00
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
 
                 <nav class="pagination-nav"
                      th:if="${favoriteStockPageInfo.favoriteStockPage != null && favoriteStockPageInfo.favoriteStockPage.totalPages > 1}"

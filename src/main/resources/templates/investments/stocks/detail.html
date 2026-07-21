@@ -8,15 +8,19 @@
     <style>
         .stock-summary {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 12px;
         }
 
         .summary-item {
-            padding: 12px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            background: #f8fafc;
+            display: grid;
+            gap: 8px;
+            min-height: 104px;
+            padding: 14px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.045);
         }
 
         .summary-item span {
@@ -26,13 +30,23 @@
             font-weight: 700;
         }
 
+        .summary-item .code-chip,
+        .summary-item .market-chip,
+        .summary-item .security-chip,
+        .summary-item .currency-chip {
+            display: inline-flex;
+            margin-top: 2px;
+            font-size: 13px;
+            font-weight: 900;
+        }
+
         .metadata-card {
             margin-top: 18px;
             padding: 18px;
-            border: 1px solid #dbe3ef;
-            border-radius: 14px;
-            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.055);
         }
 
         .metadata-header {
@@ -110,9 +124,9 @@
 
         .metadata-section {
             padding: 14px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--color-border);
             border-radius: 12px;
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.9);
         }
 
         .metadata-section h3 {
@@ -159,6 +173,11 @@
             font-weight: 800;
             text-align: right;
             word-break: keep-all;
+        }
+
+        .metadata-value.industry-chip {
+            justify-self: end;
+            text-align: left;
         }
 
         .metadata-empty {
@@ -787,11 +806,14 @@
 
     <main class="main">
         <section class="content">
-            <h1>
-                <span th:text="${stockDetailPageInfo.stock.nameKo}">삼성전자</span>
-                <span th:if="${stockDetailPageInfo.stock.nameEn != null and !#strings.isEmpty(stockDetailPageInfo.stock.nameEn)}"
-                      th:text="|(${stockDetailPageInfo.stock.nameEn})|">(Samsung Electronics)</span>
-            </h1>
+            <div class="page-heading">
+                <h1>
+                    <span th:text="${stockDetailPageInfo.stock.nameKo}">삼성전자</span>
+                    <span th:if="${stockDetailPageInfo.stock.nameEn != null and !#strings.isEmpty(stockDetailPageInfo.stock.nameEn)}"
+                          th:text="|(${stockDetailPageInfo.stock.nameEn})|">(Samsung Electronics)</span>
+                </h1>
+                <p>일봉 차트, 실시간 호가, 종목 마스터 정보를 한 화면에서 확인합니다.</p>
+            </div>
 
             <section>
                 <h2>일봉 차트</h2>
@@ -1124,19 +1146,19 @@
                 <div class="stock-summary">
                     <div class="summary-item">
                         <strong>종목코드</strong>
-                        <span th:text="${stockDetailPageInfo.stock.symbol}">005930</span>
+                        <span class="code-chip" th:text="${stockDetailPageInfo.stock.symbol}">005930</span>
                     </div>
                     <div class="summary-item">
                         <strong>시장</strong>
-                        <span th:text="${stockDetailPageInfo.stock.marketType}">KOSPI</span>
+                        <span class="market-chip" th:text="${stockDetailPageInfo.stock.marketType}">KOSPI</span>
                     </div>
                     <div class="summary-item">
                         <strong>상품유형</strong>
-                        <span th:text="${stockDetailPageInfo.stock.securityType}">COMMON_STOCK</span>
+                        <span class="security-chip" th:text="${stockDetailPageInfo.stock.securityType}">COMMON_STOCK</span>
                     </div>
                     <div class="summary-item">
                         <strong>통화</strong>
-                        <span th:text="${stockDetailPageInfo.stock.currency}">KRW</span>
+                        <span class="currency-chip" th:text="${stockDetailPageInfo.stock.currency}">KRW</span>
                     </div>
                     <div class="summary-item">
                         <strong>최근 거래일</strong>
@@ -1182,7 +1204,9 @@
                             <div class="metadata-list">
                                 <div class="metadata-row" th:each="item : ${section.items}">
                                     <span class="metadata-label" th:text="${item.label}">업종</span>
-                                    <strong class="metadata-value" th:text="${item.value}">반도체</strong>
+                                    <strong class="metadata-value"
+                                            th:classappend="${#strings.contains(item.label, '업종')} ? ' industry-chip' : ''"
+                                            th:text="${item.value}">반도체</strong>
                                 </div>
                             </div>
                         </article>

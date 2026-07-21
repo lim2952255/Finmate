@@ -2,8 +2,10 @@ package com.finmate.service.stock.trading;
 
 import com.finmate.domain.investment.Investment;
 import com.finmate.domain.stock.Stock;
+import com.finmate.domain.stock.dto.industry.StockIndustryClassification;
 import com.finmate.domain.stock.dto.trading.StockOrderPageInfo;
 import com.finmate.domain.stock.dto.trading.StockPortfolioPageInfo;
+import com.finmate.domain.stock.dto.trading.StockPortfolioPriceSnapshot;
 import com.finmate.domain.stock.dto.trading.StockTradingHistoryPageInfo;
 import com.finmate.domain.stock.market.StockMarketSchedules;
 import com.finmate.domain.stock.trading.StockHolding;
@@ -13,6 +15,7 @@ import com.finmate.repository.stock.trading.StockHoldingRepository;
 import com.finmate.repository.stock.trading.StockOrderRepository;
 import com.finmate.repository.stock.trading.StockOrderReservationRepository;
 import com.finmate.repository.stock.trading.StockTradeTransactionRepository;
+import com.finmate.service.stock.StockIndustryCodeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +36,8 @@ public class StockTradingQueryService {
     private final StockTradeTransactionRepository stockTradeTransactionRepository;
     private final StockTradingRealtimePriceService realtimePriceService; // 실시간 체결기준 가격을 결정하는 서비스
     private final StockTradingLookupService lookupService;
+    private final StockIndustryCodeService stockIndustryCodeService;
+    private final StockPortfolioValuationPriceService stockPortfolioValuationPriceService;
 
     // 주문 페이지 정보를 DTO에 담아서 리턴
     @Transactional(readOnly = true)
@@ -64,7 +69,6 @@ public class StockTradingQueryService {
     }
 
     // 포트폴리오 페이지 정보를 DTO에 담아서 리턴
-    @Transactional(readOnly = true)
     public StockPortfolioPageInfo getPortfolioPageInfo(Long userId, Long investmentId) {
         List<Investment> investments = investmentRepository.findByUserIdWithCashBalances(userId);
         boolean allAccounts = investmentId == null; // investmentId가 null이면 true, 아니면 false
@@ -78,8 +82,22 @@ public class StockTradingQueryService {
         List<StockHolding> holdings = allAccounts
                 ? stockHoldingRepository.findPortfolioHoldingsByUserId(userId)
                 : stockHoldingRepository.findPortfolioHoldingsByInvestmentId(selectedInvestment.getId());
+        Map<Long, StockIndustryClassification> industryClassificationsByStockId =
+                stockIndustryCodeService.resolveIndustryClassificationsByStocks(holdings.stream()
+                .map(StockHolding::getStock)
+                .toList());
+        Map<Long, StockPortfolioPriceSnapshot> priceSnapshotsByStockId =
+                stockPortfolioValuationPriceService.resolveLatestDailyCloseSnapshots(holdings.stream()
+                        .map(StockHolding::getStock)
+                        .toList());
 
-        return new StockPortfolioPageInfo(investments, selectedInvestment, holdings, allAccounts);
+        return new StockPortfolioPageInfo(
+                investments,
+                selectedInvestment,
+                holdings,
+                allAccounts,
+                industryClassificationsByStockId,
+                priceSnapshotsByStockId);
     }
 
     // 주식 거래내역 페이지 정보를 DTO에 담아서 리턴

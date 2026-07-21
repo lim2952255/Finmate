@@ -2,8 +2,10 @@ package com.finmate.service.stock;
 
 import com.finmate.domain.stock.FavoriteStock;
 import com.finmate.domain.stock.Stock;
+import com.finmate.domain.stock.StockMarketType;
 import com.finmate.domain.stock.dto.favorite.FavoriteStockPageInfo;
 import com.finmate.domain.stock.dto.search.StockSearchPageInfo;
+import com.finmate.domain.stock.dto.search.StockSearchType;
 import com.finmate.domain.user.User;
 import com.finmate.global.pagination.PaginationInfo;
 import com.finmate.repository.stock.FavoriteStockRepository;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -28,27 +31,57 @@ public class StockService {
     private final StockRepository stockRepository;
     private final FavoriteStockRepository favoriteStockRepository;
     private final UserRepository userRepository;
+    private final StockIndustryCodeService stockIndustryCodeService;
 
-    @Transactional(readOnly = true)
-    public StockSearchPageInfo getStockSearchPageInfo(Long userId, String keyword, int page) {
+    // 검색 시 종목명 / 업종명을 선택할 수 있다.
+    public StockSearchPageInfo getStockSearchPageInfo(Long userId, String keyword, StockSearchType searchType, int page) {
+        return getStockSearchPageInfo(userId, keyword, searchType, null, page);
+    }
+
+    public StockSearchPageInfo getStockSearchPageInfo(Long userId,
+                                                      String keyword,
+                                                      StockSearchType searchType,
+                                                      StockMarketType marketType,
+                                                      int page) {
         String normalizedKeyword = normalizeKeyword(keyword);
+        // searchType의 기본값은 종목명 기반
+        StockSearchType selectedSearchType = searchType == null ? StockSearchType.STOCK : searchType;
         Pageable pageable = PageRequest.of(
                 PaginationInfo.safePage(page),
                 STOCK_SEARCH_PAGE_SIZE,
                 Sort.unsorted());
 
-        Page<Stock> stockPage = findStockWithKeyword(userId, normalizedKeyword, pageable);
+        // searchType에 따라 적절한 종목을 검색한다음 결과를 반환한다.
+        Page<Stock> stockPage = findStockWithKeyword(userId, normalizedKeyword, selectedSearchType, marketType, pageable);
+        // 검색된 종목별로 표시할 가장 세부적인 업종명을 반환한다.
+        Map<Long, String> industryNamesByStockId =
+                stockIndustryCodeService.resolveIndustryNamesByStocks(stockPage.getContent());
 
-        return new StockSearchPageInfo(normalizedKeyword, stockPage);
+        return new StockSearchPageInfo(normalizedKeyword, selectedSearchType, marketType, stockPage, industryNamesByStockId);
+    }
+    // searchType에 따라 다른 SQL을 실행한다.
+    @Transactional(readOnly = true)
+    public Page<Stock> findStockWithKeyword(Long userId, String keyword, StockSearchType searchType, Pageable pageable) {
+        return findStockWithKeyword(userId, keyword, searchType, null, pageable);
     }
 
     @Transactional(readOnly = true)
-    public Page<Stock> findStockWithKeyword(Long userId, String keyword, Pageable pageable) {
+    public Page<Stock> findStockWithKeyword(Long userId,
+                                            String keyword,
+                                            StockSearchType searchType,
+                                            StockMarketType marketType,
+                                            Pageable pageable) {
         if (keyword == null || keyword.isBlank()) {
             return Page.empty(pageable);
         }
 
-        return stockRepository.searchByKeywordWithFavoriteFirst(userId, keyword.trim(), pageable);
+        String normalizedKeyword = keyword.trim();
+        StockSearchType selectedSearchType = searchType == null ? StockSearchType.STOCK : searchType;
+        if (selectedSearchType == StockSearchType.INDUSTRY) {
+            return stockRepository.searchByIndustryKeywordWithFavoriteFirst(userId, normalizedKeyword, marketType, pageable);
+        }
+
+        return stockRepository.searchByKeywordWithFavoriteFirst(userId, normalizedKeyword, marketType, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -56,15 +89,18 @@ public class StockService {
         return favoriteStockRepository.findStockIdsByUserId(userId);
     }
 
-    @Transactional(readOnly = true)
     public FavoriteStockPageInfo getFavoriteStockPageInfo(Long userId, int page) {
         Pageable pageable = PageRequest.of(
                 PaginationInfo.safePage(page),
                 FAVORITE_STOCK_PAGE_SIZE);
 
         Page<FavoriteStock> favoriteStockPage = favoriteStockRepository.findPageByUserId(userId, pageable);
+        Map<Long, String> industryNamesByStockId = stockIndustryCodeService.resolveIndustryNamesByStocks(
+                favoriteStockPage.getContent().stream()
+                        .map(FavoriteStock::getStock)
+                        .toList());
 
-        return new FavoriteStockPageInfo(favoriteStockPage);
+        return new FavoriteStockPageInfo(favoriteStockPage, industryNamesByStockId);
     }
 
     @Transactional

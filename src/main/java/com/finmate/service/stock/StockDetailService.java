@@ -1,13 +1,12 @@
 package com.finmate.service.stock;
 
 import com.finmate.domain.stock.Stock;
-import com.finmate.domain.stock.StockMarketType;
 import com.finmate.domain.stock.dto.detail.StockChartPeriod;
 import com.finmate.domain.stock.dto.detail.StockDetailPageInfo;
+import com.finmate.domain.stock.dto.detail.StockIndustryDisplayNames;
 import com.finmate.domain.stock.dto.detail.StockMetadataDisplayInfo;
 import com.finmate.domain.stock.metadata.DomesticStockMetadata;
 import com.finmate.domain.stock.metadata.OverseasStockMetadata;
-import com.finmate.domain.stock.market.StockMarketSchedule;
 import com.finmate.domain.stock.market.StockMarketSchedules;
 import com.finmate.domain.stock.price.StockDailyPrice;
 import com.finmate.repository.stock.StockRepository;
@@ -19,8 +18,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -32,6 +32,7 @@ public class StockDetailService {
     private final StockRepository stockRepository;
     private final StockDailyPriceRepository stockDailyPriceRepository;
     private final StockDailyPriceSyncService stockDailyPriceSyncService;
+    private final StockIndustryCodeService stockIndustryCodeService;
     private final DomesticStockMetadataRepository domesticStockMetadataRepository;
     private final OverseasStockMetadataRepository overseasStockMetadataRepository;
 
@@ -43,7 +44,7 @@ public class StockDetailService {
         // 차트 조회기간을 설정하지 않으면 기본값으로 1년으로 설정
         StockChartPeriod selectedPeriod = period == null ? StockChartPeriod.ONE_YEAR : period;
         // 현재 시간과 시장 타입을 기준으로 예상되는 최신 거래일 계산(저장되어 있어야 하는 최신 날짜)
-        LocalDate expectedLatestTradeDate = getExpectedLatestTradeDate(stock.getMarketType());
+        LocalDate expectedLatestTradeDate = StockMarketSchedules.expectedLatestDailyPriceTradeDate(stock.getMarketType());
         // 데이터를 가져올 시작일을 계산(최신 거래일 - 3년)
         LocalDate initialFetchStartDate = expectedLatestTradeDate.minusYears(INITIAL_HISTORY_YEARS);
         // 화면에 보여줄 차트 시작일을 계산
@@ -126,21 +127,29 @@ public class StockDetailService {
         DomesticStockMetadata domesticMetadata = domesticStockMetadataRepository
                 .findByStock_Id(stock.getId())
                 .orElse(null);
-        OverseasStockMetadata overseasMetadata = domesticMetadata == null
-                ? overseasStockMetadataRepository.findByStock_Id(stock.getId()).orElse(null)
-                : null;
+        if (domesticMetadata != null) {
+            Map<String, String> domesticSectorNames = stockIndustryCodeService.findDomesticSectorNames(Arrays.asList(
+                    domesticMetadata.getSectorLargeDivisionCode(),
+                    domesticMetadata.getSectorMediumDivisionCode(),
+                    domesticMetadata.getSectorSmallDivisionCode()));
+            StockIndustryDisplayNames industryDisplayNames =
+                    new StockIndustryDisplayNames(domesticSectorNames, null);
+            return StockMetadataDisplayInfo.from(stock, domesticMetadata, null, industryDisplayNames);
+        }
 
-        return StockMetadataDisplayInfo.from(stock, domesticMetadata, overseasMetadata);
+        OverseasStockMetadata overseasMetadata = overseasStockMetadataRepository
+                .findByStock_Id(stock.getId())
+                .orElse(null);
+        if (overseasMetadata == null) {
+            return StockMetadataDisplayInfo.from(stock, null, null);
+        }
+
+        String overseasIndustryName = stockIndustryCodeService
+                .resolveOverseasIndustryName(overseasMetadata.getExchangeCode(), overseasMetadata.getIndustryCode())
+                .orElse(null);
+        StockIndustryDisplayNames industryDisplayNames =
+                new StockIndustryDisplayNames(Map.of(), overseasIndustryName);
+        return StockMetadataDisplayInfo.from(stock, null, overseasMetadata, industryDisplayNames);
     }
 
-    // 만약 금일 일봉 반영 기준 시간이 지났다면 오늘 날짜까지를 ExpectedLatestTradeDate로 설정하고,
-    // 그렇지 않다면 전날까지의 날짜를 ExpectedLatestTradeDate로 설정한다.
-    private LocalDate getExpectedLatestTradeDate(StockMarketType marketType) {
-        StockMarketSchedule schedule = StockMarketSchedules.get(marketType);
-        LocalDate today = LocalDate.now(schedule.zoneId());
-        LocalTime now = LocalTime.now(schedule.zoneId());
-
-        LocalDate candidate = now.isBefore(schedule.dailyPriceAvailableTime()) ? today.minusDays(1) : today;
-        return StockMarketSchedules.previousWeekday(candidate);
-    }
 }

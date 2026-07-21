@@ -15,6 +15,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import static com.finmate.domain.stock.dto.industry.StockIndustryDisplayUtils.displayNameOrCode;
+import static com.finmate.domain.stock.dto.industry.StockIndustryDisplayUtils.isNoneCode;
+import static com.finmate.domain.stock.dto.industry.StockIndustryDisplayUtils.mostSpecificDomesticDisplayName;
+
 @Getter
 public class StockMetadataDisplayInfo {
     private static final String EMPTY_DISPLAY_VALUE = "-";
@@ -145,12 +149,22 @@ public class StockMetadataDisplayInfo {
     public static StockMetadataDisplayInfo from(Stock stock,
                                                 DomesticStockMetadata domesticMetadata,
                                                 OverseasStockMetadata overseasMetadata) {
+        return from(stock, domesticMetadata, overseasMetadata, StockIndustryDisplayNames.empty());
+    }
+
+    public static StockMetadataDisplayInfo from(Stock stock,
+                                                DomesticStockMetadata domesticMetadata,
+                                                OverseasStockMetadata overseasMetadata,
+                                                StockIndustryDisplayNames industryDisplayNames) {
+        StockIndustryDisplayNames displayNames = industryDisplayNames == null
+                ? StockIndustryDisplayNames.empty()
+                : industryDisplayNames;
         if (domesticMetadata != null) {
-            return domestic(domesticMetadata);
+            return domestic(domesticMetadata, displayNames);
         }
 
         if (overseasMetadata != null) {
-            return overseas(overseasMetadata);
+            return overseas(overseasMetadata, displayNames);
         }
 
         String sourceLabel = stock == null ? "종목 마스터" : stock.getMarketType() + " 마스터";
@@ -170,7 +184,8 @@ public class StockMetadataDisplayInfo {
         return !badges.isEmpty();
     }
 
-    private static StockMetadataDisplayInfo domestic(DomesticStockMetadata metadata) {
+    private static StockMetadataDisplayInfo domestic(DomesticStockMetadata metadata,
+                                                     StockIndustryDisplayNames industryDisplayNames) {
         List<StockMetadataBadge> badges = new ArrayList<>();
         List<StockMetadataSection> sections = new ArrayList<>();
 
@@ -180,9 +195,11 @@ public class StockMetadataDisplayInfo {
         List<StockMetadataItem> overviewItems = new ArrayList<>();
         addMappedItem(overviewItems, "상품 성격", metadata.getSecurityGroupClassCode(), DOMESTIC_SECURITY_GROUP_NAMES);
         addMappedItem(overviewItems, "시가총액 규모", metadata.getMarketCapScaleClassCode(), MARKET_CAP_SCALE_NAMES);
-        addCodeItem(overviewItems, "업종 대분류", metadata.getSectorLargeDivisionCode());
-        addCodeItem(overviewItems, "업종 중분류", metadata.getSectorMediumDivisionCode());
-        addCodeItem(overviewItems, "업종 소분류", metadata.getSectorSmallDivisionCode());
+        addRawItem(overviewItems, "업종", mostSpecificDomesticDisplayName(
+                metadata.getSectorLargeDivisionCode(),
+                metadata.getSectorMediumDivisionCode(),
+                metadata.getSectorSmallDivisionCode(),
+                industryDisplayNames::domesticSectorName));
         addDomesticIndustryItems(overviewItems, metadata);
         addMappedItem(overviewItems, "KOSPI200 섹터", metadata.getKospi200SectorCode(), KOSPI200_SECTOR_NAMES);
         addMappedItem(overviewItems, "우선주 구분", metadata.getPreferredStockClassCode(), PREFERRED_STOCK_NAMES);
@@ -249,7 +266,8 @@ public class StockMetadataDisplayInfo {
                 sections);
     }
 
-    private static StockMetadataDisplayInfo overseas(OverseasStockMetadata metadata) {
+    private static StockMetadataDisplayInfo overseas(OverseasStockMetadata metadata,
+                                                     StockIndustryDisplayNames industryDisplayNames) {
         List<StockMetadataBadge> badges = new ArrayList<>();
         List<StockMetadataSection> sections = new ArrayList<>();
 
@@ -257,7 +275,10 @@ public class StockMetadataDisplayInfo {
         addBadgeIfHasText(badges, metadata.getCurrency(), "neutral");
         addBadgeIfYes(badges, metadata.getDrYn(), "DR", "warning");
         addBadgeIfYes(badges, metadata.getIndexConstituentYn(), "지수 구성", "info");
-        addBadgeIfHasText(badges, codeWithPrefix("업종", metadata.getIndustryCode()), "info");
+        addBadgeIfHasText(
+                badges,
+                textWithPrefix("업종", displayNameOrCode(metadata.getIndustryCode(), industryDisplayNames.overseasIndustryName())),
+                "info");
 
         List<StockMetadataItem> overviewItems = new ArrayList<>();
         addCodeItem(overviewItems, "국가 코드", metadata.getNationalCode());
@@ -265,7 +286,7 @@ public class StockMetadataDisplayInfo {
         addCodeItem(overviewItems, "거래소 ID", metadata.getExchangeId());
         addMappedItem(overviewItems, "증권 유형", metadata.getSecurityTypeCode(), OVERSEAS_SECURITY_TYPE_NAMES);
         addCodeItem(overviewItems, "데이터 유형", metadata.getDataType());
-        addCodeItem(overviewItems, "업종 코드", metadata.getIndustryCode());
+        addResolvedCodeItem(overviewItems, "업종", metadata.getIndustryCode(), industryDisplayNames.overseasIndustryName());
         addRawItem(overviewItems, "통화", metadata.getCurrency());
         addCodeItem(overviewItems, "ETP 유형", metadata.getEtpType());
         addYesNoItem(overviewItems, "DR 여부", metadata.getDrYn());
@@ -376,6 +397,16 @@ public class StockMetadataDisplayInfo {
         String normalizedCode = normalize(code);
         if (hasText(normalizedCode)) {
             items.add(new StockMetadataItem(label, "코드 " + normalizedCode));
+        }
+    }
+
+    private static void addResolvedCodeItem(List<StockMetadataItem> items,
+                                            String label,
+                                            String code,
+                                            String resolvedName) {
+        String displayValue = displayNameOrCode(code, resolvedName);
+        if (displayValue != null) {
+            items.add(new StockMetadataItem(label, displayValue));
         }
     }
 
@@ -514,11 +545,6 @@ public class StockMetadataDisplayInfo {
         }
 
         return label;
-    }
-
-    private static boolean isNoneCode(String code) {
-        String normalizedCode = normalize(code);
-        return "0".equals(normalizedCode) || "00".equals(normalizedCode);
     }
 
     private static String formatNumber(String value) {
@@ -664,13 +690,13 @@ public class StockMetadataDisplayInfo {
         return null;
     }
 
-    private static String codeWithPrefix(String prefix, String code) {
-        String normalizedCode = normalize(code);
-        if (!hasText(normalizedCode)) {
+    private static String textWithPrefix(String prefix, String text) {
+        String normalizedText = normalize(text);
+        if (!hasText(normalizedText)) {
             return null;
         }
 
-        return prefix + " " + normalizedCode;
+        return prefix + " " + normalizedText;
     }
 
     private static String appendPrefixSuffix(String value, String prefix, String suffix) {
