@@ -22,6 +22,8 @@ public class StockRealtimeWebSocketHandler extends TextWebSocketHandler {
     // 클래스가 보낼 메세지 타입 상수로 정의
     private static final String SUBSCRIBE_STOCK = "SUBSCRIBE_STOCK"; // 상세페이지에서 종목의 실시간 시세를 구독하는 메세지
     private static final String UNSUBSCRIBE_STOCK = "UNSUBSCRIBE_STOCK"; // 상세페이지에서 벗어나서 종목의 실시간 시세 구독을 해제하는 메세지
+    private static final String SUBSCRIBE_ORDER_STOCK = "SUBSCRIBE_ORDER_STOCK";
+    private static final String UNSUBSCRIBE_ORDER_STOCK = "UNSUBSCRIBE_ORDER_STOCK";
     private static final String SUBSCRIBE_PORTFOLIO_STOCK = "SUBSCRIBE_PORTFOLIO_STOCK"; // 포트폴리오 페이지에서 시세를 구독하는 메세지
     private static final String UNSUBSCRIBE_PORTFOLIO_STOCK = "UNSUBSCRIBE_PORTFOLIO_STOCK"; // 포트폴리오 페이지에서 나가서 시세 구독을 해제하ㅡㄴㄴ 메세지
 
@@ -54,6 +56,11 @@ public class StockRealtimeWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
+        if (SUBSCRIBE_ORDER_STOCK.equals(request.type())) {
+            clientSessionService.subscribeStock(session, request.stockId(), StockRealtimeSubscriptionPurpose.ORDER_PAGE);
+            return;
+        }
+
         // 만약 클라이언트가 전송한 메세지가 상세페이지 종목 구독해제였다면, 종목 구독을 해제하는 로직 호출
         if (UNSUBSCRIBE_STOCK.equals(request.type())) {
             clientSessionService.unsubscribeStock(session, request.stockId(), StockRealtimeSubscriptionPurpose.DETAIL_PAGE);
@@ -63,6 +70,12 @@ public class StockRealtimeWebSocketHandler extends TextWebSocketHandler {
         // 만약 클라이언트가 전송한 메세지가 포트폴리오 페이지 종목 구독해제였다면, PORTFOLIO_PAGE 구독을 해제하는 로직 호출
         if (UNSUBSCRIBE_PORTFOLIO_STOCK.equals(request.type())) {
             clientSessionService.unsubscribeStock(session, request.stockId(), StockRealtimeSubscriptionPurpose.PORTFOLIO_PAGE);
+            return;
+        }
+
+
+        if (UNSUBSCRIBE_ORDER_STOCK.equals(request.type())) {
+            clientSessionService.unsubscribeStock(session, request.stockId(), StockRealtimeSubscriptionPurpose.ORDER_PAGE);
             return;
         }
 

@@ -13,6 +13,8 @@ public record StockRealtimeClientMessage(
         String trId,
         String trKey,
         BigDecimal currentPrice,
+        BigDecimal bestBidPrice,
+        BigDecimal bestAskPrice,
         BigDecimal openPrice,
         BigDecimal highPrice,
         BigDecimal lowPrice,

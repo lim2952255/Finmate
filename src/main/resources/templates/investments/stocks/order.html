@@ -112,7 +112,10 @@
 
             <p th:if="${errorMessage}" th:text="${errorMessage}" style="color:#dc2626;">오류</p>
 
-            <div class="market-summary">
+            <div class="market-summary"
+                 id="order-market-summary"
+                 th:attr="data-stock-id=${stockOrderPageInfo.stock.id},
+                          data-fraction-digits=${stockOrderPageInfo.currencyCode.fractionDigits}">
                 <div class="summary-item">
                     <strong>종목코드</strong>
                     <span th:text="${stockOrderPageInfo.stock.symbol}">005930</span>
@@ -127,15 +130,18 @@
                 </div>
                 <div class="summary-item">
                     <strong>현재가</strong>
-                    <span th:text="${stockOrderPageInfo.formatPrice(stockOrderPageInfo.tradePrice)}">-</span>
+                    <span id="order-current-price"
+                          th:text="${stockOrderPageInfo.formatPrice(stockOrderPageInfo.tradePrice)}">-</span>
                 </div>
                 <div class="summary-item">
                     <strong>매수 기준가</strong>
-                    <span th:text="${stockOrderPageInfo.formatPrice(stockOrderPageInfo.buyExecutablePrice)}">-</span>
+                    <span id="order-buy-price"
+                          th:text="${stockOrderPageInfo.formatPrice(stockOrderPageInfo.buyExecutablePrice)}">-</span>
                 </div>
                 <div class="summary-item">
                     <strong>매도 기준가</strong>
-                    <span th:text="${stockOrderPageInfo.formatPrice(stockOrderPageInfo.sellExecutablePrice)}">-</span>
+                    <span id="order-sell-price"
+                          th:text="${stockOrderPageInfo.formatPrice(stockOrderPageInfo.sellExecutablePrice)}">-</span>
                 </div>
                 <div class="summary-item">
                     <strong>거래 가능 시간</strong>
@@ -421,6 +427,86 @@
             if (element) {
                 element.textContent = value || '-';
             }
+        }
+    })();
+</script>
+<script>
+    (() => {
+        const summary = document.getElementById('order-market-summary');
+        if (!summary || !window.WebSocket) {
+            return;
+        }
+
+        const stockId = Number(summary.dataset.stockId);
+        const fractionDigits = Number(summary.dataset.fractionDigits || 0);
+        const currentPrice = document.getElementById('order-current-price');
+        const buyPrice = document.getElementById('order-buy-price');
+        const sellPrice = document.getElementById('order-sell-price');
+        if (!stockId) {
+            return;
+        }
+
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const socket = new WebSocket(`${protocol}://${window.location.host}/ws/stocks`);
+
+        socket.addEventListener('open', () => {
+            socket.send(JSON.stringify({type: 'SUBSCRIBE_ORDER_STOCK', stockId}));
+        });
+
+        socket.addEventListener('message', (event) => {
+            const message = parseMessage(event.data);
+            if (!message || Number(message.stockId) !== stockId) {
+                return;
+            }
+
+            if (message.type === 'STOCK_TRADE') {
+                setPrice(currentPrice, message.currentPrice);
+                setPrice(buyPrice, firstPositive(message.bestAskPrice, message.currentPrice));
+                setPrice(sellPrice, firstPositive(message.bestBidPrice, message.currentPrice));
+                return;
+            }
+
+            if (message.type === 'STOCK_ORDERBOOK') {
+                setPrice(buyPrice, firstLevelPrice(message.askLevels));
+                setPrice(sellPrice, firstLevelPrice(message.bidLevels));
+            }
+        });
+
+        window.addEventListener('pagehide', () => {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({type: 'UNSUBSCRIBE_ORDER_STOCK', stockId}));
+                socket.close();
+            }
+        });
+
+        function parseMessage(raw) {
+            try {
+                return JSON.parse(raw);
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function firstLevelPrice(levels) {
+            if (!Array.isArray(levels) || levels.length === 0) {
+                return null;
+            }
+            return levels[0]?.price;
+        }
+
+        function firstPositive(primary, fallback) {
+            return Number(primary) > 0 ? primary : fallback;
+        }
+
+        function setPrice(element, value) {
+            const numericValue = Number(value);
+            if (!element || !Number.isFinite(numericValue) || numericValue <= 0) {
+                return;
+            }
+            element.textContent = numericValue.toLocaleString('ko-KR', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: fractionDigits
+            });
         }
     })();
 </script>

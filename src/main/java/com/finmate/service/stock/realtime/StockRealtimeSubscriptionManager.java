@@ -31,8 +31,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class StockRealtimeSubscriptionManager {
     private static final String KOSPI_INDEX_CODE = "0001";
     private static final String KOSDAQ_INDEX_CODE = "1001";
-    private static final String NASDAQ_REALTIME_PREFIX = "DNAS";
-
     private final StockRepository stockRepository; // 종목을 저장하는 repository
     private final KisRealtimeWebSocketClient realtimeWebSocketClient; // KIS WebSocket과의 연결을 관리하고, 데이터를 저장하는 client
     private final Map<KisRealtimeSubscription, AtomicInteger> subscriberCounts = new ConcurrentHashMap<>(); // 종목별로 구독하고 있는 사용자수를 관리(동시성문제가 발생할 수 있으므로 atomic하게 관리)
@@ -217,7 +215,7 @@ public class StockRealtimeSubscriptionManager {
     // 종목을 구독할 때, 종목의 실시간 체결가 + 실시간 호가를 구독하도록 설정
     private List<KisRealtimeSubscription> resolveStockSubscriptions(Stock stock) {
         if (stock.getMarketType() == StockMarketType.NASDAQ) {
-            String realtimeSymbol = resolveNasdaqRealtimeSymbol(stock);
+            String realtimeSymbol = StockRealtimeKeyResolver.resolve(stock);
             return List.of(
                     new KisRealtimeSubscription(
                             // api와 RealtimeSymbol을 저장
@@ -229,7 +227,7 @@ public class StockRealtimeSubscriptionManager {
         }
 
         if (stock.getMarketType() == StockMarketType.KOSPI || stock.getMarketType() == StockMarketType.KOSDAQ) {
-            String realtimeSymbol = resolveDomesticRealtimeSymbol(stock);
+            String realtimeSymbol = StockRealtimeKeyResolver.resolve(stock);
             return List.of(
                     new KisRealtimeSubscription(
                             // api와 RealtimeSymbol을 저장
@@ -241,22 +239,6 @@ public class StockRealtimeSubscriptionManager {
         }
 
         throw new RuntimeException("Unsupported realtime stock market type. marketType=" + stock.getMarketType());
-    }
-
-    private String resolveDomesticRealtimeSymbol(Stock stock) {
-        if (stock.getRealtimeSymbol() != null && !stock.getRealtimeSymbol().isBlank()) {
-            return stock.getRealtimeSymbol().trim();
-        }
-
-        return stock.getSymbol().trim();
-    }
-
-    private String resolveNasdaqRealtimeSymbol(Stock stock) {
-        if (stock.getRealtimeSymbol() != null && !stock.getRealtimeSymbol().isBlank()) {
-            return stock.getRealtimeSymbol().trim();
-        }
-
-        return NASDAQ_REALTIME_PREFIX + stock.getSymbol().trim();
     }
 
     private StockRealtimeSubscriptionPurpose normalizePurpose(StockRealtimeSubscriptionPurpose purpose) {

@@ -42,17 +42,18 @@ out/
 SUMMARY.md
 .omx/
 .codex/*
+!.codex/config.toml
+!.codex/hooks.json
 !.codex/agents/
 !.codex/agents/**
-!.codex/skills/
-!.codex/skills/**
 .codex/skills/.system/**
-!.codex/prompts/
-!.codex/prompts/**
 
 ### Local AI assistant files ###
 *.md
-.omx/
+!AGENTS.md
+!README.md
+!docs/
+!docs/**/*.md
 .claude/
 .claude.json*
 claude*.json
