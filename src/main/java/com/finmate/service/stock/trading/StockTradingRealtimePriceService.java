@@ -6,6 +6,7 @@ import com.finmate.domain.stock.trading.StockOrderSide;
 import com.finmate.infra.kis.stock.realtime.KisRealtimeApi;
 import com.finmate.infra.kis.stock.realtime.KisRealtimePayload;
 import com.finmate.infra.kis.stock.realtime.KisRealtimeStore;
+import com.finmate.service.stock.realtime.StockRealtimeKeyResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,8 +21,6 @@ import static com.finmate.infra.kis.parser.KisValueParser.parsePositiveBigDecima
 @Service
 @RequiredArgsConstructor
 public class StockTradingRealtimePriceService {
-    private static final String NASDAQ_REALTIME_PREFIX = "DNAS";
-
     private final KisRealtimeStore realtimeStore; // KIS WebSocket으로부터 받은 실시간 체결가 + 실시간 호가 데이터 저장소
 
     // 체결가능한 가격을 반드시 찾아서 리턴하는 메서드. 만약 체결가능한 가격을 찾지 못하면 예외를 발생시킨다.
@@ -87,15 +86,7 @@ public class StockTradingRealtimePriceService {
     }
 
     private String realtimeKey(Stock stock) {
-        if (stock.getRealtimeSymbol() != null && !stock.getRealtimeSymbol().isBlank()) {
-            return stock.getRealtimeSymbol().trim();
-        }
-
-        if (stock.getMarketType() == StockMarketType.NASDAQ) {
-            return NASDAQ_REALTIME_PREFIX + stock.getSymbol().trim();
-        }
-
-        return stock.getSymbol().trim();
+        return StockRealtimeKeyResolver.resolve(stock);
     }
 
     private String value(Map<String, String> values, String firstKey, String secondKey) {

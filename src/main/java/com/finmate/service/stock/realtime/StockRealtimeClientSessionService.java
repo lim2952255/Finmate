@@ -212,6 +212,8 @@ public class StockRealtimeClientSessionService {
                 payload.trId(),
                 payload.trKey(),
                 currentPrice,
+                parseNullableBigDecimal(value(values, "BIDP1", "PBID")),
+                parseNullableBigDecimal(value(values, "ASKP1", "PASK")),
                 openPrice,
                 highPrice,
                 lowPrice,
