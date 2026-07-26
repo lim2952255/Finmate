@@ -9,7 +9,7 @@
 - 문서와 코드가 다르면 테스트로 차이를 드러내고 **알려진 공백/실패**로 기록한다.
 - 목표 계약을 위반하는 테스트는 `@Disabled`, 조건부 skip, 완화된 기대값으로 숨기지 않는다.
 - 테스트 구축 작업은 결함을 증명하는 데까지 책임지며, 프로덕션 금융 로직 수정은 별도 작업으로 수행한다.
-- GitHub Actions CI는 이 문서 개편과 최초 테스트 구축 범위에 포함하지 않는다.
+- GitHub Actions CI는 `main` 대상 pull request와 `main` push에서 전체 테스트를 실행하며, 실패한 금융 계약을 `continue-on-error`나 skip으로 숨기지 않는다.
 
 각 규칙은 다음 정보를 가진다.
 
@@ -529,3 +529,13 @@ FILLED / CANCELED / EXPIRED / TRIGGERED 중 허용된 하나만 승리
 - 테스트 DB: JVM당 새 MySQL 8.4 Testcontainer, Spring context 간 공유
 - 데이터 격리: 각 테스트 전 `finmate_test`의 모든 base table truncate
 - Gradle의 두 번째 `./gradlew test`가 수백 ms에 끝나는 것은 테스트 재실행이 아니라 모든 task가 `UP-TO-DATE`였기 때문이다.
+
+### 12.4 GitHub Actions 회귀 게이트
+
+- workflow: `.github/workflows/ci.yml`
+- trigger: `main` 대상 pull request, `main` push, 수동 실행
+- 실행 명령: `./gradlew test --no-daemon --console=plain`
+- 실행 환경: Java 17, Gradle Wrapper, GitHub-hosted Ubuntu, MySQL 8.4 Testcontainers
+- 중복 제어: 같은 pull request 또는 ref의 새 실행이 시작되면 이전 실행을 취소한다.
+- 실패 증거: JUnit XML, HTML test report와 Gradle 문제 report를 14일 동안 artifact로 보관한다.
+- 비밀값 경계: KIS, 개발 MySQL, Redis credential을 CI에 등록하거나 사용하지 않는다.

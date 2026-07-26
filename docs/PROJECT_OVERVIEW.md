@@ -38,7 +38,7 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이�
 | 실시간 | Spring WebSocket(브라우저 연결), JDK `HttpClient` WebSocket(KIS 연결) |
 | 외부 통신 | JDK `java.net.http.HttpClient` |
 | 뷰 | Thymeleaf 템플릿과 정적 CSS |
-| 빌드·테스트 | Gradle Wrapper, JUnit 5, Spring Boot Test |
+| 빌드·테스트 | Gradle Wrapper, JUnit 5, Spring Boot Test, GitHub Actions CI |
 | 보조 | Lombok, Docker Compose |
 
 `README.md`의 Spring Boot 버전 및 일부 기술 목록은 실제 빌드와 다르므로 이 문서는 `build.gradle`을 기준으로 한다.
@@ -100,4 +100,4 @@ KIS 실시간 payload
 - Redis 장애 시 랭킹 조회는 빈 보드를 반환하고 저장 실패는 경고 로그로 끝난다.
 - 실제 주문은 항상 남은 수량 전체를 한 번에 체결한다. 상태 모델에는 `PARTIALLY_FILLED`가 있으나 부분 체결 수량을 결정하는 로직은 **현재 구현되지 않음**.
 - 증권계좌 안의 KRW/USD 예수금 환전은 `USD_KRW` 최신 시세를 기준으로 처리하고 환전 내역을 저장한다. 일반 계좌↔증권 계좌 이체 자체는 서로 다른 통화 간 직접 이체를 하지 않는다.
-- 운영 배포, CI/CD, 관측성, FDS, 뉴스·AI 기능은 **현재 구현되지 않음**.
+- GitHub Actions CI는 `main` 대상 pull request와 `main` push에서 전체 테스트를 실행한다. 운영 배포(CD), 관측성, FDS, 뉴스·AI 기능은 **현재 구현되지 않음**.
