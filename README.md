@@ -32,6 +32,12 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 함께 관리하는 S
 | Build/Test | Gradle Wrapper, JUnit 5, Spring Boot Test |
 | Utility | Lombok, Docker Compose |
 
+## 지속적 통합
+
+GitHub Actions는 `main` 대상 pull request와 `main` push에서 Java 17·Gradle Wrapper 환경으로 전체 테스트를 실행합니다. MySQL 통합·동시성 테스트는 MySQL 8.4 Testcontainers를 사용하므로 개발 DB나 별도 CI용 DB credential에 연결하지 않습니다.
+
+테스트가 실패하면 workflow도 실패하고, JUnit XML과 HTML test report를 artifact로 남깁니다. 배포와 branch protection 설정은 이 CI의 범위에 포함하지 않습니다.
+
 ## 애플리케이션 구조
 
 ```text
@@ -191,4 +197,4 @@ KIS WebSocket 최신 payload, 브라우저 세션, 구독 참조 수는 Redis가
 - 공휴일, 조기폐장, 종목별 특수 거래 제한 캘린더는 반영하지 않았습니다.
 - KIS token, WebSocket 연결 상태, 실시간 최신 payload는 단일 JVM 메모리 기준입니다.
 - 다중 서버 fan-out, leader election, 중복 체결 방지 구조는 없습니다.
-- JWT, Refresh Token, FDS, 뉴스 수집, AI 리포트, React 프론트엔드, Spring Batch, QueryDSL, CI/CD, AWS 배포는 현재 소스 기준 구현 범위가 아닙니다.
+- JWT, Refresh Token, FDS, 뉴스 수집, AI 리포트, React 프론트엔드, Spring Batch, QueryDSL, CD와 AWS 배포는 현재 소스 기준 구현 범위가 아닙니다.

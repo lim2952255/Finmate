@@ -169,6 +169,7 @@ KIS payload는 `KisRealtimeStore`에 최신값으로 저장되고 Spring 동기 
 
 - 접수: `StockTradingCommandService.submitOrder()`/`submitReservation()`
 - 실시간 처리: `StockTradingExecutionService.processRealtimeUpdate()`
+- 만료 처리: `StockOrderExpirationScheduler` → `StockOrderExpirationService.expireOverdueOrdersAndReservations()`
 - 활성 주문·예약 목록과 예수금·보유 수량은 비관적 쓰기 락 조회를 사용한다.
 - 구독 활성·종료 이벤트는 DB 커밋 뒤 `@TransactionalEventListener(AFTER_COMMIT)`에서 처리된다.
 - KIS payload 이벤트 리스너는 비동기 설정이 없으므로 발행 스레드에서 동기 실행된다.
@@ -188,6 +189,7 @@ KIS payload는 `KisRealtimeStore`에 최신값으로 저장되고 Spring 동기 
 ## 7. 스케줄러와 이벤트
 
 - `@EnableScheduling`: `FinmateApplication`
+- 주문·예약 만료: 서버 시작 즉시 한 번 실행한 뒤 기본 10초 간격. 중단 중 만료된 활성 건도 시작 시 복구
 - 종목 마스터: 국내·NASDAQ 평일 오전 8시, 각 시장 시간대. 국내 업종코드는 국내 종목 마스터와 같은 스케줄에서 함께 갱신한다.
 - 랭킹: 기본 100ms 후 시작, 이전 실행 완료 후 10초 간격
 - 구독 해제: 별도 단일 스레드 executor로 기본 60초 유예

@@ -40,6 +40,8 @@ public class StockTradingAssetService {
         CurrencyCode currencyCode = lookupService.currencyCode(stock);
         if (side == StockOrderSide.SELL) { // 주식 매도의 경우, 매도할 수량만큼의 종목을 잠가야 한다.
             // 현재 계좌가 보유중인 종목의 수량을 조회한다.
+            // 매도의 경우 사실 논리상으로는 주문 접수 시점에  금액에 lock을 걸 필요가 없지만, 데드락 방지를 위해 lock순서를 맞추기 위해 lock을 획득한다.
+            findCashBalanceForUpdate(investment.getId(), currencyCode); // 매수주문과 매도주문에서 lock순서가 꼬이는 것을 방지하기 위해 항상 금액 먼저 lock을 걸고 그다음에 보유 수량에 lock을 건다.
             StockHolding holding = stockHoldingRepository.findByInvestmentIdAndStockIdForUpdate(investment.getId(), stock.getId())
                     .orElseThrow(() -> new RuntimeException("보유 종목이 없습니다."));
             holding.lockQuantity(quantity); // 해당 수량 만큼의 종목을 잠근다.
@@ -53,7 +55,9 @@ public class StockTradingAssetService {
         BigDecimal grossAmount = calculateAmount(currencyCode, reservePrice, quantity, RoundingMode.CEILING); // 총 거래대금을 계산
         BigDecimal reserveAmount = StockTradingFeePolicy.from(stock.getMarketType()) // 지식 매수의 경우, 총 거래대금 + 거래 수수료 만큼의 예수금을 잠가야 한다.
                 .calculateSettlementAmount(currencyCode, StockOrderSide.BUY, grossAmount);
-        findCashBalanceForUpdate(investment.getId(), currencyCode).lock(reserveAmount); // InvestmentCashBalance에서 reserveAmount만큼의 금액을 잠근다.
+        findCashBalanceForUpdate(investment.getId(), currencyCode).lock(reserveAmount); // InvestmentCashBalance에서 reserveAmount만큼의 금액을 잠근
+        StockHolding holding = stockHoldingRepository.findByInvestmentIdAndStockIdForUpdate(investment.getId(), stock.getId())
+                .orElse(null); // 매수의 경우에도 사실 논리상으로는 주문 접수 시점에 보유 종목 수에 lock을 걸 필요가 없지만, 데드락 방지를 위해 lock순서를 맞추기 위해 lock을 획득한다.
         return new ReservedAsset(reserveAmount, BigDecimal.ZERO); // lock 정보를 리턴한다.
     }
 

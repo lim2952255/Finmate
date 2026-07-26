@@ -47,6 +47,7 @@ public class StockTradingExecutionService {
     private final StockTradingRealtimePriceService realtimePriceService; // 실시간 체결기준 가격을 결정하는 서비스
     private final StockTradingLookupService lookupService;
     private final StockTradingAssetService assetService;
+    private final StockOrderExpirationService expirationService;
     private final ApplicationEventPublisher eventPublisher; // 이벤트 발생기 (스프링에서 기본적으로 제공하는 스프링 빈)
 
     // 실시간으로 주식의 가격이 변동될때마다 주문을 체결할지 여부를 결정하는 메서드
@@ -68,11 +69,7 @@ public class StockTradingExecutionService {
 
         for (StockOrderReservation reservation : reservations) {
             // 예약기간이 만료된 경우
-            if (reservation.isExpired(now)) {
-                assetService.releaseReservationAsset(reservation);
-                reservation.expire(); // 예약 만료 처리
-                // 예약 주문 취소 이벤트를 발생시킨다. (이벤트 리스너가 해당 예약종목에 대한 구독을 취소한다.)
-                eventPublisher.publishEvent(new StockReservationClosedEvent(stock.getId()));
+            if (expirationService.expireReservationIfDue(reservation, now)) {
                 continue;
             }
 
@@ -112,11 +109,7 @@ public class StockTradingExecutionService {
 
         for (StockOrder order : orders) {
             // 지정가 주문의 기한이 만료된 경우
-            if (order.isExpired(now)) {
-                assetService.releaseOrderAsset(order);
-                order.expireRemaining(); // 지정가 주문을 만료시킨다.
-                // 지정가 주문이 만료되었으므로, 일반 주문 취소 이벤트를 발생시킨다.
-                eventPublisher.publishEvent(new StockOrderClosedEvent(order.getStock().getId()));
+            if (expirationService.expireOrderIfDue(order, now)) {
                 continue;
             }
 
@@ -211,14 +204,14 @@ public class StockTradingExecutionService {
                 ? grossAmount.add(commissionAmount) // 매수의 경우 거래대금 + 수수료를 내야한다.
                 : grossAmount.subtract(commissionAmount).subtract(taxAmount); // 매도의 경우 거래대금 - 수수료 - 세금을 받는다.
 
-        InvestmentCashBalance cashBalance = assetService.findCashBalanceForUpdate(order.getInvestment().getId(), currencyCode);
-        StockHolding holding = assetService.findOrCreateHoldingForUpdate(order.getInvestment(), order.getStock(), currencyCode);
+        InvestmentCashBalance cashBalance = assetService.findCashBalanceForUpdate(order.getInvestment().getId(), currencyCode); // 통화 잔고에 우선적으로 lock을 건다
+        StockHolding holding = assetService.findOrCreateHoldingForUpdate(order.getInvestment(), order.getStock(), currencyCode); // 종목 수량에 lock을 건다.
         BigDecimal cashBefore = cashBalance.getTotalBalance(); // 주문 체결 전 예수금
         BigDecimal holdingBefore = holding.getQuantity(); // 주문 체결 전 종목 수량
 
         if (order.getSide() == StockOrderSide.BUY) { // 매수의 경우, cashBalance에서 주문 체결결과를 예수금에 반영하고 lock을 해제한다.
-            cashBalance.settleBuyFromLocked(order.getReservedCashAmount(), netCashAmount);
             holding.applyBuyExecution(executionQuantity, normalizedExecutionPrice); // 또한 StockHolding에서 보유중인 종목 수량과 평균단가를 update한다.
+            cashBalance.settleBuyFromLocked(order.getReservedCashAmount(), netCashAmount);
         } else {
             holding.applySellExecution(executionQuantity); // 매도의 경우, StockHolding에서 보유중인 종목 수량을 update하고, lock을 해제한다.
             cashBalance.deposit(netCashAmount); // 또한 cashBalance에서 주문 체결 결과를 예수금에 반영한다.

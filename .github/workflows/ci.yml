@@ -1,0 +1,65 @@
+# github Action을 기반으로 한 CI 설정
+
+# github Actions의 workflow 이름
+name: FinMate CI
+
+# main 브랜치에 push하거나 PR시에 Github Actions가 workflow를 시작한다.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: # 수동 실행 설
+
+# github Actions의 workflow가 저장소에 대해기 읽기권한만 가지도록 설정한다.
+permissions:
+  contents: read
+
+# 중복실행 제어. 즉 같은 PR이나 같은 브랜치에서 이전 CI가 실행중일때, 새 CI가 실행되면 중복실행을 방지하기 위해 이전 CI를 취소한다.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# github Actions의 workflow가 수행할 job을 지정
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest # job을 실행할 서버 설정
+    timeout-minutes: 15 # Test job이 최대 15분동안 실행될 수 있도록 설정한다.
+
+    # Test job에서 실행되는 작업들을 순차적으로 설정
+    steps:
+      # 저장소 코드 내려받기
+      - name: Check out repository # GitHub의 임시 Ubuntu 서버에 Finmate 저장소 코드를 내려받는 단계야.
+        uses: actions/checkout@v6
+
+      # Java 17 설정
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # Gradle 설정
+      - name: Set up Gradle # Gradle 실행 환경과 캐시를 설정
+        uses: gradle/actions/setup-gradle@v6
+
+      # 테스트 실행
+      - name: Run tests # 실제 테스트 코드들을 실행한다. (이 테스트 코드 내부에서 TestContainer 도커 컨테이너 생성 및 테스트 DB작업을 준비한다.) -> 우분투 서버에서 TestContianer를 도커에 연결한다.
+        run: ./gradlew test --no-daemon --console=plain
+
+      # 테스트 실패시 테스트 리포트를 작성
+      - name: Upload test reports
+        if: failure() # 테스트가 실패한 경우에만 테스트 리포트를 작성한다.
+        uses: actions/upload-artifact@v6 # runner 안에 생성된 파일을 GitHub에 artifact로 보관하는 action
+        with:
+          name: test-reports-${{ github.run_number }}
+          # 테스트 레포트를 업로드할 경로
+          path: |
+            build/test-results/test/
+            build/reports/tests/test/
+            build/reports/problems/
+          if-no-files-found: warn
+          retention-days: 14 # 레포트 보관기간

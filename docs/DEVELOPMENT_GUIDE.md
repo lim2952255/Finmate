@@ -48,9 +48,13 @@ STOCK_RANKING_REFRESH_INTERVAL_MILLIS=10000
 STOCK_RANKING_INITIAL_DELAY_MILLIS=100
 STOCK_RANKING_OPEN_CACHE_TTL_SECONDS=30
 STOCK_RANKING_CLOSED_CACHE_TTL_SECONDS=86400
+TRADING_EXPIRATION_INTERVAL_MILLIS=10000
+TRADING_EXPIRATION_INITIAL_DELAY_MILLIS=0
+TRADING_EXPIRATION_ENABLED=true
 ```
 
 국내 업종코드 파일은 국내 종목 마스터와 같은 `STOCK_MASTER_DOMESTIC_SYNC_CRON` / `STOCK_MASTER_DOMESTIC_SYNC_ZONE` 설정으로 함께 갱신된다.
+주문 만료 스케줄러는 기본 10초 간격으로 만료된 활성 주문·예약을 처리하고, 서버 시작 직후에는 중단 중 만료된 건을 즉시 복구한다.
 
 ## 3. MySQL과 Redis 실행
 
@@ -88,9 +92,16 @@ STOCK_RANKING_INITIAL_DELAY_MILLIS=600000 ./gradlew bootRun
 
 금융 상태 전이, 계산식, 트랜잭션 경계 또는 락 순서를 변경할 때 필요한 회귀·보존식·실패 주입·동시성 증거는 [금융 불변식](FINANCIAL_INVARIANTS.md)의 변경 기준을 함께 따른다.
 
+통합 테스트는 JVM마다 새 MySQL Testcontainer를 만들고 여러 Spring 테스트 컨텍스트가 이를 공유한다.
+테스트 프로필은 `ddl-auto=update`로 스키마를 한 번 생성하며, 각 테스트 시작 전 공통 지원 클래스가 테스트 스키마의 모든 테이블을 비운다.
+따라서 컨텍스트별 `create-drop` 종료 작업이 같은 FK를 반복 삭제하는 로그를 만들지 않는다.
+
 ```bash
 # 전체 테스트
 ./gradlew test
+
+# Gradle UP-TO-DATE 판정과 관계없이 전체 테스트 강제 재실행
+./gradlew test --rerun-tasks --no-daemon --console=plain
 
 # 정리 후 전체 빌드(테스트 포함)
 ./gradlew clean build
@@ -99,15 +110,29 @@ STOCK_RANKING_INITIAL_DELAY_MILLIS=600000 ./gradlew bootRun
 ./gradlew bootJar
 ```
 
-현재 테스트는 `FinmateApplicationTests.contextLoads()` 한 개뿐이며 랭킹 스케줄러 초기 지연을 10분으로 덮어쓴다. 계좌이체, 락 순서, 주문·정산, KIS parser/client, Redis 캐시 테스트는 **현재 구현되지 않음**.
+현재 회귀 suite는 단위·MVC·MySQL 통합·MySQL 동시성 테스트 170개로 구성된다. 계좌이체, 일반↔투자계좌 자금 이동, 환전, 주문·예약·체결·취소·만료, 원장 rollback과 주요 락 경합을 검증한다.
+
+두 번째 `./gradlew test`가 매우 빠르게 끝나고 모든 task가 `UP-TO-DATE`라면 테스트를 다시 실행한 것이 아니다. 실제 전체 회귀를 다시 실행하려면 위의 `--rerun-tasks` 명령을 사용한다.
 
 별도의 Checkstyle, SpotBugs, PMD, JaCoCo, 전용 lint/typecheck Gradle task는 `build.gradle`에서 확인되지 않는다.
 
-## 6. DB 스키마
+## 6. GitHub Actions CI
+
+`.github/workflows/ci.yml`은 다음 경우 전체 테스트를 실행한다.
+
+- `main`을 대상으로 pull request를 생성하거나 새 commit을 push한 경우
+- `main`에 commit이 push된 경우
+- Actions 화면에서 수동으로 실행한 경우
+
+같은 pull request 또는 branch에 새 실행이 시작되면 이전 실행은 취소한다. CI는 Java 17과 프로젝트 Gradle Wrapper를 사용하며, MySQL은 별도 service container가 아니라 테스트 코드의 MySQL 8.4 Testcontainers가 실행한다. KIS·개발 MySQL·Redis credential은 필요하지 않다.
+
+테스트 실패 시 Actions 실행도 실패하며, JUnit XML·HTML test report와 Gradle 문제 report를 14일 동안 artifact로 보관한다. branch protection과 required status check 설정은 저장소 운영 설정이므로 이 workflow가 자동으로 변경하지 않는다.
+
+## 7. DB 스키마
 
 `spring.jpa.hibernate.ddl-auto=update`이므로 애플리케이션 시작 시 엔티티 변경이 DB에 반영된다. Flyway/Liquibase 마이그레이션은 **현재 구현되지 않음**. 운영 또는 협업 환경에서 재현 가능한 스키마 변경 절차는 **확인 필요**.
 
-## 7. 자주 발생할 수 있는 실행 오류
+## 8. 자주 발생할 수 있는 실행 오류
 
 ### MySQL 연결 실패
 
@@ -146,7 +171,7 @@ STOCK_RANKING_INITIAL_DELAY_MILLIS=600000 ./gradlew bootRun
 
 `SecurityConfig`에는 `PasswordEncoder`만 있고 명시적 `SecurityFilterChain` bean은 없다. 실제 로그인 제어는 MVC 인터셉터와 HTTP Session이 담당한다. Spring Boot 3.5.15 자동 설정에서의 최종 필터 동작은 실행 환경에서 **확인 필요**.
 
-## 8. 테스트 보강 우선순위
+## 9. 테스트 보강 우선순위
 
 1. Testcontainers 기반 MySQL 계좌이체 동시성·데드락 회귀 테스트
 2. 일반↔투자 자금 이동 원자성 테스트

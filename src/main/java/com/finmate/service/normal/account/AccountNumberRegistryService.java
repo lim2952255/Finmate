@@ -6,9 +6,6 @@ import com.finmate.repository.normal.account.AccountNumberRegistryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -18,7 +15,6 @@ public class AccountNumberRegistryService {
     private static final int MAX_ACCOUNT_NUMBER_GENERATION_ATTEMPTS = 100;
 
     private final AccountNumberRegistryRepository accountNumberRegistryRepository;
-    private final PlatformTransactionManager transactionManager;
 
     // 고유한 계좌번호를 생성하고 Registry에 먼저 등록한다.
     public String issueUniqueAccountNumber(AccountType accountType) {
@@ -36,10 +32,7 @@ public class AccountNumberRegistryService {
     }
 
     private void registerInNewTransaction(String accountNumber, AccountType accountType) {
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        transactionTemplate.executeWithoutResult(status ->
-                accountNumberRegistryRepository.saveAndFlush(AccountNumberRegistry.create(accountNumber, accountType)));
+        accountNumberRegistryRepository.save(AccountNumberRegistry.create(accountNumber, accountType));
     }
 
     // 고유한 계좌 번호 생성기

@@ -11,12 +11,8 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import static com.finmate.domain.stock.trading.TradingAmountValidator.*;
 import static com.finmate.global.validation.RequiredValidator.validateRequired;
-import static com.finmate.domain.stock.trading.TradingAmountValidator.normalizeAmount;
-import static com.finmate.domain.stock.trading.TradingAmountValidator.normalizeQuantity;
-import static com.finmate.domain.stock.trading.TradingAmountValidator.validateOrderPrice;
-import static com.finmate.domain.stock.trading.TradingAmountValidator.validatePositivePrice;
-import static com.finmate.domain.stock.trading.TradingAmountValidator.validatePositiveQuantity;
 
 // 예약 주문용 엔티티
 // 이는 예약 조건이 만족되면 나중에 실제 주문을 만들기 위한 예약 데이터를 저장하는 엔티티
@@ -118,6 +114,7 @@ public class StockOrderReservation {
         validatePositiveQuantity(quantity);
         validatePositivePrice(currencyCode, triggerPrice, "예약 기준 가격은 0보다 커야 합니다.");
         validateOrderPrice(orderType, currencyCode, orderPrice);
+        validateReservationExpiration(expiresAt);
 
         StockOrderReservation reservation = new StockOrderReservation();
         reservation.reservationNumber = reservationNumber;
