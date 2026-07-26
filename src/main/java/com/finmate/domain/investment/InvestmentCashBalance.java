@@ -119,6 +119,7 @@ public class InvestmentCashBalance {
             return;
         }
 
+        // 만약 실제 거래체결가가 예약가보다 높다면 AvailableBalance에서 추가로 차감한다.
         BigDecimal additionalAmount = settlementAmount.subtract(lockedAmount);
         if (additionalAmount.compareTo(BigDecimal.ZERO) > 0) {
             if (this.availableBalance.compareTo(additionalAmount) < 0) {

@@ -32,7 +32,6 @@ import com.finmate.repository.normal.account.AccountRepository;
 import com.finmate.repository.normal.account.transaction.AccountTransactionRepository;
 import com.finmate.repository.normal.transfer.TransferRepository;
 import com.finmate.service.normal.account.AccountNumberRegistryService;
-import com.finmate.service.normal.transfer.TransferLimitUsageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -61,7 +60,6 @@ public class InvestmentService {
     private final TransferRepository transferRepository;
     private final AccountTransactionRepository accountTransactionRepository;
     private final SecuritiesCashTransactionRepository securitiesCashTransactionRepository;
-    private final TransferLimitUsageService transferLimitUsageService;
 
     private static final List<SecuritiesCashTransactionType> DEPOSIT_TYPES = List.of(
             SecuritiesCashTransactionType.DEPOSIT);
@@ -367,7 +365,8 @@ public class InvestmentService {
         // 일반 계좌가 사용하는 통화 정보를 얻고, 증권 계좌의 해당 통화 잔고를 업데이트한다.
         CurrencyCode currencyCode = fromAccount.getCurrencyCode();
         InvestmentCashBalance cashBalance = findOrCreateCashBalanceForUpdate(toInvestment, currencyCode);
-        transferLimitUsageService.use(fromAccount, amount);
+
+        // 일반계좌 -> 증권계좌로 예수금을 입금할때에는 본인명의의 계좌로만 입출금이 되기 때문에 안전하다고 판단하여 일일 누적거래량에 포함되게 하지 않는다.
 
         BigDecimal accountBalanceBeforeTransaction = fromAccount.getBalance();
         BigDecimal investmentBalanceBeforeTransaction = cashBalance.getAvailableBalance();

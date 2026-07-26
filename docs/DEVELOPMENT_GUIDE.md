@@ -48,9 +48,13 @@ STOCK_RANKING_REFRESH_INTERVAL_MILLIS=10000
 STOCK_RANKING_INITIAL_DELAY_MILLIS=100
 STOCK_RANKING_OPEN_CACHE_TTL_SECONDS=30
 STOCK_RANKING_CLOSED_CACHE_TTL_SECONDS=86400
+TRADING_EXPIRATION_INTERVAL_MILLIS=10000
+TRADING_EXPIRATION_INITIAL_DELAY_MILLIS=0
+TRADING_EXPIRATION_ENABLED=true
 ```
 
 국내 업종코드 파일은 국내 종목 마스터와 같은 `STOCK_MASTER_DOMESTIC_SYNC_CRON` / `STOCK_MASTER_DOMESTIC_SYNC_ZONE` 설정으로 함께 갱신된다.
+주문 만료 스케줄러는 기본 10초 간격으로 만료된 활성 주문·예약을 처리하고, 서버 시작 직후에는 중단 중 만료된 건을 즉시 복구한다.
 
 ## 3. MySQL과 Redis 실행
 
@@ -87,6 +91,10 @@ STOCK_RANKING_INITIAL_DELAY_MILLIS=600000 ./gradlew bootRun
 ## 5. 테스트와 빌드
 
 금융 상태 전이, 계산식, 트랜잭션 경계 또는 락 순서를 변경할 때 필요한 회귀·보존식·실패 주입·동시성 증거는 [금융 불변식](FINANCIAL_INVARIANTS.md)의 변경 기준을 함께 따른다.
+
+통합 테스트는 JVM마다 새 MySQL Testcontainer를 만들고 여러 Spring 테스트 컨텍스트가 이를 공유한다.
+테스트 프로필은 `ddl-auto=update`로 스키마를 한 번 생성하며, 각 테스트 시작 전 공통 지원 클래스가 테스트 스키마의 모든 테이블을 비운다.
+따라서 컨텍스트별 `create-drop` 종료 작업이 같은 FK를 반복 삭제하는 로그를 만들지 않는다.
 
 ```bash
 # 전체 테스트

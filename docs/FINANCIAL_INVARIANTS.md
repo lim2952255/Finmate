@@ -50,15 +50,15 @@
 - **[현재 구현 사실]** 일반↔투자 계좌 이동은 방향과 무관하게 `Account` 후 `Investment`, 이어서 해당 `InvestmentCashBalance`를 잠근다 (`src/main/java/com/finmate/service/investment/InvestmentService.java`). 환전은 `Investment` 후 KRW 예수금, USD 예수금 순서다 (`src/main/java/com/finmate/service/investment/InvestmentCurrencyExchangeService.java`).
 - **[현재 구현 사실]** 즉시 동기 주문 접수는 `Investment`를 먼저 잠근 뒤 매수면 통화별 예수금, 매도면 종목별 `StockHolding`을 잠근다. 즉시 체결되는 매도는 같은 트랜잭션에서 그 Holding 락을 유지한 채 이후 예수금 락을 요청하므로 실효 순서는 `Investment → Holding → Cash`다. 반면 실시간 처리는 종목별 활성 예약 행을 생성시각 순으로 잠그고 처리한 뒤 활성 주문 행을 생성시각 순으로 잠그며, 각 체결에서 `Cash → Holding` 순으로 요청한다 (`src/main/java/com/finmate/service/stock/trading/StockTradingCommandService.java`, `src/main/java/com/finmate/service/stock/trading/StockTradingLookupService.java`, `src/main/java/com/finmate/repository/stock/trading/StockOrderReservationRepository.java`, `src/main/java/com/finmate/repository/stock/trading/StockOrderRepository.java`, `src/main/java/com/finmate/service/stock/trading/StockTradingAssetService.java`, `src/main/java/com/finmate/service/stock/trading/StockTradingExecutionService.java`).
 - **[필수 불변식]** 기존 다중 행 잠금 순서를 바꾸거나 새 금융 경로를 추가할 때는 모든 교차 경로의 순서를 하나의 전역 순서로 비교하고, 역순 획득을 만들지 않는다. 비관적 락은 해당 DB 트랜잭션 안에서만 보호하므로 Redis/KIS/WebSocket 처리까지 원자적이라고 간주하지 않는다.
-- **[알려진 공백/위험]** 취소는 주문/예약을 `findById`로 읽고 상태를 검사하며 해당 주문 행에 비관적 락을 잡지 않는다. 따라서 실시간 체결·만료와 취소가 동시에 실행될 때 상태 전이와 자산 해제의 정확히 한 번 처리가 직렬화된다고 보장할 증거가 없다 (`src/main/java/com/finmate/service/stock/trading/StockTradingCommandService.java`).
+- **[현재 구현 사실]** 취소, 실시간 체결·트리거, 주기 만료 처리는 대상 주문·예약 행을 `PESSIMISTIC_WRITE`로 잠근 뒤 상태 전이와 자산 해제·소비를 수행한다 (`src/main/java/com/finmate/service/stock/trading/StockTradingCommandService.java`, `src/main/java/com/finmate/service/stock/trading/StockTradingExecutionService.java`, `src/main/java/com/finmate/service/stock/trading/StockOrderExpirationService.java`).
 - **[알려진 공백/위험]** 즉시 매도 체결의 `Holding → Cash`와 실시간 체결의 `Cash → Holding`은 같은 자산 행에 대한 역순 획득이다. 두 경로가 교차 실행되면 서로 상대 락을 기다리는 대기 사이클과 데드락 가능성이 있으며, 현재 구현이나 동시성 테스트로 안전하다고 주장할 수 없다.
 
 ## 6. 체결·취소·만료 경합
 
 - **[필수 불변식]** 활성 주문/예약의 종료 상태는 체결, 취소, 만료, 예약 트리거 중 하나만 승리해야 한다. 승리한 전이만 자산을 소비/해제하고 원장을 만들며, 뒤늦은 경로는 재처리 없이 종료해야 한다.
 - **[현재 구현 사실]** 실시간 처리 한 트랜잭션 안에서는 예약을 먼저, 일반 주문을 다음에 처리한다. 활성 목록을 비관적 락으로 가져와 만료를 우선 검사하고, 거래 시간이면서 가격 조건이 맞으면 남은 수량 전부를 체결한다 (`src/main/java/com/finmate/service/stock/trading/StockTradingExecutionService.java`).
-- **[현재 구현 사실]** 만료는 별도 스케줄러가 아니라 해당 종목의 실시간 payload 처리 때 수행된다. 시장가 주문에는 만료 시각이 없고 실행 가격이 없을 때의 자동 만료 경로도 없다 (`docs/TRADING_FLOW.md`).
-- **[알려진 공백/위험]** 취소 대 체결/만료, 중복 payload, 동시 payload, 예약 트리거 대 취소를 검증하는 경쟁 테스트가 없다. 위 경합은 현재 안전하다고 간주하지 않으며, 관련 변경 전 주문/예약 행의 공통 잠금 또는 조건부 상태 전이 전략과 회귀 테스트가 필요하다.
+- **[현재 구현 사실]** `StockOrderExpirationScheduler`가 기본 10초마다 만료된 활성 지정가 주문과 예약을 비관적 락 조회하여 자산을 해제하고 `EXPIRED`로 전이한다. 서버 시작 직후에도 실행하므로 중단 중 만료된 건을 복구한다. 실시간 payload 처리도 체결·트리거보다 만료를 먼저 검사한다. 시장가 일반주문에는 만료 시각이 없고 실행 가격이 없을 때의 자동 만료 경로도 없다 (`docs/TRADING_FLOW.md`).
+- **[알려진 공백/위험]** 중복 payload, 동시 payload와 모든 종료 경합 조합에 대한 실제 DB 경쟁 테스트가 완전하지 않다. 공통 주문·예약 행 잠금으로 직렬화하지만 운영 수준 보장은 관련 동시성 테스트 결과와 함께 판단해야 한다.
 
 ## 7. KIS와 내부 모의 거래의 경계
 

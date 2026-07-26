@@ -26,10 +26,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-import static com.finmate.domain.stock.trading.TradingAmountValidator.normalizeOrderPrice;
-import static com.finmate.domain.stock.trading.TradingAmountValidator.normalizePositivePrice;
-import static com.finmate.domain.stock.trading.TradingAmountValidator.normalizeRequiredQuantity;
-import static com.finmate.domain.stock.trading.TradingAmountValidator.validateOrderExpiration;
+import static com.finmate.domain.stock.trading.TradingAmountValidator.*;
 import static com.finmate.global.validation.RequiredValidator.validateRequired;
 
 // 일반 주문 / 예약 주문 접수 및 취소를 처리하는 서비스
@@ -60,7 +57,8 @@ public class StockTradingCommandService {
         StockOrderSide side = lookupService.requireSide(request.getSide()); // 매수 주문 or 매도 주문
         StockOrderType orderType = lookupService.requireOrderType(request.getOrderType()); // 시장가 주문 or 지정가 주문
         BigDecimal orderPrice = normalizeOrderPrice(currencyCode, orderType, request.getOrderPrice()); // 주문 가격
-        validateOrderExpiration(orderType, request.getExpiresAt()); // 주문 만료기한이 유효한지 검사
+        validateOrderSubmissionExpiration(orderType, request.getExpiresAt()); // 주문 만료기한이 유효한지 검사
+
         StockTradingAssetService.ReservedAsset reservedAsset = assetService.reserveAsset( // 종목에 대한 주문을 접수하기전, 매수의 경우 예수금에 lock을 걸고, 매도의 경우, 종목 수량에 lock을 건다.
                 investment,
                 stock,
@@ -94,7 +92,7 @@ public class StockTradingCommandService {
         return order;
     }
 
-    // 예약 주문 처리 메서드
+    // 예약 주문 접수 메서드
     @Transactional
     public StockOrderReservation submitReservation(Long userId, StockOrderReservationRequest request) {
         validateRequired(request, "예약 주문 요청 필수입니다.");
@@ -102,14 +100,15 @@ public class StockTradingCommandService {
         Investment investment = lookupService.findOwnedInvestmentForUpdate(userId, request.getInvestmentId());
         CurrencyCode currencyCode = lookupService.currencyCode(stock);
         lookupService.validateTradable(stock);
-        lookupService.validateTradingTime(stock);
+        // 예약주문 접수는 장외시간대에도 허용해야 한다.
+        //lookupService.validateTradingTime(stock);
 
         BigDecimal quantity = normalizeRequiredQuantity(request.getQuantity());
         StockOrderSide side = lookupService.requireSide(request.getSide()); // 매수 or 매도
         StockOrderType orderType = lookupService.requireOrderType(request.getOrderType()); // 시장가 주문 or 지정가 주문
         BigDecimal triggerPrice = normalizePositivePrice(currencyCode, request.getTriggerPrice(), "예약 기준 가격은 필수입니다."); // 예약 기준 가격
         BigDecimal orderPrice = normalizeOrderPrice(currencyCode, orderType, request.getOrderPrice()); // 지정가
-        validateOrderExpiration(orderType, request.getExpiresAt()); // 주문 만료기한이 유효한지 검사
+        validateReservationSubmissionExpiration(request.getExpiresAt()); // 주문 만료기한이 유효한지 검사
         StockTradingAssetService.ReservedAsset reservedAsset = assetService.reserveAsset( // 예약 주문에 필요한 종목 수량 또는 예수금에 lock을 거는 메서드
                 investment,
                 stock,
@@ -145,6 +144,8 @@ public class StockTradingCommandService {
         StockOrder order = stockOrderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
         lookupService.validateOwnedInvestment(userId, order.getInvestment());
+        order = stockOrderRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
         if (!ACTIVE_ORDER_STATUSES.contains(order.getStatus())) { // 활성 상태의 주문만 취소 가능
             throw new RuntimeException("활성 상태의 주문만 취소가 가능합니다.");
         }
@@ -161,6 +162,8 @@ public class StockTradingCommandService {
         StockOrderReservation reservation = stockOrderReservationRepository.findById(reservationId)
                 .orElseThrow(() -> new RuntimeException("예약 주문을 찾을 수 없습니다."));
         lookupService.validateOwnedInvestment(userId, reservation.getInvestment());
+        reservation = stockOrderReservationRepository.findByIdForUpdate(reservationId)
+                .orElseThrow(() -> new RuntimeException("예약 주문을 찾을 수 없습니다."));
         if (reservation.getStatus() != StockOrderReservationStatus.ACTIVE) {
             throw new RuntimeException("활성 상태의 예약 주문만 취소할 수 있습니다.");
         }
