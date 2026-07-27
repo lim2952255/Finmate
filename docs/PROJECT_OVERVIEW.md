@@ -61,6 +61,8 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이�
 
 종목 마스터와 국내 업종코드 마스터는 평일 스케줄러가 파일을 내려받아 DB에 반영한다. 해외 업종코드는 종목 상세·목록·포트폴리오 화면에서 필요한 거래소 코드 목록이 DB에 없을 때 KIS REST API로 조회해 DB에 캐시한다. 검색 화면은 종목명/종목코드 기준 검색과 업종명/업종코드 기준 검색을 분리하고, 전체·KOSPI·KOSDAQ·NASDAQ 시장 필터를 함께 적용한다. 국내 종목은 소·중·대 업종 중 가장 세부적인 유효 업종명을 표시하고, 포트폴리오는 업종별 매입금액 비중을 통화별로 계산하되 해외 종목은 거래소별 업종 체계가 다르므로 거래소 그룹별로 분리 집계한다. 포트폴리오 평가손익은 실시간 시세가 들어오면 실시간 가격을 사용하고, 초기 표시나 장마감처럼 실시간 체결가가 없을 때는 최신 일봉 종가를 KIS REST API로 보충해 정적 fallback 가격으로 사용한다. 일봉과 환율·해외 지수 일봉은 화면 조회 시 부족한 기간을 KIS REST API에서 가져와 DB에 보충한다. 국내 KOSPI/KOSDAQ 지수 상세 화면은 KIS WebSocket 실시간 지수 체결을 구독하고, 환율·해외 지수 실시간 값은 1분 스케줄러가 KIS REST API에서 갱신해 Redis에 TTL 캐시한다. 거래량·거래대금 TOP 10도 스케줄러가 KIS에서 갱신하고 Redis에 TTL 캐시한다.
 
+종목 상세의 실시간 채팅은 별도 `/ws/chat` 연결을 사용한다. 로그인 HTTP 세션에서 사용자를 식별하며, 메시지는 MySQL에 저장해 재접속한 사용자도 과거 기록을 조회할 수 있다. 작성자는 본인 메시지를 수정하거나 소프트 삭제할 수 있고, 다른 메시지를 대상으로 한 답글을 작성할 수 있다.
+
 ### 모의 주식 거래
 
 매수 주문은 예수금을, 매도 주문은 보유 수량을 먼저 잠근다. 실시간 체결가·호가가 조건을 만족하면 예수금, 보유 수량, 주문 상태와 체결 기록을 하나의 트랜잭션으로 갱신한다. 예약 주문은 조건 충족 시 일반 주문으로 전환된다.
@@ -72,11 +74,16 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이�
 ```text
 브라우저
   ├─ HTTP 요청 ─> Controller ─> Service ─> Spring Data JPA ─> MySQL
-  └─ /ws/stocks WebSocket
+  ├─ /ws/stocks WebSocket
          └─ StockRealtimeWebSocketHandler
               └─ StockRealtimeClientSessionService
                    └─ StockRealtimeSubscriptionManager
                         └─ KisRealtimeWebSocketClient ─> KIS WebSocket
+  └─ /ws/chat WebSocket
+         └─ StockChatWebSocketHandler
+              └─ StockChatClientSessionService
+                   ├─ StockChatService ─> MySQL 채팅 기록
+                   └─ JVM 메모리 종목별 세션 fan-out
 
 KIS REST API
   └─ KisRestClient
@@ -96,7 +103,7 @@ KIS 실시간 payload
 ## 5. 현재 구현 상태와 경계
 
 - DB 스키마는 `spring.jpa.hibernate.ddl-auto=update`로 관리된다. 버전 관리형 마이그레이션은 **현재 구현되지 않음**.
-- KIS WebSocket 실시간 payload, KIS 토큰, WebSocket 구독자와 브라우저 세션은 단일 JVM 메모리에 있다. 환율·해외 지수 1분 조회 결과는 Redis에 TTL 캐시하지만, 다중 인스턴스 WebSocket fan-out 구조는 **현재 구현되지 않음**.
+- KIS WebSocket 실시간 payload, KIS 토큰, WebSocket 구독자와 브라우저 세션은 단일 JVM 메모리에 있다. 채팅 기록은 MySQL에 남지만 채팅 fan-out과 접속 인원도 단일 JVM 메모리 기준이다. 환율·해외 지수 1분 조회 결과는 Redis에 TTL 캐시하지만, 다중 인스턴스 WebSocket fan-out 구조는 **현재 구현되지 않음**.
 - Redis 장애 시 랭킹 조회는 빈 보드를 반환하고 저장 실패는 경고 로그로 끝난다.
 - 실제 주문은 항상 남은 수량 전체를 한 번에 체결한다. 상태 모델에는 `PARTIALLY_FILLED`가 있으나 부분 체결 수량을 결정하는 로직은 **현재 구현되지 않음**.
 - 증권계좌 안의 KRW/USD 예수금 환전은 `USD_KRW` 최신 시세를 기준으로 처리하고 환전 내역을 저장한다. 일반 계좌↔증권 계좌 이체 자체는 서로 다른 통화 간 직접 이체를 하지 않는다.

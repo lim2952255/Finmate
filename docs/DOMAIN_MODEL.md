@@ -18,6 +18,9 @@ erDiagram
     Stock ||--o{ StockTradeTransaction : target
     Stock ||--o| DomesticStockMetadata : has
     Stock ||--o| OverseasStockMetadata : has
+    Stock ||--o{ StockChatMessage : discusses
+    User ||--o{ StockChatMessage : writes
+    StockChatMessage o|--o{ StockChatMessage : replies
     StockOrderReservation o|--o| StockOrder : converts_to
     StockOrder ||--o{ StockTradeTransaction : executions
 ```
@@ -94,6 +97,16 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 - 포트폴리오 평가손익은 브라우저 WebSocket 실시간 시세가 수신되면 실시간 가격으로 계산한다. 실시간 가격이 아직 없거나 장마감 상태이면 서버가 최신 일봉 종가를 DB에서 찾고, 부족하면 KIS 일봉 API로 최근 구간을 보충한 뒤 fallback 가격으로 내려보낸다.
 - 국내 기초 재무 화면 표시는 마스터파일 단위에 맞춰 시가총액·손익 항목은 억 원, 자본금·가격 항목은 원, 상장주식수는 주 단위 환산값을 사용한다.
 - 주문, 예약, 보유, 체결 기록의 공통 참조
+
+### StockChatMessage
+
+종목별 실시간 대화 한 건을 저장한다.
+
+- `Stock`과 작성자 `User`, 최대 500자의 내용, 작성·수정·삭제 시각을 저장한다.
+- `parentMessage` 자기참조로 답글 대상을 보존하며 현재 화면에서는 한 단계 들여쓰기로 표현한다.
+- 작성자는 본인 메시지만 수정·삭제할 수 있고 권한은 서버의 로그인 세션을 기준으로 검증한다.
+- 삭제는 행을 제거하지 않는 소프트 삭제다. 기존 답글 관계는 유지하고 사용자 응답에서는 삭제된 원문을 노출하지 않는다.
+- `(stock_id, id)` 인덱스와 ID 커서를 사용해 종목별 과거 기록을 최신 구간부터 조회한다.
 
 ## 8. StockOrder
 
