@@ -1,9 +1,12 @@
 # github Action을 기반으로 한 CI 설정
 
 # github Actions의 workflow 이름
+# workflow는 Github가 자동으로 수행할 전체 작업 절차를 의미한다.
+# github는 .github/workflows 내의 yml파일을 읽어서 자동화 규칙으로 등록한다.
 name: FinMate CI
 
 # main 브랜치에 push하거나 PR시에 Github Actions가 workflow를 시작한다.
+# on은 workflow를 언제 시작할지 정하는 조건이다.
 on:
   push:
     branches:
@@ -23,15 +26,19 @@ concurrency:
   cancel-in-progress: true
 
 # github Actions의 workflow가 수행할 job을 지정
+# actions는 다른사람이 만들어 둔 재사용가능한 자동화 프로그램이다.
 jobs:
   test:
+    # runner는 workflow 명령을 실제로 수행하는 컴퓨터를 의미한다.
+    # 즉 runner가 지정된 job들을 순차적으로 실행하는 방식이다.
+    # 1. Github가 Ubuntu Runner 준비, 2. Workflow의 Step 순차 실행, 3. 결과로그를 Github에 전달
     name: Test
     runs-on: ubuntu-latest # job을 실행할 서버 설정
     timeout-minutes: 15 # Test job이 최대 15분동안 실행될 수 있도록 설정한다.
 
     # Test job에서 실행되는 작업들을 순차적으로 설정
     steps:
-      # 저장소 코드 내려받기
+      # 저장소 코드 내려받기 (Runner disk에 Finmate 코드를 내려받는다)
       - name: Check out repository # GitHub의 임시 Ubuntu 서버에 Finmate 저장소 코드를 내려받는 단계야.
         uses: actions/checkout@v6
 
@@ -43,10 +50,11 @@ jobs:
           java-version: "17"
 
       # Gradle 설정
+      # Gradle은 Java 프로그램을 컴파일하고, 테스트하고, 패키징하는 과정을 관리하는 빌드 자동화 도구 (컴파일, 테스트, 패키징 관리)
       - name: Set up Gradle # Gradle 실행 환경과 캐시를 설정
         uses: gradle/actions/setup-gradle@v6
 
-      # 테스트 실행
+      # Runner에서 테스트 실행
       - name: Run tests # 실제 테스트 코드들을 실행한다. (이 테스트 코드 내부에서 TestContainer 도커 컨테이너 생성 및 테스트 DB작업을 준비한다.) -> 우분투 서버에서 TestContianer를 도커에 연결한다.
         run: ./gradlew test --no-daemon --console=plain
 
