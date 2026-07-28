@@ -97,10 +97,10 @@ FILLED / CANCELED / EXPIRED / TRIGGERED 중 허용된 하나만 승리
 - **테스트 수준:** `W`
 - **핵심 시나리오:**
   - Given 로그인 세션이 없을 때, When 공개 경로를 요청하면, Then 정상 응답한다.
-  - Given 로그인 세션이 없을 때, When 일반계좌·투자계좌·주문 경로를 요청하면, Then `/login`으로 이동하며 원래 요청 경로를 전달한다.
-- **검증 증거:** HTTP status, redirect URL, session 미생성 여부.
-- **현재 상태:** `LoginInterceptor`가 공개 경로를 제외한 `/**`를 검사한다.
-- **예정 테스트:** `LoginInterceptorMvcTest`
+  - Given 인증되지 않은 요청일 때, When 일반계좌·투자계좌·주문 경로를 요청하면, Then `/login`으로 이동하고 원래 요청을 안전하게 저장한다.
+- **검증 증거:** HTTP status, 로그인 redirect URL, 인증되지 않은 `SecurityContext`.
+- **현재 상태:** Spring Security `SecurityFilterChain`이 공개 경로를 허용하고 나머지 경로에 인증을 요구한다. 보호 경로의 원래 요청을 저장하기 위해 인증 전 session이 만들어질 수 있지만 인증 정보는 포함하지 않는다.
+- **현재 테스트:** `SecurityAuthorizationMvcTest`
 
 ### AUTH-002 — 서버 세션 기반 로그인 유지
 
@@ -109,9 +109,9 @@ FILLED / CANCELED / EXPIRED / TRIGGERED 중 허용된 하나만 승리
 - **핵심 시나리오:**
   - Given 로그인 성공으로 생성된 session이 있을 때, When 같은 session으로 연속 요청하면, Then 모두 인증 사용자로 처리한다.
   - Given session cookie가 없거나 유효하지 않을 때, When 보호 경로를 요청하면, Then 재로그인을 요구한다.
-- **검증 증거:** session의 로그인 사용자 속성, 후속 요청의 인증 성공, 새 로그인 요청 부재.
-- **현재 상태:** HTTP session의 로그인 사용자 속성을 interceptor가 확인한다.
-- **예정 테스트:** `LoginSessionMvcTest`
+- **검증 증거:** session의 `SecurityContext`, 후속 요청의 인증 성공, 새 로그인 요청 부재.
+- **현재 상태:** Spring Security가 인증된 `FinMatePrincipal`을 `SecurityContext`에 저장하고 서버 HTTP session으로 후속 요청에 복원한다.
+- **현재 테스트:** `LoginSessionMvcTest`
 
 ### AUTH-003 — 로그아웃과 세션 무효화
 
@@ -120,7 +120,7 @@ FILLED / CANCELED / EXPIRED / TRIGGERED 중 허용된 하나만 승리
 - **핵심 시나리오:** Given 로그인 session이 있을 때, When 로그아웃한 뒤 같은 session으로 요청하면, Then 로그인 페이지로 이동한다.
 - **검증 증거:** session invalidation, 보호 경로 redirect.
 - **비목표:** remember-me, 브라우저 cookie 삭제나 서버 재시작을 넘어서는 영구 로그인.
-- **예정 테스트:** `LoginSessionMvcTest`
+- **현재 테스트:** `LoginSessionMvcTest`
 
 ## 4. 일반계좌
 

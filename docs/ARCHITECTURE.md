@@ -34,7 +34,7 @@ com.finmate
 │  ├─ core, rest, websocket, parser, exchange
 │  └─ stock.master, stock.price, stock.ranking, stock.realtime
 ├─ global
-│  ├─ interceptor, security, websocket
+│  ├─ security, websocket
 │  ├─ pagination, validation, format, constant
 └─ exception
 ```
@@ -51,7 +51,9 @@ Thymeleaf 화면과 폼 요청을 연결한다. `@Controller` 기반이며 JSON 
 - `InvestmentController`: 투자 계좌, 예수금 이체, 포트폴리오, 주문 내역, 환율·지수
 - `StockController`: 시장별 종목/업종 검색, 관심 종목, 상세, 랭킹 데이터
 - `OrderController`: 주문 화면, 일반·예약 주문 접수와 취소
-- `LoginController`: 회원가입, 세션 로그인·로그아웃
+- `LoginController`: 회원가입과 로그인 화면
+
+Spring Security의 `SecurityFilterChain`이 폼 로그인·로그아웃과 URL 인가를 처리한다. `FinMateUserDetailsService`가 사용자 자격 정보를 조회하고, 보호 컨트롤러는 `@AuthenticationPrincipal FinMatePrincipal`에서 인증 사용자 ID를 받아 서비스 계층의 소유권 검증에 전달한다.
 
 ### Service
 

@@ -31,7 +31,7 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이�
 | 언어 | Java 17 |
 | 프레임워크 | Spring Boot 3.5.15 |
 | 웹 | Spring MVC, Thymeleaf, Bean Validation |
-| 보안 | Spring Security 의존성, BCrypt, 자체 MVC 인터셉터와 HTTP Session 로그인 |
+| 보안 | Spring Security 폼 로그인·인가, BCrypt, HTTP Session 기반 SecurityContext |
 | 영속성 | Spring Data JPA, Hibernate, MySQL Connector/J |
 | DB | MySQL 8.4 (`docker-compose.yml`) |
 | 캐시 | Redis 7.2, `StringRedisTemplate` |
@@ -47,7 +47,7 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이�
 
 ### 사용자와 인증
 
-`LoginController`와 `UserService`가 회원가입·로그인을 처리하고 `SessionUser`를 HTTP Session에 저장한다. `LoginInterceptor`가 공개 경로 외 요청을 검사한다. 비밀번호는 `BCryptPasswordEncoder`로 암호화된다.
+`LoginController`와 `UserService`가 회원가입을 처리하고, Spring Security 폼 로그인이 자격 증명 검증·로그인·로그아웃을 담당한다. `FinMateUserDetailsService`가 `UserRepository`에서 사용자를 조회하고 `SecurityFilterChain`이 공개·보호 경로를 구분한다. 인증된 `FinMatePrincipal`은 `SecurityContext`를 통해 서버 HTTP Session에 보존되며, 비밀번호는 `BCryptPasswordEncoder`로 암호화된다.
 
 ### 일반 계좌
 

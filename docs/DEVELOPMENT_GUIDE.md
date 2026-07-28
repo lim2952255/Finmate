@@ -167,9 +167,9 @@ STOCK_RANKING_INITIAL_DELAY_MILLIS=600000 ./gradlew bootRun
 - KIS approval key 발급과 WebSocket endpoint 확인
 - 최신값은 JVM 메모리이므로 재시작 직후에는 새 payload가 올 때까지 비어 있다.
 
-### Spring Security 기본 동작과 인터셉터 충돌
+### Spring Security 로그인 문제
 
-`SecurityConfig`에는 `PasswordEncoder`만 있고 명시적 `SecurityFilterChain` bean은 없다. 실제 로그인 제어는 MVC 인터셉터와 HTTP Session이 담당한다. Spring Boot 3.5.15 자동 설정에서의 최종 필터 동작은 실행 환경에서 **확인 필요**.
+`SecurityConfig`의 공개 경로, 로그인 처리 URL(`/login`), 아이디 파라미터명(`userId`)과 로그아웃 URL(`/logout`)을 확인한다. 인증 정보는 `FinMateUserDetailsService`가 조회하고 `BCryptPasswordEncoder`가 비밀번호를 검증한다. 로그인·로그아웃 POST는 CSRF 토큰이 필요하며 Thymeleaf의 `th:action` 폼은 토큰을 자동 렌더링한다. 인증 성공 상태는 서버 HTTP session의 `SecurityContext`에 저장된다.
 
 ## 9. 테스트 보강 우선순위
 

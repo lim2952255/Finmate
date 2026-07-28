@@ -3,12 +3,12 @@ package com.finmate.controller.order;
 import com.finmate.domain.stock.dto.trading.StockOrderPageInfo;
 import com.finmate.domain.stock.dto.trading.StockOrderRequest;
 import com.finmate.domain.stock.dto.trading.StockOrderReservationRequest;
-import com.finmate.domain.user.dto.SessionUser;
-import com.finmate.global.constant.Const;
+import com.finmate.global.security.FinMatePrincipal;
 import com.finmate.service.stock.trading.StockTradingCommandService;
 import com.finmate.service.stock.trading.StockTradingQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.SessionAttribute;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -31,7 +30,7 @@ public class OrderController {
     public String order(@PathVariable Long stockId,
                         @RequestParam(required = false) Long investmentId,
                         Model model,
-                        @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+                        @AuthenticationPrincipal FinMatePrincipal sessionUser) {
         // StockTradingQueryService를 활용하여 주문 페이지에 필요한 정보들을 DTO에 담아서 model로 전달한다.
         addOrderPageAttributes(sessionUser.getId(), stockId, investmentId, model, new StockOrderRequest(), new StockOrderReservationRequest());
         return "investments/stocks/order";
@@ -41,7 +40,7 @@ public class OrderController {
     @PostMapping
     public String submitOrder(@ModelAttribute StockOrderRequest stockOrderRequest,
                               Model model,
-                              @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+                              @AuthenticationPrincipal FinMatePrincipal sessionUser) {
         try {
             // StockTradingCommandService를 통해 일반 주문이 들어오면 일반 주문을 접수 및 체결하는 메서드를 호출
             stockTradingCommandService.submitOrder(sessionUser.getId(), stockOrderRequest);
@@ -64,7 +63,7 @@ public class OrderController {
     @PostMapping("/reservations")
     public String submitReservation(@ModelAttribute StockOrderReservationRequest reservationRequest,
                                     Model model,
-                                    @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+                                    @AuthenticationPrincipal FinMatePrincipal sessionUser) {
         try {
             // StockTradingCommandService를 통해 예약 주문이 들어오면 예약 주문을 접수 및 체결하는 메서드를 호출
             stockTradingCommandService.submitReservation(sessionUser.getId(), reservationRequest);
@@ -88,7 +87,7 @@ public class OrderController {
     public String cancelOrder(@PathVariable Long orderId,
                               @RequestParam Long investmentId,
                               @RequestParam(required = false, defaultValue = "false") boolean allAccounts,
-                              @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+                              @AuthenticationPrincipal FinMatePrincipal sessionUser) {
         // StockTradingCommandService를 통해 일반 주문을 취소하는 로직을 호출한다.
         stockTradingCommandService.cancelOrder(sessionUser.getId(), orderId);
         if (allAccounts) {
@@ -101,7 +100,7 @@ public class OrderController {
     public String cancelReservation(@PathVariable Long reservationId,
                                     @RequestParam Long investmentId,
                                     @RequestParam(required = false, defaultValue = "false") boolean allAccounts,
-                                    @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+                                    @AuthenticationPrincipal FinMatePrincipal sessionUser) {
         // StockTradingCommandService를 통해 예약 주문을 취소하는 로직을 호출한다.
         stockTradingCommandService.cancelReservation(sessionUser.getId(), reservationId);
         if (allAccounts) {

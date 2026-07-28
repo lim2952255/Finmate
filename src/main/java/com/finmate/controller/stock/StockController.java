@@ -7,13 +7,13 @@ import com.finmate.domain.stock.dto.detail.StockDetailPageInfo;
 import com.finmate.domain.stock.dto.ranking.StockMarketMoversPageInfo;
 import com.finmate.domain.stock.dto.search.StockSearchPageInfo;
 import com.finmate.domain.stock.dto.search.StockSearchType;
-import com.finmate.domain.user.dto.SessionUser;
-import com.finmate.global.constant.Const;
+import com.finmate.global.security.FinMatePrincipal;
 import com.finmate.service.stock.StockDetailService;
 import com.finmate.service.stock.StockService;
 import com.finmate.service.stock.ranking.StockMarketMoverService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.SessionAttribute;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -38,7 +37,7 @@ public class StockController {
                               @RequestParam(required = false) StockMarketType marketType,
                               @RequestParam(required = false, defaultValue = "0") int page,
                               Model model,
-                              @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+                              @AuthenticationPrincipal FinMatePrincipal sessionUser) {
         StockSearchPageInfo pageInfo = stockService.getStockSearchPageInfo(
                 sessionUser.getId(),
                 keyword,
@@ -54,14 +53,14 @@ public class StockController {
     @PostMapping("/favorite")
     public String toggleFavoriteStock(@RequestParam Long stockId,
                                       @RequestParam String redirectUrl,
-                                      @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+                                      @AuthenticationPrincipal FinMatePrincipal sessionUser) {
         stockService.toggleFavoriteStock(sessionUser.getId(), stockId);
 
         return "redirect:" + redirectUrl;
     }
 
     @GetMapping("/watchlist")
-    public String watchlistStock(@SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser,
+    public String watchlistStock(@AuthenticationPrincipal FinMatePrincipal sessionUser,
                                  @RequestParam(required = false, defaultValue = "0") int page,
                                  Model model) {
         FavoriteStockPageInfo pageInfo = stockService.getFavoriteStockPageInfo(sessionUser.getId(), page);

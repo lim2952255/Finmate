@@ -11,15 +11,15 @@ import com.finmate.domain.normal.account.dto.TransferRequest;
 import com.finmate.domain.normal.account.transaction.TransactionPeriod;
 import com.finmate.domain.normal.account.transaction.dto.AccountTransactionPageInfo;
 import com.finmate.domain.user.User;
-import com.finmate.domain.user.dto.SessionUser;
+import com.finmate.global.security.FinMatePrincipal;
 import com.finmate.exception.DuplicatedId;
-import com.finmate.global.constant.Const;
 import com.finmate.service.investment.InvestmentService;
 import com.finmate.service.normal.account.AccountService;
 import com.finmate.service.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -42,7 +42,7 @@ public class AccountController {
     @GetMapping("")
     public String accountsHome(Model model,
                                // 세션에서 사용자 정보를 바로 꺼낼 수 있다.
-                               @SessionAttribute(name = Const.LOGIN_USER) SessionUser user) {
+                               @AuthenticationPrincipal FinMatePrincipal user) {
         // 대표계좌 정보등을 dto에 담아서 view에 전달
         model.addAttribute("accountHomeInfo", accountService.getAccountHomeInfo(user.getId()));
         return "accounts/home";
@@ -59,7 +59,7 @@ public class AccountController {
 
     @PostMapping("/open")
     public String accountsOpen(@Valid @ModelAttribute OpenAccount openAccount, BindingResult bindingResult
-            ,@SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser
+            ,@AuthenticationPrincipal FinMatePrincipal sessionUser
             ,Model model){
         model.addAttribute("bankCodes", BankCode.values());
         model.addAttribute("currencyCodes", CurrencyCode.values());
@@ -68,7 +68,7 @@ public class AccountController {
             return "accounts/open";
         }
         try{
-            User user = userService.findUser(sessionUser);
+            User user = userService.findUser(sessionUser.getId());
             // 이때 user는 Transaction이 끝났기 때문에 준영속 상태이다.
             // 계좌 개설
             accountService.openAccount(openAccount, user);
@@ -84,7 +84,7 @@ public class AccountController {
 
     @GetMapping("/list")
     public String accountsLists(Model model
-            ,@SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser){
+            ,@AuthenticationPrincipal FinMatePrincipal sessionUser){
         // 준영속상태에서의 지연로딩 문제를 해결하기 위해 AccountService를 통해 영속 상태에서 accountList를 조회
         // 계좌 목록을 출력
         List<Account> accounts = accountService.findAccounts(sessionUser.getId());
@@ -94,7 +94,7 @@ public class AccountController {
 
     @PostMapping("/list")
     public String accountsLists(@RequestParam Long primaryAccountId ,Model model
-            ,@SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser){
+            ,@AuthenticationPrincipal FinMatePrincipal sessionUser){
 
         try{
             // 대표 계좌 변경
@@ -112,7 +112,7 @@ public class AccountController {
     public String accountsTransfer(Model model,
                                    @RequestParam(required = false) String from,
                                    @RequestParam(required = false) BankCode fromBankCode,
-                                   @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser){
+                                   @AuthenticationPrincipal FinMatePrincipal sessionUser){
         List<Account> accounts = accountService.findAccounts(sessionUser.getId());
         model.addAttribute("accounts", accounts);
         model.addAttribute("fromAccountNumber", from);
@@ -130,9 +130,9 @@ public class AccountController {
     @PostMapping("/transfer")
     public String accountsTransfer(@Valid @ModelAttribute("transferRequest") TransferRequest transferRequest,
                                    BindingResult bindingResult,
-                                   @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser,
+                                   @AuthenticationPrincipal FinMatePrincipal sessionUser,
                                    Model model){
-        User user = userService.findUser(sessionUser);
+        User user = userService.findUser(sessionUser.getId());
 
         if(bindingResult.hasErrors()){
             model.addAttribute("bankCodes", BankCode.values());
@@ -155,7 +155,7 @@ public class AccountController {
 
     @GetMapping("/transfer-investment")
     public String accountsTransferInvestment(Model model,
-                                             @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser,
+                                             @AuthenticationPrincipal FinMatePrincipal sessionUser,
                                              @RequestParam(required = false) String from,
                                              @RequestParam(required = false) BankCode fromBankCode) {
         InvestmentDepositRequest investmentDepositRequest = new InvestmentDepositRequest();
@@ -177,7 +177,7 @@ public class AccountController {
     public String accountsTransferInvestment(@Valid @ModelAttribute("investmentDepositRequest") InvestmentDepositRequest investmentDepositRequest,
                                              BindingResult bindingResult,
                                              Model model,
-                                             @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+                                             @AuthenticationPrincipal FinMatePrincipal sessionUser) {
         if (bindingResult.hasErrors()) {
             InvestmentDepositPageInfo pageInfo = investmentService.getInvestmentDepositPageInfo(
                     sessionUser.getId(),
@@ -204,7 +204,7 @@ public class AccountController {
     public String accountsTransferLimit(Model model,
                                          @RequestParam(required = false) String accountNumber,
                                          @RequestParam(required = false) BankCode bankCode,
-                                         @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser){
+                                         @AuthenticationPrincipal FinMatePrincipal sessionUser){
         TransferLimitPageInfo pageInfo = accountService.getTransferLimitPageInfo(
                 sessionUser.getId(),
                 accountNumber,
@@ -219,7 +219,7 @@ public class AccountController {
                   @RequestParam BigDecimal dailyTransferLimit,
                   @RequestParam BigDecimal singleTransferLimit,
                   Model model,
-                  @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser,
+                  @AuthenticationPrincipal FinMatePrincipal sessionUser,
                   RedirectAttributes redirectAttributes){
         try {
             // 계좌별 이체한도 변경
@@ -251,7 +251,7 @@ public class AccountController {
                                        @RequestParam(required = false, defaultValue = "ONE_MONTH") TransactionPeriod period,
                                        @RequestParam(required = false, defaultValue = "0") int page,
                                        Model model,
-                                       @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser){
+                                       @AuthenticationPrincipal FinMatePrincipal sessionUser){
         AccountTransactionPageInfo pageInfo = accountService.getAccountTransactionPageInfo(
                 sessionUser.getId(),
                 accountNumber,

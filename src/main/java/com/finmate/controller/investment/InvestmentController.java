@@ -19,8 +19,7 @@ import com.finmate.domain.normal.account.transaction.TransactionPeriod;
 import com.finmate.domain.stock.dto.trading.StockPortfolioPageInfo;
 import com.finmate.domain.stock.dto.trading.StockTradingHistoryPageInfo;
 import com.finmate.domain.user.User;
-import com.finmate.domain.user.dto.SessionUser;
-import com.finmate.global.constant.Const;
+import com.finmate.global.security.FinMatePrincipal;
 import com.finmate.service.investment.InvestmentCurrencyExchangeService;
 import com.finmate.service.investment.InvestmentService;
 import com.finmate.service.market.MarketDataService;
@@ -31,6 +30,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -52,7 +52,7 @@ public class InvestmentController {
 
     @GetMapping
     public String investmentHome(Model model,
-                                 @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser){
+                                 @AuthenticationPrincipal FinMatePrincipal sessionUser){
         InvestmentHomeInfo investmentHomeInfo = investmentService.getInvestmentHomeInfo(sessionUser.getId());
         model.addAttribute("investmentHomeInfo", investmentHomeInfo);
         return "investments/home";
@@ -68,7 +68,7 @@ public class InvestmentController {
     @PostMapping("/open")
     public String openInvestment(@Valid @ModelAttribute OpenInvestment openInvestment
         , BindingResult bindingResult
-        , @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser
+        , @AuthenticationPrincipal FinMatePrincipal sessionUser
         , Model model){
         model.addAttribute("securitiesCompanyCodes", SecuritiesCompanyCode.values());
         if(bindingResult.hasErrors()){
@@ -76,7 +76,7 @@ public class InvestmentController {
         }
 
         try {
-            User user = userService.findUser(sessionUser);
+            User user = userService.findUser(sessionUser.getId());
             investmentService.openInvestment(openInvestment, user);
         } catch (Exception e) {
             bindingResult.reject("errorMessage", e.getMessage());
@@ -88,7 +88,7 @@ public class InvestmentController {
 
     @GetMapping("/list")
     public String investmentsList(Model model,
-                  @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser){
+                  @AuthenticationPrincipal FinMatePrincipal sessionUser){
         List<Investment> investments = investmentService.findInvestments(sessionUser.getId());
         model.addAttribute("investments", investments);
 
@@ -99,7 +99,7 @@ public class InvestmentController {
     @PostMapping("/list")
     public String investmentsList(@RequestParam Long primaryInvestmentId,
                                   Model model,
-                                  @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+                                  @AuthenticationPrincipal FinMatePrincipal sessionUser) {
         try {
             investmentService.setPrimary(primaryInvestmentId, sessionUser.getId());
         } catch (Exception e) {
@@ -116,7 +116,7 @@ public class InvestmentController {
     public String securityCashTransfer(Model model,
                                        @RequestParam(required = false) String from,
                                        @RequestParam(required = false) SecuritiesCompanyCode fromSecuritiesCompanyCode,
-                                       @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser
+                                       @AuthenticationPrincipal FinMatePrincipal sessionUser
     ){
         if (from == null || from.isBlank() || fromSecuritiesCompanyCode == null) {
             InvestmentWithdrawalPageInfo pageInfo = investmentService.getInvestmentWithdrawalPageInfo(sessionUser.getId());
@@ -149,7 +149,7 @@ public class InvestmentController {
     public String securityCashTransfer(@Valid @ModelAttribute("investmentWithdrawalRequest") InvestmentWithdrawalRequest investmentWithdrawalRequest,
                                        BindingResult bindingResult,
                                        Model model,
-                                       @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+                                       @AuthenticationPrincipal FinMatePrincipal sessionUser) {
         if (bindingResult.hasErrors()) {
             InvestmentWithdrawalPageInfo pageInfo = investmentService.getInvestmentWithdrawalPageInfo(
                     sessionUser.getId(),
@@ -179,7 +179,7 @@ public class InvestmentController {
                                            @RequestParam(required = false, defaultValue = "ONE_MONTH") TransactionPeriod period,
                                            @RequestParam(required = false, defaultValue = "0") int page,
                                            Model model,
-                                           @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser){
+                                           @AuthenticationPrincipal FinMatePrincipal sessionUser){
         SecuritiesCashTransactionPageInfo pageInfo = investmentService.getSecuritiesCashTransactionPageInfo(
                 sessionUser.getId(),
                 investmentNumber,
@@ -195,7 +195,7 @@ public class InvestmentController {
     public String currencyExchange(@RequestParam(required = false) String investmentNumber,
                                    @RequestParam(required = false) SecuritiesCompanyCode securitiesCompanyCode,
                                    Model model,
-                                   @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+                                   @AuthenticationPrincipal FinMatePrincipal sessionUser) {
         InvestmentCurrencyExchangeRequest request = new InvestmentCurrencyExchangeRequest();
 
         // 사용자가 특정 증권계좌를 선택한 경우, 해당 정보를 InvestmentCurrencyExchangeRequest에 담는다.
@@ -219,7 +219,7 @@ public class InvestmentController {
     public String currencyExchange(@Valid @ModelAttribute("investmentCurrencyExchangeRequest") InvestmentCurrencyExchangeRequest request,
                                    BindingResult bindingResult,
                                    Model model,
-                                   @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+                                   @AuthenticationPrincipal FinMatePrincipal sessionUser) {
         if (bindingResult.hasErrors()) {
             addCurrencyExchangeModel(sessionUser.getId(), request, model);
             return "investments/cash/exchange";
@@ -243,7 +243,7 @@ public class InvestmentController {
                                                @RequestParam(required = false, defaultValue = "ONE_MONTH") TransactionPeriod period,
                                                @RequestParam(required = false, defaultValue = "0") int page,
                                                Model model,
-                                               @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+                                               @AuthenticationPrincipal FinMatePrincipal sessionUser) {
         InvestmentCurrencyExchangeTransactionPageInfo pageInfo =
                 investmentCurrencyExchangeService.getCurrencyExchangeTransactionPageInfo(
                         sessionUser.getId(),
@@ -258,7 +258,7 @@ public class InvestmentController {
     @GetMapping("/portfolio")
     public String portfolio(@RequestParam(required = false) Long investmentId,
                             Model model,
-                            @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+                            @AuthenticationPrincipal FinMatePrincipal sessionUser) {
         StockPortfolioPageInfo pageInfo = stockTradingQueryService.getPortfolioPageInfo(sessionUser.getId(), investmentId);
         model.addAttribute("stockPortfolioPageInfo", pageInfo);
         return "investments/portfolio";
@@ -268,7 +268,7 @@ public class InvestmentController {
     @GetMapping("/orders")
     public String orders(@RequestParam(required = false) Long investmentId,
                          Model model,
-                         @SessionAttribute(name = Const.LOGIN_USER) SessionUser sessionUser) {
+                         @AuthenticationPrincipal FinMatePrincipal sessionUser) {
         StockTradingHistoryPageInfo pageInfo = stockTradingQueryService.getTradingHistoryPageInfo(sessionUser.getId(), investmentId);
         model.addAttribute("stockTradingHistoryPageInfo", pageInfo);
         return "investments/orders";
