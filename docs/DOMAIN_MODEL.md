@@ -6,6 +6,7 @@
 erDiagram
     User ||--o{ Account : owns
     User ||--o{ Investment : owns
+    User ||--o{ OAuthAccount : authenticates_with
     Investment ||--o{ InvestmentCashBalance : has
     Investment ||--o{ InvestmentCurrencyExchangeTransaction : exchanges
     Investment ||--o{ StockOrder : places
@@ -26,14 +27,26 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 
 ## 2. User
 
-사용자 신원과 로그인 자격 정보를 저장한다.
+서비스 내부의 사용자 신원과 금융 자산 소유권 기준을 저장한다.
 
 - 주요 필드: `username`, `telephone`, `email`, unique `userId`, 암호화된 `password`
+- 로컬 가입자는 `userId`와 BCrypt `password`를 사용한다.
+- 소셜 로그인 전용 사용자는 `userId`와 `password`가 없을 수 있다.
 - `Account`와 `OneToMany` 양방향 관계
 - `addAccount()`가 양쪽 연관관계를 설정
 - `Investment` 목록 필드는 없지만 `Investment.user`를 통해 소유 관계가 성립
 
-## 3. Account
+## 3. OAuthAccount
+
+외부 인증 공급자의 사용자 식별자를 로컬 `User`에 연결한다.
+
+- 주요 필드: `provider`, `providerSubject`, `providerEmail`, `user`
+- `(provider, provider_subject)` 조합은 unique다.
+- Google·Kakao의 `sub`, Naver 프로필 응답의 `id`를 `providerSubject`에 저장한다.
+- `providerEmail`은 사용자 표시·참조 정보이며 계정 연결의 신뢰 키로 사용하지 않는다.
+- 공급자 비밀번호, 액세스 토큰, 리프레시 토큰은 저장하지 않는다.
+
+## 4. Account
 
 은행형 일반 계좌의 잔액과 이체 정책을 보유한다.
 
@@ -44,7 +57,7 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 
 계좌이체 기록은 `Transfer`와 `AccountTransaction`에 분리된다. 요청 자체와 계좌 관점의 원장이 각각 저장된다.
 
-## 4. Investment
+## 5. Investment
 
 모의 증권 계좌다.
 
@@ -53,7 +66,7 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 - 직접 잔액을 갖지 않고 통화별 예수금 엔티티에 위임
 - 보유 종목, 주문, 체결은 각 엔티티가 `Investment`를 참조
 
-## 5. InvestmentCashBalance
+## 6. InvestmentCashBalance
 
 투자 계좌 한 개의 특정 통화 예수금을 관리한다.
 
@@ -66,7 +79,7 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 - 환전은 사용 가능 예수금만 대상으로 하며, 환전 전 통화 출금과 환전 후 통화 입금은 같은 트랜잭션에서 처리된다.
 - 총 잔액은 두 필드의 합
 
-## 6. InvestmentCurrencyExchangeTransaction
+## 7. InvestmentCurrencyExchangeTransaction
 
 증권계좌 안에서 발생한 KRW/USD 환전 결과를 불변 기록으로 저장한다.
 
@@ -79,7 +92,7 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 환전 기록은 `fromBalanceBeforeExchange - fromAmount = fromBalanceAfterExchange`와
 `toBalanceBeforeExchange + toAmount = toBalanceAfterExchange`가 성립해야 생성된다.
 
-## 7. Stock
+## 8. Stock
 
 거래·검색 대상 종목의 기준 정보다.
 
@@ -95,7 +108,7 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 - 국내 기초 재무 화면 표시는 마스터파일 단위에 맞춰 시가총액·손익 항목은 억 원, 자본금·가격 항목은 원, 상장주식수는 주 단위 환산값을 사용한다.
 - 주문, 예약, 보유, 체결 기록의 공통 참조
 
-## 8. StockOrder
+## 9. StockOrder
 
 접수된 모의 매수·매도 주문 한 건이다.
 
@@ -108,7 +121,7 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 
 현재 실행 서비스는 `remainingQuantity` 전체를 체결 수량으로 사용한다. `PARTIALLY_FILLED` 상태를 만들 수 있는 도메인 메서드는 있으나 실제 부분 체결 입력은 **현재 구현되지 않음**.
 
-## 9. StockOrderReservation
+## 10. StockOrderReservation
 
 가격 조건이 만족될 때 일반 주문을 만들기 위한 예약이다.
 

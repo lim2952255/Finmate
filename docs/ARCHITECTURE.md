@@ -53,7 +53,24 @@ Thymeleaf 화면과 폼 요청을 연결한다. `@Controller` 기반이며 JSON 
 - `OrderController`: 주문 화면, 일반·예약 주문 접수와 취소
 - `LoginController`: 회원가입과 로그인 화면
 
-Spring Security의 `SecurityFilterChain`이 폼 로그인·로그아웃과 URL 인가를 처리한다. `FinMateUserDetailsService`가 사용자 자격 정보를 조회하고, 보호 컨트롤러는 `@AuthenticationPrincipal FinMatePrincipal`에서 인증 사용자 ID를 받아 서비스 계층의 소유권 검증에 전달한다.
+Spring Security의 `SecurityFilterChain`이 폼 로그인·Google/Kakao OIDC·Naver OAuth2 로그인·로그아웃과 URL 인가를 처리한다. 로컬 로그인은 `FinMateUserDetailsService`와 `DaoAuthenticationProvider`를 사용한다. `FinMateOidcUserService`는 Google·Kakao OIDC 사용자를, `FinMateOAuth2UserService`는 Naver OAuth2 사용자를 로컬 `User`에 매핑한다. 보호 컨트롤러는 로그인 방식과 무관하게 `@AuthenticationPrincipal FinMateAuthenticatedPrincipal`에서 로컬 사용자 ID를 받아 서비스 계층의 소유권 검증에 전달한다.
+
+소셜 로그인 흐름은 다음과 같다.
+
+```text
+/oauth2/authorization/{google|kakao|naver}
+  -> 공급자 인증·동의
+  -> /login/oauth2/code/{registrationId}
+  -> Spring Security가 authorization code와 token 처리
+  -> Google/Kakao: FinMateOidcUserService(providerSubject=sub)
+  -> Naver: FinMateOAuth2UserService(providerSubject=response.id)
+  -> OAuthAccountService
+  -> 기존 OAuthAccount 조회 또는 비밀번호 없는 User + OAuthAccount 생성
+  -> FinMateOidcPrincipal 또는 FinMateOAuth2Principal
+  -> SecurityContext -> HTTP Session
+```
+
+Google·Kakao의 `sub`와 Naver의 프로필 `id`는 각 공급자 내에서 사용자를 식별하는 키다. `OAuthAccount`가 `provider + providerSubject`를 로컬 `User.id`에 연결하며, 공급자 비밀번호와 OAuth 토큰은 영속화하지 않는다. 동일 이메일을 근거로 서로 다른 공급자나 로컬 계정을 자동 병합하지 않는다.
 
 ### Service
 
@@ -94,6 +111,7 @@ Redis 접근 코드는 `service.stock.ranking.StockRankingCacheService`에 있�
 
 ```text
 User
+ ├─ OAuthAccount(GOOGLE/KAKAO sub, NAVER profile id)
  ├─ Account ── AccountTransaction
  │     └─ Transfer ── 상대 Account 또는 Investment
  └─ Investment ── InvestmentCashBalance

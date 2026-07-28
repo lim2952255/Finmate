@@ -33,9 +33,48 @@ KIS_REQUEST_INTERVAL_MILLIS=700
 KIS_WEBSOCKET_URL=ws://ops.koreainvestment.com:21000
 KIS_WEBSOCKET_PATH=/tryitout
 KIS_REALTIME_UNSUBSCRIBE_GRACE_MILLIS=60000
+
+# Google 로그인을 사용할 때만 활성화
+GOOGLE_OAUTH_ENABLED=true
+GOOGLE_CLIENT_ID=change-me.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=change-me
+
+# Kakao 로그인을 사용할 때만 활성화
+KAKAO_OAUTH_ENABLED=true
+KAKAO_CLIENT_ID=change-me
+KAKAO_CLIENT_SECRET=change-me
+
+# Naver 로그인을 사용할 때만 활성화
+NAVER_OAUTH_ENABLED=true
+NAVER_CLIENT_ID=change-me
+NAVER_CLIENT_SECRET=change-me
 ```
 
 현재 `.env`에 추가 KIS 운영·모의 계좌 관련 이름이 존재할 수 있으나 `application.properties`와 `KisProperties`가 직접 읽는 것은 위 공통 키들이다. `KIS_ACCESS_TOKEN`도 현재 코드에서 직접 주입하지 않는다.
+
+Google 로그인을 사용하지 않으면 `GOOGLE_OAUTH_ENABLED`를 생략하거나 `false`로 둔다. 사용할 때는 Google Cloud Console에서 Web application OAuth client를 만들고 로컬 Authorized redirect URI를 다음과 같이 등록한다.
+
+```text
+http://localhost:8080/login/oauth2/code/google
+```
+
+배포 환경에서는 `{서비스 base URL}/login/oauth2/code/google`을 별도로 등록한다. Client ID와 Client Secret은 `.env` 또는 운영 비밀 저장소로만 주입하고 저장소에 커밋하지 않는다.
+
+Kakao 로그인은 [Kakao Developers](https://developers.kakao.com/)에서 애플리케이션을 만든 뒤 Kakao Login과 OpenID Connect를 활성화한다. `KAKAO_CLIENT_ID`에는 REST API key를, `KAKAO_CLIENT_SECRET`에는 Client secret code를 사용하고 다음 Redirect URI를 등록한다.
+
+```text
+http://localhost:8080/login/oauth2/code/kakao
+```
+
+현재 코드는 OIDC `openid`, `profile_nickname` 범위만 요청한다. 이메일이 필요하면 Kakao Developers에서 이메일 동의 항목 권한을 확인한 뒤 코드의 scope를 함께 확장해야 한다.
+
+Naver 로그인은 [Naver Developers](https://developers.naver.com/)에서 애플리케이션을 등록하고 사용 API로 `네이버 로그인`을 선택한다. 서비스 URL은 `http://localhost:8080`, Callback URL은 다음과 같이 등록한다.
+
+```text
+http://localhost:8080/login/oauth2/code/naver
+```
+
+발급된 Client ID와 Client Secret을 각각 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`에 설정한다. 배포 환경에서는 Kakao와 Naver에도 실제 HTTPS base URL을 사용한 callback을 별도로 등록한다.
 
 스케줄 조정용 선택 환경변수:
 
@@ -170,6 +209,10 @@ STOCK_RANKING_INITIAL_DELAY_MILLIS=600000 ./gradlew bootRun
 ### Spring Security 로그인 문제
 
 `SecurityConfig`의 공개 경로, 로그인 처리 URL(`/login`), 아이디 파라미터명(`userId`)과 로그아웃 URL(`/logout`)을 확인한다. 인증 정보는 `FinMateUserDetailsService`가 조회하고 `BCryptPasswordEncoder`가 비밀번호를 검증한다. 로그인·로그아웃 POST는 CSRF 토큰이 필요하며 Thymeleaf의 `th:action` 폼은 토큰을 자동 렌더링한다. 인증 성공 상태는 서버 HTTP session의 `SecurityContext`에 저장된다.
+
+소셜 로그인 버튼이 보이지 않으면 해당 공급자의 `*_OAUTH_ENABLED=true`와 Client ID/Secret 주입을 확인한다. callback 오류가 발생하면 실제 접속 주소와 공급자 콘솔에 등록한 Redirect URI가 정확히 일치하는지 확인한다. 인증 성공 후에는 `OAuthAccount(provider, providerSubject)`로 로컬 `User`를 찾으며, 최초 사용자는 로컬 비밀번호 없이 생성된다.
+
+Kakao에서 ID token이 발급되지 않으면 Kakao Login의 OpenID Connect 활성화 여부를 확인한다. Naver 사용자 정보 오류가 발생하면 애플리케이션의 제공 정보 설정과 `response.id` 반환 여부를 확인한다.
 
 ## 9. 테스트 보강 우선순위
 

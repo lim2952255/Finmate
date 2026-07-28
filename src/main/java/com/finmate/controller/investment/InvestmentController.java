@@ -19,7 +19,7 @@ import com.finmate.domain.normal.account.transaction.TransactionPeriod;
 import com.finmate.domain.stock.dto.trading.StockPortfolioPageInfo;
 import com.finmate.domain.stock.dto.trading.StockTradingHistoryPageInfo;
 import com.finmate.domain.user.User;
-import com.finmate.global.security.FinMatePrincipal;
+import com.finmate.global.security.FinMateAuthenticatedPrincipal;
 import com.finmate.service.investment.InvestmentCurrencyExchangeService;
 import com.finmate.service.investment.InvestmentService;
 import com.finmate.service.market.MarketDataService;
@@ -52,7 +52,7 @@ public class InvestmentController {
 
     @GetMapping
     public String investmentHome(Model model,
-                                 @AuthenticationPrincipal FinMatePrincipal sessionUser){
+                                 @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser){
         InvestmentHomeInfo investmentHomeInfo = investmentService.getInvestmentHomeInfo(sessionUser.getId());
         model.addAttribute("investmentHomeInfo", investmentHomeInfo);
         return "investments/home";
@@ -68,7 +68,7 @@ public class InvestmentController {
     @PostMapping("/open")
     public String openInvestment(@Valid @ModelAttribute OpenInvestment openInvestment
         , BindingResult bindingResult
-        , @AuthenticationPrincipal FinMatePrincipal sessionUser
+        , @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser
         , Model model){
         model.addAttribute("securitiesCompanyCodes", SecuritiesCompanyCode.values());
         if(bindingResult.hasErrors()){
@@ -88,7 +88,7 @@ public class InvestmentController {
 
     @GetMapping("/list")
     public String investmentsList(Model model,
-                  @AuthenticationPrincipal FinMatePrincipal sessionUser){
+                  @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser){
         List<Investment> investments = investmentService.findInvestments(sessionUser.getId());
         model.addAttribute("investments", investments);
 
@@ -99,7 +99,7 @@ public class InvestmentController {
     @PostMapping("/list")
     public String investmentsList(@RequestParam Long primaryInvestmentId,
                                   Model model,
-                                  @AuthenticationPrincipal FinMatePrincipal sessionUser) {
+                                  @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser) {
         try {
             investmentService.setPrimary(primaryInvestmentId, sessionUser.getId());
         } catch (Exception e) {
@@ -116,7 +116,7 @@ public class InvestmentController {
     public String securityCashTransfer(Model model,
                                        @RequestParam(required = false) String from,
                                        @RequestParam(required = false) SecuritiesCompanyCode fromSecuritiesCompanyCode,
-                                       @AuthenticationPrincipal FinMatePrincipal sessionUser
+                                       @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser
     ){
         if (from == null || from.isBlank() || fromSecuritiesCompanyCode == null) {
             InvestmentWithdrawalPageInfo pageInfo = investmentService.getInvestmentWithdrawalPageInfo(sessionUser.getId());
@@ -149,7 +149,7 @@ public class InvestmentController {
     public String securityCashTransfer(@Valid @ModelAttribute("investmentWithdrawalRequest") InvestmentWithdrawalRequest investmentWithdrawalRequest,
                                        BindingResult bindingResult,
                                        Model model,
-                                       @AuthenticationPrincipal FinMatePrincipal sessionUser) {
+                                       @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser) {
         if (bindingResult.hasErrors()) {
             InvestmentWithdrawalPageInfo pageInfo = investmentService.getInvestmentWithdrawalPageInfo(
                     sessionUser.getId(),
@@ -179,7 +179,7 @@ public class InvestmentController {
                                            @RequestParam(required = false, defaultValue = "ONE_MONTH") TransactionPeriod period,
                                            @RequestParam(required = false, defaultValue = "0") int page,
                                            Model model,
-                                           @AuthenticationPrincipal FinMatePrincipal sessionUser){
+                                           @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser){
         SecuritiesCashTransactionPageInfo pageInfo = investmentService.getSecuritiesCashTransactionPageInfo(
                 sessionUser.getId(),
                 investmentNumber,
@@ -195,7 +195,7 @@ public class InvestmentController {
     public String currencyExchange(@RequestParam(required = false) String investmentNumber,
                                    @RequestParam(required = false) SecuritiesCompanyCode securitiesCompanyCode,
                                    Model model,
-                                   @AuthenticationPrincipal FinMatePrincipal sessionUser) {
+                                   @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser) {
         InvestmentCurrencyExchangeRequest request = new InvestmentCurrencyExchangeRequest();
 
         // 사용자가 특정 증권계좌를 선택한 경우, 해당 정보를 InvestmentCurrencyExchangeRequest에 담는다.
@@ -219,7 +219,7 @@ public class InvestmentController {
     public String currencyExchange(@Valid @ModelAttribute("investmentCurrencyExchangeRequest") InvestmentCurrencyExchangeRequest request,
                                    BindingResult bindingResult,
                                    Model model,
-                                   @AuthenticationPrincipal FinMatePrincipal sessionUser) {
+                                   @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser) {
         if (bindingResult.hasErrors()) {
             addCurrencyExchangeModel(sessionUser.getId(), request, model);
             return "investments/cash/exchange";
@@ -243,7 +243,7 @@ public class InvestmentController {
                                                @RequestParam(required = false, defaultValue = "ONE_MONTH") TransactionPeriod period,
                                                @RequestParam(required = false, defaultValue = "0") int page,
                                                Model model,
-                                               @AuthenticationPrincipal FinMatePrincipal sessionUser) {
+                                               @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser) {
         InvestmentCurrencyExchangeTransactionPageInfo pageInfo =
                 investmentCurrencyExchangeService.getCurrencyExchangeTransactionPageInfo(
                         sessionUser.getId(),
@@ -258,7 +258,7 @@ public class InvestmentController {
     @GetMapping("/portfolio")
     public String portfolio(@RequestParam(required = false) Long investmentId,
                             Model model,
-                            @AuthenticationPrincipal FinMatePrincipal sessionUser) {
+                            @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser) {
         StockPortfolioPageInfo pageInfo = stockTradingQueryService.getPortfolioPageInfo(sessionUser.getId(), investmentId);
         model.addAttribute("stockPortfolioPageInfo", pageInfo);
         return "investments/portfolio";
@@ -268,7 +268,7 @@ public class InvestmentController {
     @GetMapping("/orders")
     public String orders(@RequestParam(required = false) Long investmentId,
                          Model model,
-                         @AuthenticationPrincipal FinMatePrincipal sessionUser) {
+                         @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser) {
         StockTradingHistoryPageInfo pageInfo = stockTradingQueryService.getTradingHistoryPageInfo(sessionUser.getId(), investmentId);
         model.addAttribute("stockTradingHistoryPageInfo", pageInfo);
         return "investments/orders";

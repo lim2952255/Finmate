@@ -1,5 +1,6 @@
 package com.finmate.global.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -18,7 +19,12 @@ public class SecurityConfig {
 	public SecurityFilterChain securityFilterChain(
 			HttpSecurity http, // http 보안 설정을 작성하는 객체
 			FinMateUserDetailsService userDetailsService, // 로그인 Id를 기반으로 DB에서 사용자를 조회하고 검증하는 서비스
-			PasswordEncoder passwordEncoder // 비밀번호를 암호화해서 비교하는 객체
+			FinMateOidcUserService oidcUserService,
+			FinMateOAuth2UserService oauth2UserService,
+			PasswordEncoder passwordEncoder, // 비밀번호를 암호화해서 비교하는 객체
+			@Value("${finmate.oauth.google.enabled:false}") boolean googleOAuthEnabled,
+			@Value("${finmate.oauth.kakao.enabled:false}") boolean kakaoOAuthEnabled,
+			@Value("${finmate.oauth.naver.enabled:false}") boolean naverOAuthEnabled
 	) throws Exception {
 
 		// DaoAuthenticationProvider는 DB에 저장된 사용자 정보를 기반으로 아이디와 비밀번호를 인증하는 객체이다.
@@ -37,6 +43,8 @@ public class SecurityConfig {
 								"/home",
 								"/login",
 								"/signup",
+								"/oauth2/**",
+								"/login/oauth2/**",
 								"/css/**",
 								"/js/**",
 								"/images/**",
@@ -76,6 +84,22 @@ public class SecurityConfig {
 						.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
 						.sessionFixation(fixation -> fixation.changeSessionId())
 				);
+
+		// 외부 공급자가 하나라도 설정되어 있는지를 검사한다.
+		boolean socialOAuthEnabled = googleOAuthEnabled
+				|| kakaoOAuthEnabled
+				|| naverOAuthEnabled;
+
+		if (socialOAuthEnabled) {
+			http.oauth2Login(oauth -> oauth
+					.loginPage("/login") // OAuth 로그인을 적용할 사용자 페이지 지정
+					.userInfoEndpoint(userInfo -> userInfo
+							.userService(oauth2UserService) // OAuth2UserService와 OidcUserService를 등록한다.
+							.oidcUserService(oidcUserService)
+					)
+					.failureUrl("/login?oauth2Error")
+			);
+		}
 
 		return http.build();
 	}

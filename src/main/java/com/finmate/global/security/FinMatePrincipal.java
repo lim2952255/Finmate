@@ -10,7 +10,10 @@ import java.util.List;
 // FinMatePrincipal 객체는 Spring Security가 로그인한 사용자를 관리하기 위한 객체이다.
 // UserDetails는 Spring Security가 사용자 정보를 읽는 인터페이스이다.
 // CredentialsContainer는 인증이 끝난 다음, 비밀번호와 같은 개인정보를 지우는 역할을 수행한다.
-public final class FinMatePrincipal implements UserDetails, CredentialsContainer {
+public final class FinMatePrincipal implements
+        UserDetails,
+        CredentialsContainer,
+        FinMateAuthenticatedPrincipal {
 
     private final Long id;
     private final String userId;

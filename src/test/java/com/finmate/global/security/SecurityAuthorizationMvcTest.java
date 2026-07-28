@@ -27,6 +27,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         HomeController.class,
         LoginController.class,
         SecurityAuthorizationMvcTest.ProtectedRouteController.class
+}, properties = {
+        "finmate.oauth.google.enabled=false",
+        "finmate.oauth.kakao.enabled=false",
+        "finmate.oauth.naver.enabled=false"
 })
 @Import({
         SecurityConfig.class,
@@ -43,6 +47,12 @@ class SecurityAuthorizationMvcTest {
 
     @MockitoBean
     private FinMateUserDetailsService userDetailsService;
+
+    @MockitoBean
+    private FinMateOidcUserService oidcUserService;
+
+    @MockitoBean
+    private FinMateOAuth2UserService oauth2UserService;
 
     @Test
     @DisplayName("AUTH-001: 비로그인 사용자는 루트 경로에서 세션 생성 없이 홈으로 이동한다")

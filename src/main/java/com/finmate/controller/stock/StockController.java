@@ -7,7 +7,7 @@ import com.finmate.domain.stock.dto.detail.StockDetailPageInfo;
 import com.finmate.domain.stock.dto.ranking.StockMarketMoversPageInfo;
 import com.finmate.domain.stock.dto.search.StockSearchPageInfo;
 import com.finmate.domain.stock.dto.search.StockSearchType;
-import com.finmate.global.security.FinMatePrincipal;
+import com.finmate.global.security.FinMateAuthenticatedPrincipal;
 import com.finmate.service.stock.StockDetailService;
 import com.finmate.service.stock.StockService;
 import com.finmate.service.stock.ranking.StockMarketMoverService;
@@ -37,7 +37,7 @@ public class StockController {
                               @RequestParam(required = false) StockMarketType marketType,
                               @RequestParam(required = false, defaultValue = "0") int page,
                               Model model,
-                              @AuthenticationPrincipal FinMatePrincipal sessionUser) {
+                              @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser) {
         StockSearchPageInfo pageInfo = stockService.getStockSearchPageInfo(
                 sessionUser.getId(),
                 keyword,
@@ -53,14 +53,14 @@ public class StockController {
     @PostMapping("/favorite")
     public String toggleFavoriteStock(@RequestParam Long stockId,
                                       @RequestParam String redirectUrl,
-                                      @AuthenticationPrincipal FinMatePrincipal sessionUser) {
+                                      @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser) {
         stockService.toggleFavoriteStock(sessionUser.getId(), stockId);
 
         return "redirect:" + redirectUrl;
     }
 
     @GetMapping("/watchlist")
-    public String watchlistStock(@AuthenticationPrincipal FinMatePrincipal sessionUser,
+    public String watchlistStock(@AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser,
                                  @RequestParam(required = false, defaultValue = "0") int page,
                                  Model model) {
         FavoriteStockPageInfo pageInfo = stockService.getFavoriteStockPageInfo(sessionUser.getId(), page);

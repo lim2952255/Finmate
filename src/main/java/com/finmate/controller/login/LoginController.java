@@ -7,6 +7,7 @@ import com.finmate.service.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -20,6 +21,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequiredArgsConstructor
 public class LoginController {
     private final UserService loginService;
+
+    // Google OAuth 사용여부를 결정한다.
+    @Value("${finmate.oauth.google.enabled:false}")
+    private boolean googleOAuthEnabled;
+
+    @Value("${finmate.oauth.kakao.enabled:false}")
+    private boolean kakaoOAuthEnabled;
+
+    @Value("${finmate.oauth.naver.enabled:false}")
+    private boolean naverOAuthEnabled;
 
     @GetMapping("/signup")
     public String signup(Model model){
@@ -58,6 +69,10 @@ public class LoginController {
     public String login(Model model) {
         // 빈 DTO 객체를 생성 후 model에 담아서 view 호출
         model.addAttribute("loginRequest", new LoginRequest());
+        // Google OAuth 사용여부를 전달함으로서, 구글 로그인 버튼을 View에 렌더링 할지 말지를 결정한다.
+        model.addAttribute("googleOAuthEnabled", googleOAuthEnabled);
+        model.addAttribute("kakaoOAuthEnabled", kakaoOAuthEnabled);
+        model.addAttribute("naverOAuthEnabled", naverOAuthEnabled);
         return "home/login";
     }
 }

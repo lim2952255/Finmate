@@ -1,6 +1,8 @@
 package com.finmate.controller.login;
 
 import com.finmate.global.security.FinMatePrincipal;
+import com.finmate.global.security.FinMateOAuth2UserService;
+import com.finmate.global.security.FinMateOidcUserService;
 import com.finmate.global.security.FinMateUserDetailsService;
 import com.finmate.global.security.SecurityConfig;
 import com.finmate.service.user.UserService;
@@ -43,6 +45,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = {
         LoginController.class,
         LoginSessionMvcTest.ProtectedRouteController.class
+}, properties = {
+        "finmate.oauth.google.enabled=false",
+        "finmate.oauth.kakao.enabled=false",
+        "finmate.oauth.naver.enabled=false"
 })
 @Import({ // 관련 설정을 import한다.
         SecurityConfig.class,
@@ -67,6 +73,12 @@ class LoginSessionMvcTest {
 
     @MockitoBean
     private FinMateUserDetailsService userDetailsService;
+
+    @MockitoBean
+    private FinMateOidcUserService oidcUserService;
+
+    @MockitoBean
+    private FinMateOAuth2UserService oauth2UserService;
 
     // 매 테스트를 호출하기 전에 실행된다.
     @BeforeEach
