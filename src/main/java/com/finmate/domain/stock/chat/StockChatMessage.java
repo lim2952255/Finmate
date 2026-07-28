@@ -34,17 +34,17 @@ public class StockChatMessage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     // 어떤 종목페이지에 작성된 채팅인지를 기록하기 위해 연관관계를 설정한다.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stock_id", nullable = false, updatable = false)
     private Stock stock;
-    
+
     // 어떤 사용자가 작성한 채팅인지를 기록하기 위해 연관관계를 설정한다.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, updatable = false)
     private User user;
-    
+
     // 대댓글 기능을 사용하기 위해 자기자신과 연관관계를 설정한다.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_message_id", updatable = false)

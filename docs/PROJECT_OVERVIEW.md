@@ -4,7 +4,7 @@
 
 FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이션에서 관리하는 서버 렌더링 금융 포트폴리오 프로젝트다. 현재 소스가 제공하는 핵심 범위는 다음과 같다.
 
-- 세션 기반 회원가입·로그인·로그아웃
+- 세션 기반 로컬·Google·Kakao·Naver 로그인과 로그아웃
 - 다중 통화 일반 계좌 개설, 대표 계좌, 이체 한도, 계좌이체 및 거래 내역
 - 투자 계좌 개설, 통화별 예수금, 일반 계좌와 투자 계좌 사이의 자금 이동, 증권계좌 안 KRW/USD 환전
 - 국내·미국 종목 마스터, 업종명 표시, 시장별 종목/업종 검색, 관심 종목, 차트, 거래량·거래대금 순위
@@ -31,7 +31,7 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이�
 | 언어 | Java 17 |
 | 프레임워크 | Spring Boot 3.5.15 |
 | 웹 | Spring MVC, Thymeleaf, Bean Validation |
-| 보안 | Spring Security 의존성, BCrypt, 자체 MVC 인터셉터와 HTTP Session 로그인 |
+| 보안 | Spring Security 폼 로그인·Google/Kakao OIDC·Naver OAuth2·인가, BCrypt, HTTP Session 기반 SecurityContext |
 | 영속성 | Spring Data JPA, Hibernate, MySQL Connector/J |
 | DB | MySQL 8.4 (`docker-compose.yml`) |
 | 캐시 | Redis 7.2, `StringRedisTemplate` |
@@ -47,7 +47,9 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이�
 
 ### 사용자와 인증
 
-`LoginController`와 `UserService`가 회원가입·로그인을 처리하고 `SessionUser`를 HTTP Session에 저장한다. `LoginInterceptor`가 공개 경로 외 요청을 검사한다. 비밀번호는 `BCryptPasswordEncoder`로 암호화된다.
+`LoginController`와 `UserService`가 로컬 회원가입을 처리하고, Spring Security가 폼 로그인과 Google·Kakao·Naver 로그인을 함께 처리한다. 로컬 로그인은 `FinMateUserDetailsService`와 `BCryptPasswordEncoder`로 아이디·비밀번호를 검증한다. Google·Kakao는 `FinMateOidcUserService`가 검증된 OIDC `sub`를 사용하고, Naver는 `FinMateOAuth2UserService`가 사용자 정보 응답의 `response.id`를 사용해 `OAuthAccount`의 로컬 `User`와 연결한다. 최초 소셜 로그인에는 비밀번호가 없는 `User`를 생성하며 공급자 비밀번호·액세스 토큰·리프레시 토큰은 DB에 저장하지 않는다.
+
+두 로그인 방식 모두 인증 결과를 공통 `FinMateAuthenticatedPrincipal`로 다루고 `SecurityContext`를 서버 HTTP Session에 보존한다. 따라서 계좌와 투자 자산의 소유권 기준은 로그인 방식과 관계없이 기존 `User.id`다. 이메일이 같다는 이유로 기존 로컬 계정과 자동 연결하지 않으며, 명시적인 계정 연결 기능은 현재 구현되지 않았다.
 
 ### 일반 계좌
 

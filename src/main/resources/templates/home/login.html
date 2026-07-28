@@ -12,9 +12,9 @@
 
     <main class="main">
         <section class="content">
-            <div th:if="${message != null}">
-                <p th:text="${message}" >로그인 접근제어</p>
-            </div>
+            <p th:if="${param.error}">아이디 또는 비밀번호가 올바르지 않습니다.</p>
+            <p th:if="${param.oauth2Error}">소셜 로그인에 실패했습니다.</p>
+            <p th:if="${param.logout}">로그아웃되었습니다.</p>
             <h1>로그인</h1>
             <!-- 이제 Thymeleaf 탬플릿에서도 DTO객체를 입력받는다.-->
             <form th:action="@{/login}" th:object="${loginRequest}" method="post">
@@ -33,10 +33,20 @@
                     <!-- 필드 에러 발생시 해당 오류를 표시-->
                     <p th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
                 </div>
-                <!--만약 redirect경로가 존재한다면, 로그인 성공시 해당 redirectURL도 함께 보내도록 hidden 필드를 추가하였다.-->
-                <input type="hidden" name="redirectURL" th:value="${redirectURL}">
                 <button type="submit">로그인</button>
             </form>
+            <a th:if="${googleOAuthEnabled}"
+               th:href="@{/oauth2/authorization/google}">
+                Google로 로그인
+            </a>
+            <a th:if="${kakaoOAuthEnabled}"
+               th:href="@{/oauth2/authorization/kakao}">
+                Kakao로 로그인
+            </a>
+            <a th:if="${naverOAuthEnabled}"
+               th:href="@{/oauth2/authorization/naver}">
+                Naver로 로그인
+            </a>
         </section>
     </main>
 </div>

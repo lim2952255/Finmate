@@ -1,6 +1,6 @@
 package com.finmate.service.stock.chat;
 
-import com.finmate.domain.user.dto.SessionUser;
+import com.finmate.global.security.FinMateAuthenticatedPrincipal;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -13,12 +13,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StockChatSessionRegistry {
     // 어떤 WebSocket Session들이 연결되었는지, 어떤 사용자가 어떤 세션을 사용하는지, 각 세션이 어떤 종목 채팅방에 들어가있는지, 각 종목 채팅방에 어떤 세션들이 있는지를 서버메모리에 기록한다.
     private final ConcurrentHashMap<String, WebSocketSession> sessions = new ConcurrentHashMap<>(); // 세션 ID 관리
-    private final ConcurrentHashMap<String, SessionUser> usersBySessionId = new ConcurrentHashMap<>(); //각 세션이 어떤 사용자와 연결되어있는지를 관리
+    private final ConcurrentHashMap<String, FinMateAuthenticatedPrincipal> usersBySessionId = new ConcurrentHashMap<>(); //각 세션이 어떤 사용자와 연결되어있는지를 관리
     private final ConcurrentHashMap<String, Long> stockIdBySessionId = new ConcurrentHashMap<>(); // 각 세션이 어떤 종목 채팅방에 속해있는지를 관리
     private final ConcurrentHashMap<Long, Set<String>> sessionIdsByStockId = new ConcurrentHashMap<>(); // 각 종목별로 어떤 세션들이 속해있는지를 검사한다.
 
     // 세션 id와 세션을 연결하고, 세션과 사용자를 연결해서 저장한다.
-    public void register(WebSocketSession session, SessionUser user) {
+    public void register(WebSocketSession session, FinMateAuthenticatedPrincipal user) {
         sessions.put(session.getId(), session);
         usersBySessionId.put(session.getId(), user);
     }
@@ -66,7 +66,7 @@ public class StockChatSessionRegistry {
     }
 
     // 현재 웹소켓 세션의 로그인 사용자 정보를 리턴한다.
-    public Optional<SessionUser> user(WebSocketSession session) {
+    public Optional<FinMateAuthenticatedPrincipal> user(WebSocketSession session) {
         return Optional.ofNullable(usersBySessionId.get(session.getId()));
     }
 
@@ -90,7 +90,7 @@ public class StockChatSessionRegistry {
         return (int) sessionIds(stockId).stream()
                 .map(usersBySessionId::get)
                 .filter(user -> user != null)
-                .map(SessionUser::getId)
+                .map(FinMateAuthenticatedPrincipal::getId)
                 .distinct()
                 .count();
     }

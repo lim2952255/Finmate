@@ -1,12 +1,14 @@
 package com.finmate.global.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.finmate.domain.user.User;
-import com.finmate.domain.user.dto.SessionUser;
-import com.finmate.global.constant.Const;
+import com.finmate.global.security.FinMatePrincipal;
 import com.finmate.service.stock.chat.StockChatClientSessionService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextImpl;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -42,14 +44,24 @@ class StockChatWebSocketHandlerTest {
     @DisplayName("로그인 사용자는 채팅 WebSocket 세션으로 등록한다")
     void registersAuthenticatedConnection() throws Exception {
         WebSocketSession session = mock(WebSocketSession.class);
-        SessionUser sessionUser = sessionUser(); // 테스트용 세션 유저를 생성한다.
+        FinMatePrincipal principal = principal(); // 테스트용 인증 사용자를 생성한다.
+        SecurityContextImpl securityContext = new SecurityContextImpl(
+                new UsernamePasswordAuthenticationToken(
+                        principal,
+                        null,
+                        principal.getAuthorities()
+                )
+        );
         // 세션에서 로그인사용자를 조회할 수 있도록 설정한다.
-        when(session.getAttributes()).thenReturn(Map.of(Const.LOGIN_USER, sessionUser));
+        when(session.getAttributes()).thenReturn(Map.of(
+                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                securityContext
+        ));
 
         handler.afterConnectionEstablished(session);
 
         // 이제는 handler.afterConnectionEstablished를 호출해서 로그인 사용자 정보를 조회할 수 있기 때문에 세션이 등록되어야 한다.
-        verify(clientSessionService).register(session, sessionUser);
+        verify(clientSessionService).register(session, principal);
     }
 
     @Test
@@ -124,11 +136,13 @@ class StockChatWebSocketHandlerTest {
     }
 
     // 테스트용 세션 User를 생성한다.
-    private SessionUser sessionUser() {
-        User user = new User();
-        user.setId(1L);
-        user.setUserId("testuser0001");
-        user.setUsername("사용자");
-        return new SessionUser(user);
+    private FinMatePrincipal principal() {
+        return new FinMatePrincipal(
+                1L,
+                "testuser0001",
+                "사용자",
+                null,
+                java.util.List.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
     }
 }

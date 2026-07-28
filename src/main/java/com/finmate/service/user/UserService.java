@@ -1,11 +1,9 @@
 package com.finmate.service.user;
 
 import com.finmate.domain.user.dto.LoginDTO;
-import com.finmate.domain.user.dto.LoginRequest;
 import com.finmate.domain.user.dto.SignupRequest;
 import com.finmate.domain.user.User;
 import com.finmate.exception.DuplicatedId;
-import com.finmate.exception.LoginException;
 import com.finmate.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -42,23 +40,15 @@ public class UserService {
         return savedUser.getId();
     }
 
-    // 사용자를 조회만 하기 떄문에 readOnly = true로 설정하여 최적화
-    @Transactional(readOnly = true)
-    public User login(LoginRequest loginRequest) {
-        User user = findUser(loginRequest);
-        if(user == null) {
-            throw new LoginException("Invalid username or password");
-        }
-        if(passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())){
-            return user;
-        }
-
-        throw new LoginException("로그인 실패");
-    }
-
     @Transactional(readOnly = true)
     public User findUser(LoginDTO loginDTO) {
         return userRepository.findByUserId(loginDTO.getUserId())
+                .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public User findUser(Long userId) {
+        return userRepository.findById(userId)
                 .orElse(null);
     }
 }

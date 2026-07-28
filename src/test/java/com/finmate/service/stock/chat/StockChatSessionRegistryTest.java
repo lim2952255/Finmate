@@ -1,7 +1,6 @@
 package com.finmate.service.stock.chat;
 
-import com.finmate.domain.user.User;
-import com.finmate.domain.user.dto.SessionUser;
+import com.finmate.global.security.FinMatePrincipal;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.socket.WebSocketSession;
@@ -19,7 +18,7 @@ class StockChatSessionRegistryTest {
     @Test
     @DisplayName("같은 사용자가 여러 탭으로 접속해도 접속자 수는 한 명이다")
     void countsDistinctUsers() {
-        SessionUser user = sessionUser(1L, "사용자");
+        FinMatePrincipal user = principal(1L, "사용자");
         // 두 소켓을 성한다.
         WebSocketSession first = session("session-1");
         WebSocketSession second = session("session-2");
@@ -40,7 +39,7 @@ class StockChatSessionRegistryTest {
     void movesSessionBetweenRooms() {
 
         WebSocketSession session = session("session-1");
-        registry.register(session, sessionUser(1L, "사용자"));
+        registry.register(session, principal(1L, "사용자"));
 
         // 사용자가 10L 채팅방에 있다가 20L 채팅방으로 이동 -> 10L 채팅방은 비어있어야 한다.
         registry.join(session, 10L);
@@ -55,7 +54,7 @@ class StockChatSessionRegistryTest {
     @DisplayName("연결 종료 시 세션과 채팅방 참가 정보를 함께 제거한다")
     void unregistersSession() {
         WebSocketSession session = session("session-1");
-        registry.register(session, sessionUser(1L, "사용자"));
+        registry.register(session, principal(1L, "사용자"));
         registry.join(session, 10L);
 
         // 세션 연결 종료
@@ -75,11 +74,13 @@ class StockChatSessionRegistryTest {
         return session;
     }
     // 테스트용 사용자를 생성한다.
-    private SessionUser sessionUser(Long id, String username) {
-        User user = new User();
-        user.setId(id);
-        user.setUserId("testuser" + id);
-        user.setUsername(username);
-        return new SessionUser(user);
+    private FinMatePrincipal principal(Long id, String username) {
+        return new FinMatePrincipal(
+                id,
+                "testuser" + id,
+                username,
+                null,
+                java.util.List.of()
+        );
     }
 }

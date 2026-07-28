@@ -34,7 +34,7 @@ com.finmate
 │  ├─ core, rest, websocket, parser, exchange
 │  └─ stock.master, stock.price, stock.ranking, stock.realtime
 ├─ global
-│  ├─ interceptor, security, websocket
+│  ├─ security, websocket
 │  ├─ pagination, validation, format, constant
 └─ exception
 ```
@@ -51,7 +51,26 @@ Thymeleaf 화면과 폼 요청을 연결한다. `@Controller` 기반이며 JSON 
 - `InvestmentController`: 투자 계좌, 예수금 이체, 포트폴리오, 주문 내역, 환율·지수
 - `StockController`: 시장별 종목/업종 검색, 관심 종목, 상세, 랭킹 데이터
 - `OrderController`: 주문 화면, 일반·예약 주문 접수와 취소
-- `LoginController`: 회원가입, 세션 로그인·로그아웃
+- `LoginController`: 회원가입과 로그인 화면
+
+Spring Security의 `SecurityFilterChain`이 폼 로그인·Google/Kakao OIDC·Naver OAuth2 로그인·로그아웃과 URL 인가를 처리한다. 로컬 로그인은 `FinMateUserDetailsService`와 `DaoAuthenticationProvider`를 사용한다. `FinMateOidcUserService`는 Google·Kakao OIDC 사용자를, `FinMateOAuth2UserService`는 Naver OAuth2 사용자를 로컬 `User`에 매핑한다. 보호 컨트롤러는 로그인 방식과 무관하게 `@AuthenticationPrincipal FinMateAuthenticatedPrincipal`에서 로컬 사용자 ID를 받아 서비스 계층의 소유권 검증에 전달한다.
+
+소셜 로그인 흐름은 다음과 같다.
+
+```text
+/oauth2/authorization/{google|kakao|naver}
+  -> 공급자 인증·동의
+  -> /login/oauth2/code/{registrationId}
+  -> Spring Security가 authorization code와 token 처리
+  -> Google/Kakao: FinMateOidcUserService(providerSubject=sub)
+  -> Naver: FinMateOAuth2UserService(providerSubject=response.id)
+  -> OAuthAccountService
+  -> 기존 OAuthAccount 조회 또는 비밀번호 없는 User + OAuthAccount 생성
+  -> FinMateOidcPrincipal 또는 FinMateOAuth2Principal
+  -> SecurityContext -> HTTP Session
+```
+
+Google·Kakao의 `sub`와 Naver의 프로필 `id`는 각 공급자 내에서 사용자를 식별하는 키다. `OAuthAccount`가 `provider + providerSubject`를 로컬 `User.id`에 연결하며, 공급자 비밀번호와 OAuth 토큰은 영속화하지 않는다. 동일 이메일을 근거로 서로 다른 공급자나 로컬 계정을 자동 병합하지 않는다.
 
 ### Service
 
@@ -92,6 +111,7 @@ Redis 접근 코드는 `service.stock.ranking.StockRankingCacheService`에 있�
 
 ```text
 User
+ ├─ OAuthAccount(GOOGLE/KAKAO sub, NAVER profile id)
  ├─ Account ── AccountTransaction
  │     └─ Transfer ── 상대 Account 또는 Investment
  └─ Investment ── InvestmentCashBalance
@@ -139,7 +159,7 @@ Stock는 Order / Reservation / Holding / TradeTransaction의 공통 종목 참�
 
 KIS payload는 `KisRealtimeStore`에 최신값으로 저장되고 Spring 동기 이벤트로 발행된다. `StockRealtimeClientSessionService`와 `MarketRealtimeClientSessionService`는 구독 브라우저에 JSON을 보내며, `StockTradingRealtimeExecutionListener`는 같은 이벤트로 체결을 시도한다.
 
-종목 채팅의 `JOIN_ROOM`, `LEAVE_ROOM`, `SEND_MESSAGE`, `EDIT_MESSAGE`, `DELETE_MESSAGE` 명령은 `StockChatClientSessionService`가 처리한다. 메시지 작성·수정·소프트 삭제와 답글 관계는 MySQL의 `stock_chat_message`에 저장한다. 수정·삭제 권한은 WebSocket payload의 사용자 값이 아니라 handshake에서 등록한 `SessionUser`와 메시지 작성자를 비교해 판단한다. 삭제된 메시지 행은 답글 연결을 보존하기 위해 남기고 API 응답에서는 원문을 숨긴다. 종목별 연결 세션과 접속 인원, 실시간 fan-out은 현재 단일 JVM 메모리에 있으므로 다중 인스턴스에서는 Redis Pub/Sub 같은 별도 전파 계층이 필요하다.
+종목 채팅의 `JOIN_ROOM`, `LEAVE_ROOM`, `SEND_MESSAGE`, `EDIT_MESSAGE`, `DELETE_MESSAGE` 명령은 `StockChatClientSessionService`가 처리한다. 메시지 작성·수정·소프트 삭제와 답글 관계는 MySQL의 `stock_chat_message`에 저장한다. 수정·삭제 권한은 WebSocket payload의 사용자 값이 아니라 handshake에서 전달된 Spring Security `SecurityContext`의 `FinMateAuthenticatedPrincipal`과 메시지 작성자를 비교해 판단한다. 삭제된 메시지 행은 답글 연결을 보존하기 위해 남기고 API 응답에서는 원문을 숨긴다. 종목별 연결 세션과 접속 인원, 실시간 fan-out은 현재 단일 JVM 메모리에 있으므로 다중 인스턴스에서는 Redis Pub/Sub 같은 별도 전파 계층이 필요하다.
 
 ## 6. 트랜잭션 경계와 락
 

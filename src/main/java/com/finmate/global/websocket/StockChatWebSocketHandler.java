@@ -2,11 +2,12 @@ package com.finmate.global.websocket;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.finmate.domain.user.dto.SessionUser;
-import com.finmate.global.constant.Const;
+import com.finmate.global.security.FinMateAuthenticatedPrincipal;
 import com.finmate.service.stock.chat.StockChatClientSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -32,15 +33,20 @@ public class StockChatWebSocketHandler extends TextWebSocketHandler {
     // 웹소켓 연결이 성공하면 자동으로 호출된다.
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        // 웹소켓 세션에서 로그인한 사용자 정보를 받는다.
-        Object loginUser = session.getAttributes().get(Const.LOGIN_USER);
-        if (!(loginUser instanceof SessionUser sessionUser)) {
+        // HTTP session에서 WebSocket handshake로 복사된 Spring Security 인증정보를 받는다.
+        Object contextValue = session.getAttributes().get(
+                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY
+        );
+        if (!(contextValue instanceof SecurityContext securityContext)
+                || securityContext.getAuthentication() == null
+                || !(securityContext.getAuthentication().getPrincipal()
+                instanceof FinMateAuthenticatedPrincipal principal)) {
             // 만약 로그인 사용자정보가 맞지않으면 연결을 종료시킨다.(규칙 위반)
             session.close(CloseStatus.POLICY_VIOLATION);
             return;
         }
         // 세션과 사용자정보를 서버 메모리에 저장하고, 클라이언트에게 웹소켓 세션에 연결되었다는 메세지를 전송한다.
-        clientSessionService.register(session, sessionUser);
+        clientSessionService.register(session, principal);
     }
 
     // 웹소켓 연결 후, 클라이언트가 문자열 메세지를 보낼때마다 호출된다.

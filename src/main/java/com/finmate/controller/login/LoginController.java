@@ -1,18 +1,13 @@
 package com.finmate.controller.login;
 
-import com.finmate.domain.user.User;
 import com.finmate.domain.user.dto.LoginRequest;
-import com.finmate.domain.user.dto.SessionUser;
 import com.finmate.domain.user.dto.SignupRequest;
 import com.finmate.exception.DuplicatedId;
-import com.finmate.exception.LoginException;
-import com.finmate.global.constant.Const;
 import com.finmate.service.user.UserService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -26,6 +21,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequiredArgsConstructor
 public class LoginController {
     private final UserService loginService;
+
+    // Google OAuth 사용여부를 결정한다.
+    @Value("${finmate.oauth.google.enabled:false}")
+    private boolean googleOAuthEnabled;
+
+    @Value("${finmate.oauth.kakao.enabled:false}")
+    private boolean kakaoOAuthEnabled;
+
+    @Value("${finmate.oauth.naver.enabled:false}")
+    private boolean naverOAuthEnabled;
 
     @GetMapping("/signup")
     public String signup(Model model){
@@ -58,59 +63,16 @@ public class LoginController {
         return "redirect:/"; // home으로 redirect처리
     }
 
+    // login 컨트롤러에서는 GET 요청만 처리한다.
+    // login에 대한 POST 요청은 이제 Spring Sequrity login filter를 통해서 수행한다.
     @GetMapping("/login")
-    // redirectURL과 message 정보를 쿼리파라미터에서 꺼내서 읽는다. 이후 이를 Model에 담아서 view로 전달한다.
-    public String login(@RequestParam(value="redirectURL", required = false) String redirectURL,
-                        @RequestParam(value="message", required = false) String message,
-                        Model model) {
+    public String login(Model model) {
         // 빈 DTO 객체를 생성 후 model에 담아서 view 호출
-
         model.addAttribute("loginRequest", new LoginRequest());
-        model.addAttribute("redirectURL", redirectURL); // redirect정보를 추가
-        if(message != null){
-            model.addAttribute("message","해당 서비스는 로그인이 필요한 서비스입니다.");
-        }
+        // Google OAuth 사용여부를 전달함으로서, 구글 로그인 버튼을 View에 렌더링 할지 말지를 결정한다.
+        model.addAttribute("googleOAuthEnabled", googleOAuthEnabled);
+        model.addAttribute("kakaoOAuthEnabled", kakaoOAuthEnabled);
+        model.addAttribute("naverOAuthEnabled", naverOAuthEnabled);
         return "home/login";
-    }
-
-    @PostMapping("/login")
-    public String login(@Valid @ModelAttribute("loginRequest") LoginRequest loginRequest, BindingResult bindingResult,
-                        HttpServletRequest httpServletRequest) {
-        // 입력 검증 오류
-        if (bindingResult.hasErrors()) {
-            return "home/login";
-        }
-
-        User loginUser = null;
-        try {
-            loginUser = loginService.login(loginRequest);
-        } catch (LoginException e) {
-            bindingResult.reject("loginFail", "아이디 또는 비밀번호가 올바르지 않습니다.");
-            return "home/login";
-        }
-
-        // 로그인 처음 성공시 HttpSession에 로그인 정보를 담는다.
-        HttpSession session = httpServletRequest.getSession();
-        session.setAttribute(Const.LOGIN_USER, new SessionUser(loginUser));
-
-        String redirectURL = httpServletRequest.getParameter("redirectURL");
-
-        // 만약 로그인을 하기전에 접근하고자 했던 경로가 있었다면 해당 경로로 redirect시킨다.
-        // 또한 Post 이후에는 Get으로 Redirect시켜야 한다.
-        if(redirectURL != null){
-            return "redirect:" + redirectURL;
-        }
-
-        return "redirect:/";
-    }
-
-    @PostMapping("/logout")
-    public String logout(HttpServletRequest httpServletRequest) {
-        HttpSession session = httpServletRequest.getSession(false);
-        if (session != null) {
-            session.invalidate(); // 세션을 만료시킴으로서 로그아웃 기능을 구현
-        }
-
-        return "redirect:/";
     }
 }

@@ -1,7 +1,7 @@
 package com.finmate.service.stock.chat;
 
 import com.finmate.domain.stock.dto.chat.StockChatMessageResponse;
-import com.finmate.domain.user.dto.SessionUser;
+import com.finmate.global.security.FinMateAuthenticatedPrincipal;
 import com.finmate.global.websocket.WebSocketJsonMessageSender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,13 +27,13 @@ public class StockChatClientSessionService {
         private final WebSocketJsonMessageSender messageSender; // 웹소켓으로 Json메세지를 전달하는 객체
 
         // 웹소켓 연결 등록
-        public void register(WebSocketSession session, SessionUser user) {
+        public void register(WebSocketSession session, FinMateAuthenticatedPrincipal user) {
             sessionRegistry.register(session, user); // 세션과 사용자 정보 저장
             // 클라이언트에게 웹소켓이 연결되었다는 메세지를 전달한다.
             messageSender.send(session, Map.of(
                     "type", CONNECTED,
                     "userId", user.getId(),
-                    "username", user.getUsername()), "종목 채팅");
+                    "username", user.getDisplayName()), "종목 채팅");
         }
 
         // 종목 채팅방 입장
@@ -115,7 +115,8 @@ public class StockChatClientSessionService {
                 return;
             }
             // 해당 세션과 연결된 사용자 로그인정보를 받는다.
-            SessionUser user = sessionRegistry.user(session).orElse(null);
+            FinMateAuthenticatedPrincipal user =
+                    sessionRegistry.user(session).orElse(null);
             if (user == null) {
                 sendError(session, "로그인 정보가 없습니다.");
                 return;
