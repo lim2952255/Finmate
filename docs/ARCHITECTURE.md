@@ -151,12 +151,15 @@ Stock는 Order / Reservation / Holding / TradeTransaction의 공통 종목 참�
 
 ### WebSocket
 
-두 연결이 분리되어 있다.
+외부 실시간 연결과 브라우저용 WebSocket 경로가 분리되어 있다.
 
 1. KIS ↔ 서버: `KisRealtimeWebSocketClient`가 JDK WebSocket으로 연결한다.
-2. 브라우저 ↔ 서버: `/ws/stocks`에 `StockRealtimeWebSocketHandler`, `/ws/market-data`에 `MarketRealtimeWebSocketHandler`가 연결된다.
+2. 브라우저 시세 ↔ 서버: `/ws/stocks`에 `StockRealtimeWebSocketHandler`, `/ws/market-data`에 `MarketRealtimeWebSocketHandler`가 연결된다.
+3. 브라우저 채팅 ↔ 서버: `/ws/chat`에 `StockChatWebSocketHandler`가 연결되고 `HttpSessionHandshakeInterceptor`가 로그인 HTTP 세션 정보를 전달한다.
 
 KIS payload는 `KisRealtimeStore`에 최신값으로 저장되고 Spring 동기 이벤트로 발행된다. `StockRealtimeClientSessionService`와 `MarketRealtimeClientSessionService`는 구독 브라우저에 JSON을 보내며, `StockTradingRealtimeExecutionListener`는 같은 이벤트로 체결을 시도한다.
+
+종목 채팅의 `JOIN_ROOM`, `LEAVE_ROOM`, `SEND_MESSAGE`, `EDIT_MESSAGE`, `DELETE_MESSAGE` 명령은 `StockChatClientSessionService`가 처리한다. 메시지 작성·수정·소프트 삭제와 답글 관계는 MySQL의 `stock_chat_message`에 저장한다. 수정·삭제 권한은 WebSocket payload의 사용자 값이 아니라 handshake에서 전달된 Spring Security `SecurityContext`의 `FinMateAuthenticatedPrincipal`과 메시지 작성자를 비교해 판단한다. 삭제된 메시지 행은 답글 연결을 보존하기 위해 남기고 API 응답에서는 원문을 숨긴다. 종목별 연결 세션과 접속 인원, 실시간 fan-out은 현재 단일 JVM 메모리에 있으므로 다중 인스턴스에서는 Redis Pub/Sub 같은 별도 전파 계층이 필요하다.
 
 ## 6. 트랜잭션 경계와 락
 

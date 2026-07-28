@@ -19,6 +19,9 @@ erDiagram
     Stock ||--o{ StockTradeTransaction : target
     Stock ||--o| DomesticStockMetadata : has
     Stock ||--o| OverseasStockMetadata : has
+    Stock ||--o{ StockChatMessage : discusses
+    User ||--o{ StockChatMessage : writes
+    StockChatMessage o|--o{ StockChatMessage : replies
     StockOrderReservation o|--o| StockOrder : converts_to
     StockOrder ||--o{ StockTradeTransaction : executions
 ```
@@ -108,7 +111,17 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 - 국내 기초 재무 화면 표시는 마스터파일 단위에 맞춰 시가총액·손익 항목은 억 원, 자본금·가격 항목은 원, 상장주식수는 주 단위 환산값을 사용한다.
 - 주문, 예약, 보유, 체결 기록의 공통 참조
 
-## 9. StockOrder
+## 9. StockChatMessage
+
+종목별 실시간 대화 한 건을 저장한다.
+
+- `Stock`과 작성자 `User`, 최대 500자의 내용, 작성·수정·삭제 시각을 저장한다.
+- `parentMessage` 자기참조로 답글 대상을 보존하며 현재 화면에서는 한 단계 들여쓰기로 표현한다.
+- 작성자는 본인 메시지만 수정·삭제할 수 있고 권한은 서버의 로그인 세션을 기준으로 검증한다.
+- 삭제는 행을 제거하지 않는 소프트 삭제다. 기존 답글 관계는 유지하고 사용자 응답에서는 삭제된 원문을 노출하지 않는다.
+- `(stock_id, id)` 인덱스와 ID 커서를 사용해 종목별 과거 기록을 최신 구간부터 조회한다.
+
+## 10. StockOrder
 
 접수된 모의 매수·매도 주문 한 건이다.
 
@@ -121,7 +134,7 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 
 현재 실행 서비스는 `remainingQuantity` 전체를 체결 수량으로 사용한다. `PARTIALLY_FILLED` 상태를 만들 수 있는 도메인 메서드는 있으나 실제 부분 체결 입력은 **현재 구현되지 않음**.
 
-## 10. StockOrderReservation
+## 11. StockOrderReservation
 
 가격 조건이 만족될 때 일반 주문을 만들기 위한 예약이다.
 
@@ -131,7 +144,7 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 - 상태: `ACTIVE`, `TRIGGERED`, `CANCELED`, `EXPIRED`, `FAILED`
 - 조건 충족 시 자산 잠금을 새로 만들지 않고 기존 예약 값을 `StockOrder`에 승계
 
-## 10. StockHolding
+## 12. StockHolding
 
 투자 계좌별 종목 보유 상태다.
 
@@ -141,7 +154,7 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 - 매수 체결 시 가중 평균 매수가와 수량 갱신
 - 매도 체결 시 잠금과 총 수량 감소, 전량 매도 시 평균가 0
 
-## 11. StockTradeTransaction
+## 13. StockTradeTransaction
 
 실제 모의 체결 결과를 불변 기록으로 저장한다.
 
@@ -153,7 +166,7 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 
 `externalExecutionId`는 현재 KIS에서 받은 체결 ID가 아니라 내부에서 새 UUID로 생성된다. 명칭과 실제 의미가 달라 **코드상 의도가 불명확함**.
 
-## 12. 도메인 제약과 금융 계약
+## 14. 도메인 제약과 금융 계약
 
 잔액·예수금·보유 수량·잠금·주문 종료 상태·원장에 관한 공통 정합성 계약은 [금융 불변식](FINANCIAL_INVARIANTS.md)이 기준이다. 이 문서는 계약을 반복하지 않고 엔티티의 구조와 책임을 설명한다. 주문 상태별 처리 순서는 [주식 거래 흐름](TRADING_FLOW.md), 현재 트랜잭션과 락 획득 순서는 [아키텍처](ARCHITECTURE.md)를 함께 본다.
 

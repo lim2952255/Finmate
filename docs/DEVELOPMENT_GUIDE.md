@@ -206,6 +206,13 @@ STOCK_RANKING_INITIAL_DELAY_MILLIS=600000 ./gradlew bootRun
 - KIS approval key 발급과 WebSocket endpoint 확인
 - 최신값은 JVM 메모리이므로 재시작 직후에는 새 payload가 올 때까지 비어 있다.
 
+### 종목 채팅 연결 또는 기록 조회 실패
+
+- 채팅 WebSocket은 `/ws/chat`, 과거 기록은 `/api/stocks/{stockId}/chat/messages`를 사용한다.
+- `/ws/chat` handshake에는 로그인 HTTP 세션이 필요하다. 로그인 쿠키 없이 연결하면 정책 위반 상태로 종료된다.
+- 메시지 기록은 MySQL에 남지만 접속 인원과 실시간 전파 대상은 단일 애플리케이션 JVM 메모리에 있다.
+- 여러 애플리케이션 인스턴스를 실행하면 인스턴스 사이 실시간 메시지가 자동 전파되지 않는다. 현재 Redis Pub/Sub은 구현되지 않았다.
+
 ### Spring Security 로그인 문제
 
 `SecurityConfig`의 공개 경로, 로그인 처리 URL(`/login`), 아이디 파라미터명(`userId`)과 로그아웃 URL(`/logout`)을 확인한다. 인증 정보는 `FinMateUserDetailsService`가 조회하고 `BCryptPasswordEncoder`가 비밀번호를 검증한다. 로그인·로그아웃 POST는 CSRF 토큰이 필요하며 Thymeleaf의 `th:action` 폼은 토큰을 자동 렌더링한다. 인증 성공 상태는 서버 HTTP session의 `SecurityContext`에 저장된다.

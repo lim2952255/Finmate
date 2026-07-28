@@ -28,8 +28,16 @@ public abstract class MySqlIntegrationTestSupport {
 	static final String USERNAME = "finmate_test_user";
 	static final String PASSWORD = "finmate_test_password";
 
-	// MySQLContainer는 TestContainer가 제공하 MYSQL 전용 컨테이너로, mysql:8.4라는 도커이미지를 기반으로 컨테이너를 생성한다.
+	// MySQLContainer는 TestContainer가 제공하는 MYSQL 전용 컨테이너로, mysql:8.4라는 도커이미지를 기반으로 컨테이너관련 설정
 	// 이때 MYSQL 컨테이너는 static final로 만듦으로서 테스트내부에서 공유하도록 구성한다.
+	/*
+	* Docker 이미지: mysql:8.4
+	* DB 이름: finmate_test
+	* 사용자명: finmate_test_user
+	* 비밀번호: finmate_test_password
+	* 재사용 설정: 비활성화
+	* 와 같은 컨테이너 설정정보를 등록한다.
+	* */
 	private static final MySQLContainer<?> MYSQL = new MySQLContainer<>(DockerImageName.parse("mysql:8.4"))
 		// 컨테이너 설정
 		.withDatabaseName(DATABASE_NAME)
@@ -42,7 +50,12 @@ public abstract class MySqlIntegrationTestSupport {
 
 	// MySqlIntegrationTestSupport가 JVM에 처음 로딩될 MYSQL 컨테이너를 실행한다.
 	static {
+		// MYSQL.start()를 호출하면 TestContainers가 로컬 또는 Runners의 도커에 연결한다.
+		// 해당 도커를 기반으로 컨테이너 설정정보를 기반으로 이미지를 빌드하고, 컨테이너를 생성 및 실행한다.
+		// 임의의 호스트 포트 컨테이너의 3306 포트에 연결한다.
+		// 이때 Ryuk이라는 리소스 정리용 컨테이너를 함께 실행한다.
 		MYSQL.start();
+		// test코드가 종료되어 테스트 JVM이 종료될때 Ryuk 컨테이너가 실행되고 있든 TestContainers의 실행중이던 컨테이너들을 정리한다.
 	}
 
 	// 컨테이너 접속 정보를 Spring Environment에 동적으로 등록하며, 이는 application-testcontainers.properties보다 우선적으로 적용된다.
