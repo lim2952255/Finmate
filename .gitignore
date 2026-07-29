@@ -52,6 +52,7 @@ SUMMARY.md
 *.md
 !AGENTS.md
 !README.md
+!DESIGN.md
 !docs/
 !docs/**/*.md
 .claude/

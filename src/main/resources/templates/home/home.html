@@ -11,28 +11,82 @@
     <div th:replace="~{/layout/header :: header}"></div>
 
     <main class="main">
-        <section class="content">
-            <div class="hero">
-                <h1>금융 생활을 한곳에서 관리하세요</h1>
+        <section class="content home-content">
+            <div class="hero home-hero">
+                <div class="home-hero-copy">
+                    <span class="eyebrow">MY FINANCE, CLEARLY</span>
+                    <h1>흩어진 금융 생활을<br><span>한눈에 관리하세요</span></h1>
+                    <p>
+                        계좌 흐름부터 모의투자 포트폴리오까지,
+                        필요한 금융 정보를 하나의 대시보드에서 명확하게 확인하세요.
+                    </p>
+                    <div class="hero-actions">
+                        <a class="button-link button-link-primary" th:href="@{/investments/portfolio}">포트폴리오 확인</a>
+                        <a class="button-link button-link-secondary" th:href="@{/investments/stocks/search}">종목 둘러보기</a>
+                    </div>
+                </div>
+
+                <div class="hero-dashboard" aria-hidden="true">
+                    <div class="hero-dashboard-header">
+                        <span>자산 현황</span>
+                        <span class="status-dot">업데이트됨</span>
+                    </div>
+                    <strong>₩ 24,680,000</strong>
+                    <span class="hero-return">+ 8.42% 이번 달</span>
+                    <div class="hero-chart">
+                        <span style="height: 34%"></span>
+                        <span style="height: 45%"></span>
+                        <span style="height: 42%"></span>
+                        <span style="height: 58%"></span>
+                        <span style="height: 66%"></span>
+                        <span style="height: 62%"></span>
+                        <span style="height: 84%"></span>
+                    </div>
+                    <div class="hero-dashboard-footer">
+                        <span><i class="legend-dot account-dot"></i>계좌</span>
+                        <span><i class="legend-dot investment-dot"></i>투자</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="home-section-heading">
+                <div>
+                    <span class="eyebrow">QUICK ACCESS</span>
+                    <h2>무엇을 확인할까요?</h2>
+                </div>
                 <p>
-                    FinMate는 계좌, 거래내역, 모의투자, 금융 뉴스 분석을 함께 다루는
-                    통합 금융 플랫폼입니다.
+                    자주 사용하는 금융 기능으로 바로 이동하세요.
                 </p>
             </div>
 
-            <div class="menu">
-                <div class="menu-item">
-                    <a th:href="@{/accounts}">계좌 관리</a>
-                    <span>계좌와 거래내역 확인</span>
-                </div>
-                <div class="menu-item">
-                    <a th:href="@{/investments}">증권</a>
-                    <span>시세와 관심종목 조회</span>
-                </div>
-                <div class="menu-item">
-                    <a th:href="@{/portfolio}">포트폴리오</a>
-                    <span>자산과 수익률 확인</span>
-                </div>
+            <div class="menu home-menu">
+                <a class="menu-item menu-item-account" th:href="@{/accounts}">
+                    <span class="menu-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M3 9.5 12 4l9 5.5M5 10v8m4-8v8m6-8v8m4-8v8M3 20h18"/></svg>
+                    </span>
+                    <span class="menu-kicker">BANKING</span>
+                    <strong>계좌 관리</strong>
+                    <span class="menu-description">잔액과 거래내역, 이체 한도를 확인하고 관리하세요.</span>
+                    <span class="menu-arrow">계좌로 이동 <b aria-hidden="true">→</b></span>
+                </a>
+                <a class="menu-item menu-item-investment" th:href="@{/investments}">
+                    <span class="menu-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M4 19V9m5 10V5m6 14v-7m5 7V3M3 21h18"/></svg>
+                    </span>
+                    <span class="menu-kicker">INVESTMENT</span>
+                    <strong>투자</strong>
+                    <span class="menu-description">종목, 관심 목록, 시세와 주문 내역을 살펴보세요.</span>
+                    <span class="menu-arrow">투자로 이동 <b aria-hidden="true">→</b></span>
+                </a>
+                <a class="menu-item menu-item-portfolio" th:href="@{/investments/portfolio}">
+                    <span class="menu-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M4 19V5m0 14h16M7 15l4-4 3 2 5-6"/><path d="m16 7 3-.2.2 3"/></svg>
+                    </span>
+                    <span class="menu-kicker">PORTFOLIO</span>
+                    <strong>포트폴리오</strong>
+                    <span class="menu-description">보유 자산의 평가금액과 수익률 변화를 확인하세요.</span>
+                    <span class="menu-arrow">포트폴리오 확인 <b aria-hidden="true">→</b></span>
+                </a>
             </div>
         </section>
     </main>

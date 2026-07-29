@@ -11,13 +11,13 @@
     <div th:replace="~{/layout/header :: header}"></div>
 
     <main class="main">
-        <section class="content">
+        <section class="content transaction-page">
             <div class="page-heading">
                 <h1>거래내역</h1>
                 <p>일반 계좌의 입금, 출금, 이체 흐름을 계좌별 또는 전체 계좌 기준으로 확인합니다.</p>
             </div>
 
-            <section>
+            <section class="account-selector">
                 <h2>계좌 선택</h2>
                 <p class="action-row">
                     <a th:href="@{/accounts/transactions(period=${accountTransactionPageInfo.period}, page=0)}">전체 계좌</a>
@@ -109,14 +109,16 @@
                         <div class="summary-grid">
                             <div class="metric-card">
                                 <span class="metric-label">총 입금액</span>
-                                <span class="metric-value money-positive">
+                                <span class="metric-value"
+                                      th:classappend="${summary.totalDepositAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? ' money-positive' : ' money-flat'}">
                                     <span th:text="${#numbers.formatDecimal(summary.totalDepositAmount, 1, 'COMMA', summary.currencyCode.fractionDigits, 'POINT')}">0</span>
                                     <span th:text="${summary.currencyCode.name()}">KRW</span>
                                 </span>
                             </div>
                             <div class="metric-card">
                                 <span class="metric-label">총 출금액</span>
-                                <span class="metric-value money-negative">
+                                <span class="metric-value"
+                                      th:classappend="${summary.totalWithdrawalAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? ' money-negative' : ' money-flat'}">
                                     <span th:text="${#numbers.formatDecimal(summary.totalWithdrawalAmount, 1, 'COMMA', summary.currencyCode.fractionDigits, 'POINT')}">0</span>
                                     <span th:text="${summary.currencyCode.name()}">KRW</span>
                                 </span>
@@ -124,7 +126,7 @@
                             <div class="metric-card">
                                 <span class="metric-label">순액</span>
                                 <span class="metric-value"
-                                      th:classappend="${summary.netAmount.compareTo(T(java.math.BigDecimal).ZERO) < 0} ? ' money-negative' : ' money-positive'">
+                                      th:classappend="${summary.netAmount.compareTo(T(java.math.BigDecimal).ZERO) < 0 ? ' money-negative' : (summary.netAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? ' money-positive' : ' money-flat')}">
                                     <span th:if="${summary.netAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">+</span>
                                     <span th:text="${#numbers.formatDecimal(summary.netAmount, 1, 'COMMA', summary.currencyCode.fractionDigits, 'POINT')}">0</span>
                                     <span th:text="${summary.currencyCode.name()}">KRW</span>
@@ -135,7 +137,7 @@
                 </div>
             </section>
 
-            <section>
+            <section class="transaction-list">
                 <h2>거래내역 목록</h2>
 
                 <p th:if="${#lists.isEmpty(accountTransactionPageInfo.transactions)}">
@@ -143,7 +145,7 @@
                 </p>
 
                 <div class="table-scroll" th:unless="${#lists.isEmpty(accountTransactionPageInfo.transactions)}">
-                    <table class="records-table">
+                    <table class="records-table transaction-table">
                         <thead>
                         <tr>
                             <th>번호</th>
