@@ -11,7 +11,11 @@
             flex-wrap: wrap;
             align-items: end;
             gap: 12px;
-            margin-bottom: 16px;
+            margin: 0;
+            padding: 16px;
+            background: #f7f9fc;
+            border: 1px solid var(--color-border);
+            border-radius: 14px;
         }
 
         .portfolio-toolbar label {
@@ -24,17 +28,40 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 14px;
-            margin-bottom: 18px;
+            margin: 0;
         }
 
         .portfolio-summary-card {
+            position: relative;
             display: grid;
             gap: 12px;
-            padding: 18px;
-            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            min-height: 188px;
+            padding: 22px;
+            overflow: hidden;
+            background:
+                    radial-gradient(circle at 100% 0%, rgba(49, 91, 234, 0.10), transparent 11rem),
+                    linear-gradient(145deg, #ffffff 0%, #f6f8fc 100%);
             border: 1px solid var(--color-border);
-            border-radius: var(--radius);
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+            border-radius: 16px;
+            box-shadow: 0 14px 32px rgba(30, 52, 90, 0.08);
+        }
+
+        .portfolio-summary-card::before {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: var(--color-primary);
+            content: "";
+        }
+
+        .portfolio-summary-card:has(.positive)::before {
+            background: var(--color-positive);
+        }
+
+        .portfolio-summary-card:has(.negative)::before {
+            background: var(--color-negative);
         }
 
         .portfolio-summary-heading {
@@ -58,9 +85,9 @@
 
         .portfolio-summary-value {
             display: block;
-            font-size: 26px;
+            font-size: clamp(25px, 3vw, 31px);
             line-height: 1.15;
-            color: #0f172a;
+            color: var(--color-heading);
         }
 
         .portfolio-summary-grid {
@@ -72,11 +99,24 @@
         .portfolio-summary-item {
             display: grid;
             gap: 4px;
+            padding: 10px 11px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid #e4eaf2;
+            border-radius: 10px;
         }
 
         .portfolio-summary-label {
             color: #64748b;
             font-size: 13px;
+            font-weight: 800;
+        }
+
+        .portfolio-summary-item:has(.positive) .portfolio-summary-label {
+            color: var(--color-positive);
+        }
+
+        .portfolio-summary-item:has(.negative) .portfolio-summary-label {
+            color: var(--color-negative);
         }
 
         .portfolio-summary-status {
@@ -85,7 +125,8 @@
         }
 
         .industry-allocation {
-            margin-bottom: 18px;
+            margin: 0;
+            box-shadow: none;
         }
 
         .industry-allocation-grid {
@@ -100,7 +141,7 @@
             padding: 14px;
             background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
             border: 1px solid var(--color-border);
-            border-radius: var(--radius);
+            border-radius: 13px;
             box-shadow: 0 8px 20px rgba(15, 23, 42, 0.045);
         }
 
@@ -175,18 +216,57 @@
         }
 
         .positive {
-            color: #dc2626;
-            font-weight: 800;
+            color: var(--color-positive);
+            font-weight: 900;
         }
 
         .negative {
-            color: #2563eb;
-            font-weight: 800;
+            color: var(--color-negative);
+            font-weight: 900;
         }
 
         .flat {
             color: #64748b;
             font-weight: 800;
+        }
+
+        .portfolio-profit,
+        .portfolio-profit-rate {
+            min-width: 105px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .records-table td.portfolio-profit.positive,
+        .records-table td.portfolio-profit-rate.positive {
+            color: var(--color-positive);
+            background: var(--color-positive-soft);
+        }
+
+        .records-table td.portfolio-profit.negative,
+        .records-table td.portfolio-profit-rate.negative {
+            color: var(--color-negative);
+            background: var(--color-negative-soft);
+        }
+
+        .portfolio-table th:last-child,
+        .portfolio-table td:last-child {
+            min-width: 185px;
+        }
+
+        .portfolio-table td:last-child .secondary-line {
+            margin-top: 7px;
+            white-space: normal;
+        }
+
+        @media (max-width: 720px) {
+            .portfolio-summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .portfolio-toolbar > label,
+            .portfolio-toolbar select {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -196,7 +276,11 @@
 
     <main class="main">
         <section class="content">
-            <h1>포트폴리오</h1>
+            <div class="page-heading">
+                <span class="eyebrow">PORTFOLIO</span>
+                <h1>내 포트폴리오</h1>
+                <p>보유 종목의 실시간 평가금액과 손익, 업종별 투자 비중을 한눈에 확인하세요.</p>
+            </div>
 
             <form class="portfolio-toolbar" th:action="@{/investments/portfolio}" method="get"
                   th:if="${!#lists.isEmpty(stockPortfolioPageInfo.investments)}">

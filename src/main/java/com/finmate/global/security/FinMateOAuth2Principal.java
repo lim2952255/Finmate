@@ -13,6 +13,7 @@ import java.util.Set;
 // 외부 공급자를 통해 로그인을 하게 되면 OAuth2User라는 객체에 로그인 정보를 담아준다.
 // 하지만 해당 객체 내에 속한 정보가 충분하지 않거나, 불필요할 수 있기 때문, 외부 인증 정보와 FinMate 내부 사용자 정보를 합쳐서 FinMateAuthenticatedPrincipal로 생성한다.
 // Spring Security가 로그인이 성공한 이후에도 계속 보관하고 사용할 최종 인증 사용자 객체
+// OAuth2 로그인 사용자들의 정보를 담을 Principal
 public final class FinMateOAuth2Principal
     // OAuth2User가 Principal 인터페이스를 상속받기 떄문에, FinMateOAuth2Principal을 Principal로 사용할 수 있다.
         implements OAuth2User, FinMateAuthenticatedPrincipal {

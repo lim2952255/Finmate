@@ -11,13 +11,13 @@
     <div th:replace="~{/layout/header :: header}"></div>
 
     <main class="main">
-        <section class="content">
+        <section class="content transaction-page">
             <div class="page-heading">
                 <h1>환전 내역</h1>
                 <p>증권계좌 안에서 발생한 KRW/USD 환전 기록과 환전 전후 잔고를 확인합니다.</p>
             </div>
 
-            <section>
+            <section class="account-selector">
                 <h2>증권계좌 선택</h2>
                 <p class="action-row">
                     <a th:href="@{/investments/currency-exchange/transactions(period=${investmentCurrencyExchangeTransactionPageInfo.period}, page=0)}">
@@ -99,7 +99,7 @@
                 </form>
             </section>
 
-            <section>
+            <section class="transaction-list">
                 <h2>환전 내역 목록</h2>
 
                 <p th:if="${#lists.isEmpty(investmentCurrencyExchangeTransactionPageInfo.transactions)}">
@@ -107,7 +107,7 @@
                 </p>
 
                 <div class="table-scroll" th:unless="${#lists.isEmpty(investmentCurrencyExchangeTransactionPageInfo.transactions)}">
-                    <table class="records-table">
+                    <table class="records-table transaction-table">
                         <thead>
                         <tr>
                             <th>번호</th>

@@ -8,19 +8,35 @@
 
 <!-- 공통 상단 영역 -->
 <header class="header" th:fragment="header">
-    <a class="logo" th:href="@{/home}">FinMate</a>
+    <a class="logo" th:href="@{/home}" aria-label="FinMate 홈">
+        <span class="logo-mark" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+        </span>
+        <span>FinMate</span>
+    </a>
 
     <!--로그인 여부에 따라서 header에 노출되는 내용이 달라진다.-->
-    <div th:if="${user != null}">
-        <p th:text="|${user.displayName}님 환영합니다!|"></p>
+    <div class="header-account" th:if="${user != null}">
+        <nav class="header-nav" aria-label="주요 메뉴">
+            <a th:href="@{/accounts}">계좌</a>
+            <a th:href="@{/investments}">투자</a>
+            <a th:href="@{/investments/portfolio}">포트폴리오</a>
+        </nav>
+        <p class="header-welcome">
+            <span class="user-avatar" aria-hidden="true"
+                  th:text="${#strings.isEmpty(user.displayName) ? 'F' : #strings.substring(user.displayName, 0, 1)}">F</span>
+            <span><strong th:text="${user.displayName}">사용자</strong>님</span>
+        </p>
         <form th:action="@{/logout}" method="post">
-            <button type="submit">로그아웃</button>
+            <button class="button-quiet" type="submit">로그아웃</button>
         </form>
-        <a th:href="@{/accounts}">마이페이지</a>
+        <a class="header-cta" th:href="@{/accounts}">마이페이지</a>
     </div>
-    <div th:if="${user == null}">
-        <a th:href="@{/signup}">회원가입</a>
-        <a th:href="@{/login}">로그인</a>
+    <div class="header-account" th:if="${user == null}">
+        <a class="header-link" th:href="@{/signup}">회원가입</a>
+        <a class="header-cta" th:href="@{/login}">로그인</a>
     </div>
 </header>
 

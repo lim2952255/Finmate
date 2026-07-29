@@ -11,13 +11,13 @@
     <div th:replace="~{/layout/header :: header}"></div>
 
     <main class="main">
-        <section class="content">
+        <section class="content transaction-page">
             <div class="page-heading">
                 <h1>예수금 입출금 내역</h1>
                 <p>일반 계좌와 증권계좌 사이의 예수금 입금, 출금 흐름을 확인합니다.</p>
             </div>
 
-            <section>
+            <section class="account-selector">
                 <h2>증권계좌 선택</h2>
                 <p class="action-row">
                     <a th:href="@{/investments/securityCashTransaction(period=${securitiesCashTransactionPageInfo.period}, page=0)}">전체 증권계좌</a>
@@ -106,18 +106,20 @@
                 <div class="summary-grid">
                     <div class="metric-card">
                         <span class="metric-label">총 입금액</span>
-                        <span class="metric-value money-positive"
+                        <span class="metric-value"
+                              th:classappend="${securitiesCashTransactionPageInfo.transactionSummary.totalDepositAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? ' money-positive' : ' money-flat'}"
                               th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.totalDepositAmount, 1, 'COMMA', 0, 'POINT')}">0</span>
                     </div>
                     <div class="metric-card">
                         <span class="metric-label">총 출금액</span>
-                        <span class="metric-value money-negative"
+                        <span class="metric-value"
+                              th:classappend="${securitiesCashTransactionPageInfo.transactionSummary.totalWithdrawalAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? ' money-negative' : ' money-flat'}"
                               th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.totalWithdrawalAmount, 1, 'COMMA', 0, 'POINT')}">0</span>
                     </div>
                     <div class="metric-card">
                         <span class="metric-label">순액</span>
                         <span class="metric-value"
-                              th:classappend="${securitiesCashTransactionPageInfo.transactionSummary.netAmount.compareTo(T(java.math.BigDecimal).ZERO) < 0} ? ' money-negative' : ' money-positive'">
+                              th:classappend="${securitiesCashTransactionPageInfo.transactionSummary.netAmount.compareTo(T(java.math.BigDecimal).ZERO) < 0 ? ' money-negative' : (securitiesCashTransactionPageInfo.transactionSummary.netAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? ' money-positive' : ' money-flat')}">
                             <span th:if="${securitiesCashTransactionPageInfo.transactionSummary.netAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">+</span>
                             <span th:text="${#numbers.formatDecimal(securitiesCashTransactionPageInfo.transactionSummary.netAmount, 1, 'COMMA', 0, 'POINT')}">0</span>
                         </span>
@@ -125,7 +127,7 @@
                 </div>
             </section>
 
-            <section>
+            <section class="transaction-list">
                 <h2>예수금 거래내역 목록</h2>
 
                 <p th:if="${#lists.isEmpty(securitiesCashTransactionPageInfo.transactions)}">
@@ -133,7 +135,7 @@
                 </p>
 
                 <div class="table-scroll" th:unless="${#lists.isEmpty(securitiesCashTransactionPageInfo.transactions)}">
-                    <table class="records-table">
+                    <table class="records-table transaction-table">
                         <thead>
                         <tr>
                             <th>번호</th>
