@@ -3,6 +3,7 @@ package com.finmate.domain.stock.dto.trading;
 import com.finmate.domain.investment.CurrencyCode;
 import com.finmate.domain.investment.Investment;
 import com.finmate.domain.stock.dto.industry.StockIndustryClassification;
+import com.finmate.domain.stock.Stock;
 import com.finmate.domain.stock.StockMarketType;
 import com.finmate.domain.stock.market.StockMarketSchedules;
 import com.finmate.domain.stock.trading.StockHolding;
@@ -84,13 +85,13 @@ public class StockPortfolioPageInfo {
         this.stockTradingAvailableByMarketType = Arrays.stream(StockMarketType.values())
                 .collect(Collectors.toMap(
                         marketType -> marketType,
-                        StockMarketSchedules::isTradingTimeNow
+                        StockMarketSchedules::isMarketTradingTimeNow
                 ));
         // 각 종목에 대한 거래 가능 시간 설명
         this.stockTradingTimeDescriptionsByMarketType = Arrays.stream(StockMarketType.values())
                 .collect(Collectors.toMap(
                         marketType -> marketType,
-                        StockMarketSchedules::tradingTimeDescription
+                        StockMarketSchedules::describeTradingHours
                 ));
     }
 
@@ -115,6 +116,11 @@ public class StockPortfolioPageInfo {
         return classification == null ? unknownIfBlank(null) : classification.displayName();
     }
 
+    public String getIndustryGroupName(Long stockId) {
+        StockIndustryClassification classification = industryClassificationsByStockId.get(stockId);
+        return classification == null ? unknownIfBlank(null) : classification.allocationGroupNameOrDefault();
+    }
+
     public BigDecimal getValuationPrice(Long stockId) {
         StockPortfolioPriceSnapshot snapshot = priceSnapshotsByStockId.get(stockId);
         return snapshot == null ? null : snapshot.price();
@@ -133,8 +139,16 @@ public class StockPortfolioPageInfo {
         return stockTradingAvailableByMarketType.getOrDefault(marketType, false);
     }
 
+    public boolean isStockTradingAvailable(Stock stock) {
+        return StockMarketSchedules.isTradingTimeNow(stock);
+    }
+
     public String getStockTradingTimeDescription(StockMarketType marketType) {
         return stockTradingTimeDescriptionsByMarketType.getOrDefault(marketType, "");
+    }
+
+    public String getStockTradingTimeDescription(Stock stock) {
+        return StockMarketSchedules.describeTradingHours(stock);
     }
 
     private List<StockPortfolioIndustryAllocation> calculateIndustryAllocations() {

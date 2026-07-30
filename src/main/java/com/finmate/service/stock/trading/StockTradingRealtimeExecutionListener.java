@@ -1,6 +1,7 @@
 package com.finmate.service.stock.trading;
 
 import com.finmate.domain.stock.Stock;
+import com.finmate.domain.stock.market.StockRealtimeMarketSession;
 import com.finmate.infra.kis.stock.realtime.KisRealtimePayload;
 import com.finmate.infra.kis.stock.realtime.KisRealtimePayloadReceivedEvent;
 import com.finmate.repository.stock.StockRepository;
@@ -30,6 +31,11 @@ public class StockTradingRealtimeExecutionListener {
         if (!payload.api().isOrderbook() && !payload.api().name().endsWith("_STOCK_TRADE")) {
             return;
         }
+        StockRealtimeMarketSession marketSession =
+                StockRealtimeMarketSession.resolve(payload.api(), payload.values());
+        if (!marketSession.isTradingSession()) {
+            return;
+        }
 
         // 실시간으로 받은 종목을 찾은 다음, 주문 처리 로직 수행
         stockRepository.findByRealtimeKey(payload.trKey())
@@ -37,7 +43,7 @@ public class StockTradingRealtimeExecutionListener {
                 .ifPresent(stockId -> {
                     try {
                         // 종목의 실시간 체결가 및 호가를 받으면, 이 데이터를 기반으로 주문을 체결할지 말지 여부를 결정하고, 주문을 체결하는 메서드
-                        stockTradingExecutionService.processRealtimeUpdate(stockId);
+                        stockTradingExecutionService.processRealtimeUpdate(stockId, marketSession);
                     } catch (RuntimeException e) {
                         log.warn("실시간 시세 기반 주문 처리에 실패했습니다. stockId={}", stockId, e);
                     }

@@ -133,9 +133,9 @@ class StockHoldingCreationConcurrencyTest extends StockSettlementIntegrationTest
     private static MockedStatic<StockMarketSchedules> openMarket() {
         // StockMarketSchedules 객체의 static 메서드를 수정하기 위해서 MockedStatic 객체로 감싼다.
         MockedStatic<StockMarketSchedules> schedules = mockStatic(StockMarketSchedules.class);
-        // StockMarketSchedules의 isTradingTime메서드가 호출될 경우, MarketType이 KOSPI인 경우에는 항상 true만 리턴하도록 수정한다.
+        // StockMarketSchedules의 종목별 거래시간 판정이 항상 true를 반환하도록 설정한다.
         schedules.when(() -> StockMarketSchedules.isTradingTime(
-                eq(StockMarketType.KOSPI), any(ZonedDateTime.class))).thenReturn(true);
+                any(Stock.class), any(ZonedDateTime.class))).thenReturn(true);
         return schedules;
     }
 }

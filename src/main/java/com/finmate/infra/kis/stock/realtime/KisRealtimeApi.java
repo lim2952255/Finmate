@@ -139,6 +139,7 @@ public enum KisRealtimeApi {
     OVERSEAS_STOCK_TRADE(
             "HDFSCNT0",
             List.of(
+                    "RSYM",
                     "SYMB",
                     "ZDIV",
                     "TYMD",
@@ -165,7 +166,7 @@ public enum KisRealtimeApi {
                     "STRN",
                     "MTYP"
             ),
-            "SYMB",
+            "RSYM",
             "LAST",
             "DIFF",
             "RATE",
@@ -174,6 +175,7 @@ public enum KisRealtimeApi {
     OVERSEAS_STOCK_ORDERBOOK(
             "HDFSASP0",
             List.of(
+                    "rsym",
                     "symb",
                     "zdiv",
                     "xymd",
@@ -191,7 +193,7 @@ public enum KisRealtimeApi {
                     "dbid1",
                     "dask1"
             ),
-            "symb",
+            "rsym",
             "pask1",
             "",
             "",

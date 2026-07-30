@@ -50,6 +50,7 @@ public class StockDetailPageInfo {
     private final String latestPriceChangeClass;
     private final BigDecimal maxChartPrice;
     private final BigDecimal minChartPrice;
+    private final String currencySymbol;
     private final int priceDecimalDigits;
     private final int savedDailyPriceCount;
     private final List<StockDailyPrice> dailyPrices;
@@ -99,6 +100,7 @@ public class StockDetailPageInfo {
         this.chartEndDate = chartEndDate;
         this.expectedLatestTradeDate = expectedLatestTradeDate;
         this.savedDailyPriceCount = savedDailyPriceCount;
+        this.currencySymbol = resolveCurrencySymbol(stock);
         this.priceDecimalDigits = resolvePriceDecimalDigits(stock);
         this.dailyPrices = dailyPrices.stream()
                 .filter(this::hasValidPrice)
@@ -161,11 +163,13 @@ public class StockDetailPageInfo {
     }
 
     public String formatPrice(BigDecimal value) {
-        return formatDecimal(value, priceDecimalDigits);
+        String formattedValue = formatDecimal(value, priceDecimalDigits);
+        return value == null ? formattedValue : currencySymbol + formattedValue;
     }
 
     public String formatTradeAmount(BigDecimal value) {
-        return formatDecimal(value, priceDecimalDigits);
+        String formattedValue = formatDecimal(value, priceDecimalDigits);
+        return value == null ? formattedValue : currencySymbol + formattedValue;
     }
 
     public String formatVolume(Long value) {
@@ -503,7 +507,12 @@ public class StockDetailPageInfo {
     }
 
     private String formatSignedPrice(BigDecimal value) {
-        return DisplayFormatUtils.formatSignedDecimal(value, priceDecimalDigits);
+        if (value == null) {
+            return DisplayFormatUtils.formatSignedDecimal(null, priceDecimalDigits);
+        }
+
+        String sign = value.signum() > 0 ? "+" : value.signum() < 0 ? "-" : "";
+        return sign + currencySymbol + formatDecimal(value.abs(), priceDecimalDigits);
     }
 
     private String formatSignedRate(BigDecimal value) {
@@ -528,6 +537,18 @@ public class StockDetailPageInfo {
         }
 
         return 2;
+    }
+
+    private String resolveCurrencySymbol(Stock stock) {
+        if (stock.getCurrency() != null && "KRW".equalsIgnoreCase(stock.getCurrency())) {
+            return "₩";
+        }
+
+        if (stock.getCurrency() != null && "USD".equalsIgnoreCase(stock.getCurrency())) {
+            return "$";
+        }
+
+        return "";
     }
 
     private StockPriceMarker createHighestPriceMarker(List<StockDailyPrice> dailyPrices,

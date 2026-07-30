@@ -51,9 +51,10 @@ public class StockTradingLookupService {
 
     // 현재 시간이 거래가능 시간대인지 확인
     void validateTradingTime(Stock stock) {
-        if (!StockMarketSchedules.isTradingTime(stock.getMarketType(), ZonedDateTime.now())) {
-            throw new RuntimeException("정규장 또는 장후 시간외 거래 시간에만 주문할 수 있습니다. 거래 가능 시간: "
-                    + StockMarketSchedules.tradingTimeDescription(stock.getMarketType()));
+        ZonedDateTime now = ZonedDateTime.now();
+        if (!StockMarketSchedules.isTradingTime(stock, now)) {
+            throw new RuntimeException("현재 거래 가능한 시간이 아닙니다. 거래 가능 시간: "
+                    + StockMarketSchedules.describeTradingHours(stock));
         }
     }
 

@@ -64,8 +64,8 @@ public class StockTradingQueryService {
                 realtimePriceService.findExecutablePrice(stock, StockOrderSide.BUY).orElse(null), // 매수 기준 체결가
                 realtimePriceService.findExecutablePrice(stock, StockOrderSide.SELL).orElse(null), // 메도 기준 체결가
                 realtimePriceService.findCurrentTradePrice(stock).orElse(null), // 실시간 체결가
-                StockMarketSchedules.isTradingTimeNow(stock.getMarketType()),
-                StockMarketSchedules.tradingTimeDescription(stock.getMarketType()));
+                StockMarketSchedules.isTradingTimeNow(stock),
+                StockMarketSchedules.describeTradingHours(stock));
     }
 
     // 포트폴리오 페이지 정보를 DTO에 담아서 리턴
