@@ -268,6 +268,15 @@
             font-weight: 600;
         }
 
+        .market-session-badge {
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #4338ca;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
         .chart-legend {
             display: flex;
             flex-wrap: wrap;
@@ -1409,6 +1418,8 @@
                                       class="chart-price-time"
                                       th:if="${stockDetailPageInfo.latestTradeDate != null}"
                                       th:text="${#temporals.format(stockDetailPageInfo.latestTradeDate, 'yyyy-MM-dd')}">2026-07-02</span>
+                                <span id="realtime-market-session"
+                                      class="market-session-badge">세션 확인 대기</span>
                             </div>
 
                             <div class="chart-legend" th:if="${stockDetailPageInfo.movingAverageLines != null and !#lists.isEmpty(stockDetailPageInfo.movingAverageLines)}">
@@ -1531,6 +1542,7 @@
                                             data-price-axis-x=${stockDetailPageInfo.priceAxisX},
                                             data-realtime-candle-x=${stockDetailPageInfo.realtimeCandleX},
                                             data-realtime-candle-width=${stockDetailPageInfo.realtimeCandleWidth},
+                                            data-currency-symbol=${stockDetailPageInfo.currencySymbol},
                                             data-price-decimal-digits=${stockDetailPageInfo.priceDecimalDigits}">
                                 </g>
 
@@ -1882,6 +1894,7 @@
         const priceAxisX = toNumber(candleLayer.dataset.priceAxisX);
         const realtimeCandleX = toNumber(candleLayer.dataset.realtimeCandleX);
         const realtimeCandleWidth = toNumber(candleLayer.dataset.realtimeCandleWidth);
+        const currencySymbol = candleLayer.dataset.currencySymbol || '';
         const priceDecimalDigits = Number(candleLayer.dataset.priceDecimalDigits || 0);
         const orderbookBody = document.getElementById('realtime-orderbook-body');
         const orderbookTime = document.getElementById('realtime-orderbook-time');
@@ -1969,6 +1982,7 @@
             const currentBadgePrice = document.getElementById('realtime-current-badge-price');
             const currentBadgeRate = document.getElementById('realtime-current-badge-rate');
             const tradeTime = document.getElementById('realtime-trade-time');
+            const marketSession = document.getElementById('realtime-market-session');
             const currentY = toPriceY(currentPrice);
 
             if (chartPrice) {
@@ -2014,7 +2028,13 @@
             }
 
             if (tradeTime) {
-                tradeTime.textContent = formatTradeTime(message.tradeTime);
+                tradeTime.textContent = formatTradeTimeDisplay(message.tradeTime, message.koreaTradeTime);
+            }
+            if (marketSession && message.marketSession) {
+                marketSession.textContent = message.marketSession;
+                marketSession.title = message.marketSessionCode
+                    ? `KIS 장 구분 코드: ${message.marketSessionCode}`
+                    : '';
             }
         }
 
@@ -2407,10 +2427,11 @@
         }
 
         function formatPrice(value) {
-            return new Intl.NumberFormat('ko-KR', {
+            const formattedValue = new Intl.NumberFormat('ko-KR', {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: priceDecimalDigits
             }).format(value);
+            return `${currencySymbol}${formattedValue}`;
         }
 
         function formatSignedPrice(value, direction) {
@@ -2447,10 +2468,11 @@
                 return '-';
             }
 
-            return new Intl.NumberFormat('ko-KR', {
+            const formattedValue = new Intl.NumberFormat('ko-KR', {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: priceDecimalDigits
             }).format(parsed);
+            return `${currencySymbol}${formattedValue}`;
         }
 
         function formatVolume(value) {
@@ -2490,6 +2512,14 @@
             }
 
             return `${value.substring(0, 2)}:${value.substring(2, 4)}:${value.substring(4, 6)}`;
+        }
+
+        function formatTradeTimeDisplay(localTime, koreaTime) {
+            if (!koreaTime || koreaTime.length < 6) {
+                return formatTradeTime(localTime);
+            }
+
+            return `현지 시각(America/New_York) 기준 ${formatTradeTime(localTime)} · 대한민국 시간 기준 ${formatTradeTime(koreaTime)}`;
         }
 
         function formatTradeDate(value) {

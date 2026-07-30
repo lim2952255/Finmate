@@ -88,6 +88,12 @@ public class Stock {
     @Column(name = "trading_halted", nullable = false)
     private boolean tradingHalted;
 
+    // NXT 공식 거래대상 종목 목록의 세션별 거래 허용 코드다.
+    // null이면 NXT 비대상, 0이면 대상이지만 현재 거래 제한, 비트 1/2/4는 각각 프리/메인/애프터마켓 허용을 뜻한다.
+    // NXT 거래소에서 거래가능 종목인지 식별하는 코드
+    @Column(name = "nxt_trading_permission_code")
+    private Integer nxtTradingPermissionCode;
+
     // 상장일자다. 마스터 파일에 값이 없거나 해외 데이터에서 제공하지 않으면 null일 수 있다.
     @Column(name = "listed_date")
     private LocalDate listedDate;
@@ -192,6 +198,15 @@ public class Stock {
         this.tradable = tradable;
         this.tradingHalted = tradingHalted;
         this.lastSyncedAt = lastSyncedAt;
+    }
+
+    // NXTTradingPermissionCode를 Update한다.
+    public void updateNxtTradingPermissionCode(Integer nxtTradingPermissionCode) {
+        if (nxtTradingPermissionCode != null
+                && (nxtTradingPermissionCode < 0 || nxtTradingPermissionCode > 7)) {
+            throw new IllegalArgumentException("NXT 거래 허용 코드는 0~7이어야 합니다.");
+        }
+        this.nxtTradingPermissionCode = nxtTradingPermissionCode;
     }
 
     @PrePersist

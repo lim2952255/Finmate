@@ -11,7 +11,12 @@
             flex-wrap: wrap;
             align-items: end;
             gap: 12px;
-            margin-bottom: 16px;
+            margin: 0;
+            padding: 18px;
+            background: linear-gradient(145deg, #ffffff 0%, #f7f9fc 100%);
+            border: 1px solid var(--color-border);
+            border-radius: 14px;
+            box-shadow: 0 10px 28px rgba(30, 52, 90, 0.055);
         }
 
         .orders-toolbar label {
@@ -20,8 +25,186 @@
             gap: 6px;
         }
 
-        .section-gap {
-            margin-top: 28px;
+        .orders-toolbar a {
+            display: inline-flex;
+            align-items: center;
+            min-height: 40px;
+            padding: 9px 13px;
+            color: var(--color-primary);
+            background: #ffffff;
+            border: 1px solid #cbd9f6;
+            border-radius: 10px;
+            font-weight: 800;
+        }
+
+        .history-section {
+            display: grid;
+            gap: 14px;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #ffffff;
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            box-shadow: 0 12px 30px rgba(30, 52, 90, 0.065);
+        }
+
+        .history-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 20px 22px 4px;
+        }
+
+        .history-section-title {
+            display: grid;
+            gap: 4px;
+        }
+
+        .history-section-title h2 {
+            margin: 0;
+        }
+
+        .history-section-title p {
+            margin: 0;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .history-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 42px;
+            min-height: 30px;
+            padding: 5px 10px;
+            color: #1d4ed8;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        .history-section .table-scroll {
+            border: 0;
+            border-radius: 0;
+        }
+
+        .history-table {
+            min-width: 1040px;
+        }
+
+        .history-table th,
+        .history-table td {
+            padding: 13px 14px;
+        }
+
+        .history-table tbody tr {
+            position: relative;
+        }
+
+        .history-table tbody tr[data-side="BUY"] {
+            box-shadow: inset 3px 0 0 #ef4444;
+        }
+
+        .history-table tbody tr[data-side="SELL"] {
+            box-shadow: inset 3px 0 0 #3b82f6;
+        }
+
+        .history-index {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            color: #475569;
+            background: #f1f5f9;
+            border: 1px solid #dbe4ee;
+            border-radius: 9px;
+            font-variant-numeric: tabular-nums;
+            font-weight: 900;
+        }
+
+        .history-order-summary,
+        .history-quantity,
+        .history-price,
+        .history-time {
+            display: grid;
+            gap: 5px;
+        }
+
+        .history-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .history-primary-value {
+            color: var(--color-heading);
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .history-secondary-value {
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .history-price .execution-price {
+            color: #047857;
+        }
+
+        .history-empty {
+            margin: 0 22px 22px;
+            padding: 28px;
+            color: #64748b;
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 750;
+        }
+
+        .history-cancel-form {
+            display: block;
+        }
+
+        .history-cancel-form button {
+            min-height: 34px;
+            padding: 7px 10px;
+            color: #b91c1c;
+            background: #fff7f7;
+            border-color: #fecaca;
+            box-shadow: none;
+            font-size: 12px;
+        }
+
+        .history-cancel-form button:hover {
+            color: #ffffff;
+            background: #dc2626;
+            box-shadow: 0 8px 18px rgba(220, 38, 38, 0.18);
+        }
+
+        .history-footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 0;
+        }
+
+        @media (max-width: 720px) {
+            .orders-toolbar > label,
+            .orders-toolbar select {
+                width: 100%;
+            }
+
+            .history-section-header {
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
@@ -62,39 +245,44 @@
                 <a th:href="@{/investments/open}">증권 계좌 개설</a>
             </p>
 
-            <section th:if="${!#lists.isEmpty(stockTradingHistoryPageInfo.investments)}">
-                <h2>주문</h2>
-                <p th:if="${#lists.isEmpty(stockTradingHistoryPageInfo.orders)}">주문 내역이 없습니다.</p>
+            <section class="history-section"
+                     th:if="${!#lists.isEmpty(stockTradingHistoryPageInfo.investments)}">
+                <div class="history-section-header">
+                    <div class="history-section-title">
+                        <h2>주문 내역</h2>
+                        <p>주문 조건과 실제 평균 체결가를 함께 확인할 수 있습니다.</p>
+                    </div>
+                    <span class="history-count"
+                          th:text="|${#lists.size(stockTradingHistoryPageInfo.orders)}건|">0건</span>
+                </div>
+                <p class="history-empty"
+                   th:if="${#lists.isEmpty(stockTradingHistoryPageInfo.orders)}">주문 내역이 없습니다.</p>
                 <div class="table-scroll" th:unless="${#lists.isEmpty(stockTradingHistoryPageInfo.orders)}">
-                    <table class="records-table">
+                    <table class="records-table history-table">
                         <thead>
                         <tr>
+                            <th class="number-cell">#</th>
                             <th th:if="${stockTradingHistoryPageInfo.allAccounts}">계좌</th>
-                            <th>주문번호</th>
                             <th>종목</th>
-                            <th>구분</th>
-                            <th>유형</th>
+                            <th>주문</th>
                             <th>상태</th>
                             <th>수량</th>
-                            <th>체결수량</th>
-                            <th>지정가</th>
-                            <th>만료</th>
-                            <th>접수시각</th>
-                            <th>취소</th>
+                            <th>가격</th>
+                            <th>일시</th>
+                            <th>관리</th>
                         </tr>
                         </thead>
                         <tbody>
-                        <tr th:each="order : ${stockTradingHistoryPageInfo.orders}">
+                        <tr th:each="order, orderStat : ${stockTradingHistoryPageInfo.orders}"
+                            th:attr="data-side=${order.side.name()}">
+                            <td class="number-cell">
+                                <span class="history-index" th:text="${orderStat.count}">1</span>
+                            </td>
                             <td th:if="${stockTradingHistoryPageInfo.allAccounts}">
                                 <div class="account-cell">
                                     <span class="primary-line" th:text="${order.investment.securitiesCompanyCode.displayName}">증권사</span>
                                     <span class="secondary-line" th:text="${order.investment.accountNumber}">00000000</span>
                                 </div>
-                            </td>
-                            <td>
-                                <span class="code-chip"
-                                      th:title="${order.orderNumber}"
-                                      th:text="${order.orderNumber}">번호</span>
                             </td>
                             <td>
                                 <div class="stock-cell">
@@ -105,12 +293,14 @@
                                 </div>
                             </td>
                             <td>
-                                <span class="badge badge-buy" th:if="${order.side.name() == 'BUY'}">매수</span>
-                                <span class="badge badge-sell" th:if="${order.side.name() == 'SELL'}">매도</span>
-                            </td>
-                            <td>
-                                <span class="badge badge-neutral" th:if="${order.orderType.name() == 'MARKET'}">시장가</span>
-                                <span class="badge badge-neutral" th:if="${order.orderType.name() == 'LIMIT'}">지정가</span>
+                                <div class="history-order-summary">
+                                    <div class="history-badges">
+                                        <span class="badge badge-buy" th:if="${order.side.name() == 'BUY'}">매수</span>
+                                        <span class="badge badge-sell" th:if="${order.side.name() == 'SELL'}">매도</span>
+                                        <span class="badge badge-neutral" th:if="${order.orderType.name() == 'MARKET'}">시장가</span>
+                                        <span class="badge badge-neutral" th:if="${order.orderType.name() == 'LIMIT'}">지정가</span>
+                                    </div>
+                                </div>
                             </td>
                             <td>
                                 <span class="badge badge-submitted" th:if="${order.status.name() == 'SUBMITTED'}">접수</span>
@@ -122,19 +312,53 @@
                                       th:unless="${order.status.name() == 'SUBMITTED' or order.status.name() == 'PARTIALLY_FILLED' or order.status.name() == 'FILLED' or order.status.name() == 'CANCELED' or order.status.name() == 'EXPIRED'}"
                                       th:text="${order.status}">상태</span>
                             </td>
-                            <td th:text="${stockTradingHistoryPageInfo.formatDecimal(order.quantity, 6)}">0</td>
-                            <td th:text="${stockTradingHistoryPageInfo.formatDecimal(order.executedQuantity, 6)}">0</td>
-                            <td class="money-cell" th:text="${stockTradingHistoryPageInfo.formatDecimal(order.orderPrice, order.currencyCode.fractionDigits)}">-</td>
-                            <td class="date-cell" th:text="${order.expiresAt != null ? #temporals.format(order.expiresAt, 'yyyy-MM-dd HH:mm') : '-'}">-</td>
-                            <td class="date-cell" th:text="${#temporals.format(order.createdAt, 'yyyy-MM-dd HH:mm')}">2026-07-07</td>
+                            <td>
+                                <div class="history-quantity">
+                                    <span class="history-primary-value"
+                                          th:text="|${stockTradingHistoryPageInfo.formatDecimal(order.quantity, 6)}주|">0주</span>
+                                    <span class="history-secondary-value"
+                                          th:text="|체결 ${stockTradingHistoryPageInfo.formatDecimal(order.executedQuantity, 6)}주|">체결 0주</span>
+                                </div>
+                            </td>
+                            <td class="money-cell">
+                                <div class="history-price">
+                                    <span class="history-primary-value"
+                                          th:if="${order.orderPrice != null}"
+                                          th:text="|주문 ${order.currencyCode.symbol}${stockTradingHistoryPageInfo.formatDecimal(order.orderPrice, order.currencyCode.fractionDigits)}|">
+                                        주문가
+                                    </span>
+                                    <span class="history-primary-value"
+                                          th:unless="${order.orderPrice != null}">주문 시장가</span>
+                                    <span class="history-secondary-value execution-price"
+                                          th:if="${stockTradingHistoryPageInfo.getAverageExecutionPrice(order) != null}"
+                                          th:text="|평균 체결 ${order.currencyCode.symbol}${stockTradingHistoryPageInfo.formatDecimal(stockTradingHistoryPageInfo.getAverageExecutionPrice(order), order.currencyCode.fractionDigits)}|">
+                                        평균 체결가
+                                    </span>
+                                    <span class="history-secondary-value"
+                                          th:unless="${stockTradingHistoryPageInfo.getAverageExecutionPrice(order) != null}">체결가 대기</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="history-time">
+                                    <span class="history-primary-value"
+                                          th:text="${#temporals.format(order.createdAt, 'yyyy-MM-dd HH:mm')}">접수시각</span>
+                                    <span class="history-secondary-value"
+                                          th:text="${order.expiresAt != null ? '만료 ' + #temporals.format(order.expiresAt, 'yyyy-MM-dd HH:mm') : '즉시 체결 주문'}">
+                                        만료
+                                    </span>
+                                </div>
+                            </td>
                             <td>
                                 <form th:if="${order.status.name() == 'SUBMITTED' or order.status.name() == 'PARTIALLY_FILLED'}"
+                                      class="history-cancel-form"
                                       th:action="@{/investments/stocks/order/{orderId}/cancel(orderId=${order.id})}"
                                       method="post">
                                     <input type="hidden" name="investmentId" th:value="${order.investment.id}">
                                     <input type="hidden" name="allAccounts" th:value="${stockTradingHistoryPageInfo.allAccounts}">
-                                    <button type="submit">취소</button>
+                                    <button type="submit">주문 취소</button>
                                 </form>
+                                <span class="history-secondary-value"
+                                      th:unless="${order.status.name() == 'SUBMITTED' or order.status.name() == 'PARTIALLY_FILLED'}">처리 완료</span>
                             </td>
                         </tr>
                         </tbody>
@@ -142,38 +366,44 @@
                 </div>
             </section>
 
-            <section class="section-gap" th:if="${!#lists.isEmpty(stockTradingHistoryPageInfo.investments)}">
-                <h2>예약 주문</h2>
-                <p th:if="${#lists.isEmpty(stockTradingHistoryPageInfo.reservations)}">예약 주문 내역이 없습니다.</p>
+            <section class="history-section"
+                     th:if="${!#lists.isEmpty(stockTradingHistoryPageInfo.investments)}">
+                <div class="history-section-header">
+                    <div class="history-section-title">
+                        <h2>예약 주문</h2>
+                        <p>조건 충족을 기다리는 주문과 실행 결과입니다.</p>
+                    </div>
+                    <span class="history-count"
+                          th:text="|${#lists.size(stockTradingHistoryPageInfo.reservations)}건|">0건</span>
+                </div>
+                <p class="history-empty"
+                   th:if="${#lists.isEmpty(stockTradingHistoryPageInfo.reservations)}">예약 주문 내역이 없습니다.</p>
                 <div class="table-scroll" th:unless="${#lists.isEmpty(stockTradingHistoryPageInfo.reservations)}">
-                    <table class="records-table">
+                    <table class="records-table history-table">
                         <thead>
                         <tr>
+                            <th class="number-cell">#</th>
                             <th th:if="${stockTradingHistoryPageInfo.allAccounts}">계좌</th>
-                            <th>예약번호</th>
                             <th>종목</th>
-                            <th>구분</th>
-                            <th>실행유형</th>
+                            <th>예약 주문</th>
                             <th>상태</th>
-                            <th>조건</th>
-                            <th>기준가격</th>
+                            <th>실행 조건</th>
                             <th>수량</th>
                             <th>만료</th>
-                            <th>취소</th>
+                            <th>관리</th>
                         </tr>
                         </thead>
                         <tbody>
-                        <tr th:each="reservation : ${stockTradingHistoryPageInfo.reservations}">
+                        <tr th:each="reservation, reservationStat : ${stockTradingHistoryPageInfo.reservations}"
+                            th:attr="data-side=${reservation.side.name()}">
+                            <td class="number-cell">
+                                <span class="history-index" th:text="${reservationStat.count}">1</span>
+                            </td>
                             <td th:if="${stockTradingHistoryPageInfo.allAccounts}">
                                 <div class="account-cell">
                                     <span class="primary-line" th:text="${reservation.investment.securitiesCompanyCode.displayName}">증권사</span>
                                     <span class="secondary-line" th:text="${reservation.investment.accountNumber}">00000000</span>
                                 </div>
-                            </td>
-                            <td>
-                                <span class="code-chip"
-                                      th:title="${reservation.reservationNumber}"
-                                      th:text="${reservation.reservationNumber}">번호</span>
                             </td>
                             <td>
                                 <div class="stock-cell">
@@ -184,12 +414,12 @@
                                 </div>
                             </td>
                             <td>
-                                <span class="badge badge-buy" th:if="${reservation.side.name() == 'BUY'}">매수</span>
-                                <span class="badge badge-sell" th:if="${reservation.side.name() == 'SELL'}">매도</span>
-                            </td>
-                            <td>
-                                <span class="badge badge-neutral" th:if="${reservation.orderType.name() == 'MARKET'}">시장가</span>
-                                <span class="badge badge-neutral" th:if="${reservation.orderType.name() == 'LIMIT'}">지정가</span>
+                                <div class="history-badges">
+                                    <span class="badge badge-buy" th:if="${reservation.side.name() == 'BUY'}">매수</span>
+                                    <span class="badge badge-sell" th:if="${reservation.side.name() == 'SELL'}">매도</span>
+                                    <span class="badge badge-neutral" th:if="${reservation.orderType.name() == 'MARKET'}">시장가</span>
+                                    <span class="badge badge-neutral" th:if="${reservation.orderType.name() == 'LIMIT'}">지정가</span>
+                                </div>
                             </td>
                             <td>
                                 <span class="badge badge-active" th:if="${reservation.status.name() == 'ACTIVE'}">대기</span>
@@ -201,19 +431,39 @@
                                       th:text="${reservation.status}">상태</span>
                             </td>
                             <td>
-                                <span class="badge badge-neutral" th:text="${reservation.triggerCondition}">조건</span>
+                                <div class="history-price">
+                                    <span class="badge badge-neutral" th:text="${reservation.triggerCondition}">조건</span>
+                                    <span class="history-primary-value"
+                                          th:text="|${reservation.currencyCode.symbol}${stockTradingHistoryPageInfo.formatDecimal(reservation.triggerPrice, reservation.currencyCode.fractionDigits)}|">
+                                        기준가격
+                                    </span>
+                                </div>
                             </td>
-                            <td class="money-cell" th:text="${stockTradingHistoryPageInfo.formatDecimal(reservation.triggerPrice, reservation.currencyCode.fractionDigits)}">0</td>
-                            <td th:text="${stockTradingHistoryPageInfo.formatDecimal(reservation.quantity, 6)}">0</td>
-                            <td class="date-cell" th:text="${reservation.expiresAt != null ? #temporals.format(reservation.expiresAt, 'yyyy-MM-dd HH:mm') : '-'}">-</td>
+                            <td>
+                                <div class="history-quantity">
+                                    <span class="history-primary-value"
+                                          th:text="|${stockTradingHistoryPageInfo.formatDecimal(reservation.quantity, 6)}주|">0주</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="history-time">
+                                    <span class="history-primary-value"
+                                          th:text="${reservation.expiresAt != null ? #temporals.format(reservation.expiresAt, 'yyyy-MM-dd HH:mm') : '-'}">
+                                        만료
+                                    </span>
+                                </div>
+                            </td>
                             <td>
                                 <form th:if="${reservation.status.name() == 'ACTIVE'}"
+                                      class="history-cancel-form"
                                       th:action="@{/investments/stocks/order/reservations/{reservationId}/cancel(reservationId=${reservation.id})}"
                                       method="post">
                                     <input type="hidden" name="investmentId" th:value="${reservation.investment.id}">
                                     <input type="hidden" name="allAccounts" th:value="${stockTradingHistoryPageInfo.allAccounts}">
-                                    <button type="submit">취소</button>
+                                    <button type="submit">예약 취소</button>
                                 </form>
+                                <span class="history-secondary-value"
+                                      th:unless="${reservation.status.name() == 'ACTIVE'}">처리 완료</span>
                             </td>
                         </tr>
                         </tbody>
@@ -221,34 +471,49 @@
                 </div>
             </section>
 
-            <section class="section-gap" th:if="${!#lists.isEmpty(stockTradingHistoryPageInfo.investments)}">
-                <h2>체결</h2>
-                <p th:if="${#lists.isEmpty(stockTradingHistoryPageInfo.transactions)}">체결 내역이 없습니다.</p>
+            <section class="history-section"
+                     th:if="${!#lists.isEmpty(stockTradingHistoryPageInfo.investments)}">
+                <div class="history-section-header">
+                    <div class="history-section-title">
+                        <h2>체결 내역</h2>
+                        <p>실제 체결가격과 수수료·세금이 반영된 정산금액입니다.</p>
+                    </div>
+                    <span class="history-count"
+                          th:text="|${#lists.size(stockTradingHistoryPageInfo.transactions)}건|">0건</span>
+                </div>
+                <p class="history-empty"
+                   th:if="${#lists.isEmpty(stockTradingHistoryPageInfo.transactions)}">체결 내역이 없습니다.</p>
                 <div class="table-scroll" th:unless="${#lists.isEmpty(stockTradingHistoryPageInfo.transactions)}">
-                    <table class="records-table">
+                    <table class="records-table history-table">
                         <thead>
                         <tr>
+                            <th class="number-cell">#</th>
                             <th th:if="${stockTradingHistoryPageInfo.allAccounts}">계좌</th>
-                            <th>체결시각</th>
                             <th>종목</th>
                             <th>구분</th>
                             <th>수량</th>
                             <th>체결가</th>
                             <th>정산금액</th>
+                            <th>체결시각</th>
                         </tr>
                         </thead>
                         <tbody>
-                        <tr th:each="transaction : ${stockTradingHistoryPageInfo.transactions}">
+                        <tr th:each="transaction, transactionStat : ${stockTradingHistoryPageInfo.transactions}"
+                            th:attr="data-side=${transaction.side.name()}">
+                            <td class="number-cell">
+                                <span class="history-index" th:text="${transactionStat.count}">1</span>
+                            </td>
                             <td th:if="${stockTradingHistoryPageInfo.allAccounts}">
                                 <div class="account-cell">
                                     <span class="primary-line" th:text="${transaction.investment.securitiesCompanyCode.displayName}">증권사</span>
                                     <span class="secondary-line" th:text="${transaction.investment.accountNumber}">00000000</span>
                                 </div>
                             </td>
-                            <td class="date-cell" th:text="${#temporals.format(transaction.executedAt, 'yyyy-MM-dd HH:mm')}">2026-07-07</td>
                             <td>
                                 <div class="stock-cell">
-                                    <span class="primary-line" th:text="${transaction.stock.nameKo}">종목</span>
+                                    <a class="primary-line"
+                                       th:href="@{/investments/stocks/detail(stockId=${transaction.stock.id})}"
+                                       th:text="${transaction.stock.nameKo}">종목</a>
                                     <span class="secondary-line" th:text="${transaction.stock.symbol}">005930</span>
                                 </div>
                             </td>
@@ -256,16 +521,39 @@
                                 <span class="badge badge-buy" th:if="${transaction.side.name() == 'BUY'}">매수</span>
                                 <span class="badge badge-sell" th:if="${transaction.side.name() == 'SELL'}">매도</span>
                             </td>
-                            <td th:text="${stockTradingHistoryPageInfo.formatDecimal(transaction.quantity, 6)}">0</td>
-                            <td class="money-cell" th:text="${stockTradingHistoryPageInfo.formatDecimal(transaction.executionPrice, transaction.currencyCode.fractionDigits)}">0</td>
-                            <td class="money-cell" th:text="${stockTradingHistoryPageInfo.formatDecimal(transaction.netCashAmount, transaction.currencyCode.fractionDigits)}">0</td>
+                            <td>
+                                <span class="history-primary-value"
+                                      th:text="|${stockTradingHistoryPageInfo.formatDecimal(transaction.quantity, 6)}주|">0주</span>
+                            </td>
+                            <td class="money-cell">
+                                <span class="history-primary-value execution-price"
+                                      th:text="|${transaction.currencyCode.symbol}${stockTradingHistoryPageInfo.formatDecimal(transaction.executionPrice, transaction.currencyCode.fractionDigits)}|">0</span>
+                            </td>
+                            <td class="money-cell">
+                                <div class="history-price">
+                                    <span class="history-primary-value"
+                                          th:text="|${transaction.currencyCode.symbol}${stockTradingHistoryPageInfo.formatDecimal(transaction.netCashAmount, transaction.currencyCode.fractionDigits)}|">
+                                        정산금액
+                                    </span>
+                                    <span class="history-secondary-value"
+                                          th:text="|수수료 ${transaction.currencyCode.symbol}${stockTradingHistoryPageInfo.formatDecimal(transaction.commissionAmount, transaction.currencyCode.fractionDigits)} · 세금 ${transaction.currencyCode.symbol}${stockTradingHistoryPageInfo.formatDecimal(transaction.taxAmount, transaction.currencyCode.fractionDigits)}|">
+                                        비용
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="history-time">
+                                    <span class="history-primary-value"
+                                          th:text="${#temporals.format(transaction.executedAt, 'yyyy-MM-dd HH:mm')}">체결시각</span>
+                                </div>
+                            </td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
             </section>
 
-            <p>
+            <p class="history-footer-links">
                 <a th:href="@{/investments}">투자 홈</a>
                 <a th:href="@{/investments/stocks/search}">종목 검색</a>
             </p>

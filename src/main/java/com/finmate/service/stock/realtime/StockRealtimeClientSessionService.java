@@ -3,6 +3,7 @@ package com.finmate.service.stock.realtime;
 import com.finmate.domain.stock.dto.realtime.RealtimeSubscriptionState;
 import com.finmate.domain.stock.dto.realtime.StockRealtimeClientMessage;
 import com.finmate.domain.stock.dto.realtime.StockRealtimeOrderbookClientMessage;
+import com.finmate.domain.stock.market.StockRealtimeMarketSession;
 import com.finmate.domain.stock.dto.realtime.StockRealtimeOrderbookClientMessage.OrderbookLevel;
 import com.finmate.global.websocket.WebSocketJsonMessageSender;
 import com.finmate.infra.kis.stock.realtime.KisRealtimeApi;
@@ -224,6 +225,9 @@ public class StockRealtimeClientSessionService {
                 parseNullableBigDecimal(value(values, "ACML_TR_PBMN", "TAMT")),
                 value(values, "BSOP_DATE", "XYMD"),
                 payload.tradeTime(),
+                payload.api() == KisRealtimeApi.OVERSEAS_STOCK_TRADE ? values.get("KHMS") : null,
+                StockRealtimeMarketSession.resolve(payload.api(), values).getDisplayName(),
+                value(values, "NEW_MKOP_CLS_CODE", "MTYP"),
                 candleType(openPrice, currentPrice),
                 payload.receivedAt());
     }

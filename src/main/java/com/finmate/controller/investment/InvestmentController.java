@@ -260,7 +260,18 @@ public class InvestmentController {
                             Model model,
                             @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser) {
         StockPortfolioPageInfo pageInfo = stockTradingQueryService.getPortfolioPageInfo(sessionUser.getId(), investmentId);
+        // 포트폴리오에서 환산 조회용으로 사용하기 위한 기준 환율정보를 조회한다음 Model에 담아서 전달한다.
+        MarketRealtimeMessage usdKrwExchangeRate = null;
+        try {
+            usdKrwExchangeRate = marketRealtimeQuoteService.getLatest(MarketIndicatorSymbol.USD_KRW)
+                    .filter(message -> message.currentPrice() != null
+                            && message.currentPrice().signum() > 0)
+                    .orElse(null);
+        } catch (RuntimeException e) {
+            log.warn("포트폴리오 환산용 USD/KRW 환율을 조회하지 못했습니다.", e);
+        }
         model.addAttribute("stockPortfolioPageInfo", pageInfo);
+        model.addAttribute("usdKrwExchangeRate", usdKrwExchangeRate);
         return "investments/portfolio";
     }
 

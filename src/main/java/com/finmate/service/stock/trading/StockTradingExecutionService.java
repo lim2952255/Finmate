@@ -4,6 +4,7 @@ import com.finmate.domain.investment.CurrencyCode;
 import com.finmate.domain.investment.InvestmentCashBalance;
 import com.finmate.domain.stock.Stock;
 import com.finmate.domain.stock.market.StockMarketSchedules;
+import com.finmate.domain.stock.market.StockRealtimeMarketSession;
 import com.finmate.domain.stock.trading.StockHolding;
 import com.finmate.domain.stock.trading.StockOrder;
 import com.finmate.domain.stock.trading.StockOrderReservation;
@@ -52,11 +53,22 @@ public class StockTradingExecutionService {
 
     // 실시간으로 주식의 가격이 변동될때마다 주문을 체결할지 여부를 결정하는 메서드
     @Transactional
+    public void processRealtimeUpdate(Long stockId, StockRealtimeMarketSession marketSession) {
+        Stock stock = lookupService.findStock(stockId);
+        boolean tradingTime = marketSession != null
+                && marketSession.isTradingSession()
+                && isTradingTime(stock);
+        processReservations(stock, tradingTime); // 종목의 예약주문 체결 여부를 결정
+        processOrders(stock, tradingTime); // 종목의 지정가 주문 체결 여부를 결정
+    }
+
+    // 세션 정보를 직접 전달하지 않는 내부 호출과 기존 검증 경로는 시간 정책으로 처리한다.
+    @Transactional
     public void processRealtimeUpdate(Long stockId) {
         Stock stock = lookupService.findStock(stockId);
         boolean tradingTime = isTradingTime(stock);
-        processReservations(stock, tradingTime); // 종목의 예약주문 체결 여부를 결정
-        processOrders(stock, tradingTime); // 종목의 지정가 주문 체결 여부를 결정
+        processReservations(stock, tradingTime);
+        processOrders(stock, tradingTime);
     }
 
     // 종목의 예약주문 체결 여부를 결정한다.
@@ -172,7 +184,7 @@ public class StockTradingExecutionService {
 
     // 현재 시간이 종목을 거래할 수 있는 시간인지 확인
     private boolean isTradingTime(Stock stock) {
-        return StockMarketSchedules.isTradingTime(stock.getMarketType(), ZonedDateTime.now());
+        return StockMarketSchedules.isTradingTime(stock, ZonedDateTime.now());
     }
 
     // 주문이 체결가능한지 여부를 체결 기준 가격을 기반으로 검사한다.

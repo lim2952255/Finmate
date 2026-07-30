@@ -35,9 +35,14 @@ WebSocket 체결값을 함께 사용하면 서로 다른 환경의 현재가·�
 | 해외 업종별코드조회 | `/uapi/overseas-price/v1/quotations/industry-price` | `HHDFS76370100` |
 
 국내 거래대금도 국내 랭킹 client의 같은 경로·TR ID에 구분 파라미터를 전달한다.
-종목 랭킹 갱신은 `StockMarketSchedules`의 정규장과 시간외 거래 가능 시간을 함께 기준으로 판단하고, 정규장 또는 시간외 장 마감 직후 2분 이내에는 최종 갱신을 허용한다.
+종목 랭킹 갱신은 `StockMarketSchedules`의 거래 가능 시간을 기준으로 판단한다. KOSPI/KOSDAQ은
+기존 KRX 운영시간을 유지하고, NASDAQ은 현지 시각 기준 프리마켓 04:00부터 정규장과
+애프터마켓을 거쳐 20:00까지 갱신한다. 정규장 또는 시간외 장 마감 직후 2분 이내에는 최종
+갱신을 허용한다.
 
 시장지표 일봉은 `MarketIndicatorSymbol`의 KIS API 타입에 따라 분기한다. `USD_KRW`, `NASDAQ_COMPOSITE`, `NASDAQ_100`은 해외 가격 기간별 차트 API를 사용하고, `KOSPI`, `KOSDAQ`은 국내 주식업종기간별시세 API를 사용한다. 포트폴리오 화면은 실시간 종목 시세가 없을 때 최신 종가 fallback을 표시하기 위해 종목 일봉을 DB 우선으로 조회하고, 부족하면 최근 구간을 KIS 종목 일봉 API로 보충한다.
+NASDAQ 종목 일봉의 기대 최신 거래일은 프리·애프터마켓 종료 시각이 아니라 뉴욕 현지 정규장 종가인
+16:00을 기준으로 계산한다.
 
 환율·해외 지수 실시간 화면값은 `KisOverseasMarketMinuteChartPriceClient`가 해외지수분봉조회 API를 1분 단위로 호출하고, `MarketRealtimeCacheService`가 Redis에 `market:realtime:{indicator}` 키로 TTL 캐시한다.
 
@@ -100,11 +105,24 @@ REST 호출이 인증 실패했을 때 access token을 자동 clear 후 재발�
 
 ### 구독 종류
 
-국내 KOSPI/KOSDAQ 및 NASDAQ 종목에 대해 체결과 호가 두 구독을 만든다. `StockRealtimeSubscriptionManager`는 상세 화면, 활성 주문, 활성 예약 등 목적별 참조 수와 전체 참조 수를 `ConcurrentHashMap`/`AtomicInteger`로 관리한다.
+국내 KOSPI/KOSDAQ 및 NASDAQ 종목에 대해 체결과 호가 두 구독을 만든다. 국내 종목은 KRX와 NXT를 합친
+`H0UNCNT0`/`H0UNASP0` 통합 채널을 사용한다. 해외 체결의 `MTYP`은 정규장·프리마켓·애프터마켓
+세션 표시와 실시간 주문 처리 가능 여부에 사용한다. `StockRealtimeSubscriptionManager`는 상세 화면,
+활성 주문, 활성 예약 등 목적별 참조 수와 전체 참조 수를 `ConcurrentHashMap`/`AtomicInteger`로 관리한다.
 
 국내 KOSPI/KOSDAQ 지수 상세 화면은 `MarketRealtimeSubscriptionManager`가 `H0UPCNT0` 국내지수 실시간체결을 구독한다. 구독 키는 `MarketIndicatorSymbol`의 KIS symbol을 사용하며, `KOSPI=0001`, `KOSDAQ=1001`이다.
 
 참조 수가 0이 되면 즉시 끊지 않고 기본 60초 유예 후 다시 0인지 확인하여 해제한다.
+
+### NXT 거래대상 종목
+
+KIS KOSPI/KOSDAQ 종목 마스터에는 NXT 편입 여부가 없으므로 그 파일만으로는 종목별 NXT 거래 가능
+시간을 판단할 수 없다. `NxtStockTradingPermissionSyncService`가 NXT 공식 시장정보의 전체 거래대상
+종목과 `cptrTrdPmsnCd`를 평일 NXT 프리마켓 시작 전 07:50에 하루 한 번 동기화한다. 이 코드는 프리·메인·애프터마켓 허용 비트로
+`Stock.nxtTradingPermissionCode`에 저장하며, `null`은 NXT 비대상, `0`은 NXT 대상이지만 현재 거래
+제한 상태를 뜻한다. 외부 NXT 목록 조회는 DB 트랜잭션 밖에서 수행하고, 국내 종목 조회·비교·변경은
+`NxtStockTradingPermissionApplyService`의 짧은 트랜잭션에서 dirty checking으로 반영한다. NXT 조회가 실패하거나
+빈 목록을 반환하면 기존 값을 유지한다.
 
 ## 7. 실시간 데이터 저장과 전파
 

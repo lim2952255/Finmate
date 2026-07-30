@@ -25,6 +25,9 @@ public record StockRealtimeClientMessage(
         BigDecimal accumulatedTradeAmount,
         String tradeDate,
         String tradeTime,
+        String koreaTradeTime,
+        String marketSession,
+        String marketSessionCode,
         String candleType,
         LocalDateTime receivedAt
 ) {

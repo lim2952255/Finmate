@@ -77,8 +77,8 @@ public class StockDetailService {
                 savedDailyPriceCount,
                 dailyPrices,
                 metadataDisplayInfo,
-                StockMarketSchedules.isTradingTimeNow(stock.getMarketType()),
-                StockMarketSchedules.tradingTimeDescription(stock.getMarketType()));
+                StockMarketSchedules.isTradingTimeNow(stock),
+                StockMarketSchedules.describeTradingHours(stock));
     }
     // 종목 상세 페이지를 조회하는 순간
     // 필요한 경우에만 KIS API를 호출하고

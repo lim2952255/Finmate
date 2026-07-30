@@ -24,6 +24,49 @@
             gap: 6px;
         }
 
+        .portfolio-currency-view {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-left: auto;
+        }
+
+        .portfolio-currency-view strong {
+            font-size: 14px;
+        }
+
+        .portfolio-currency-view-buttons {
+            display: inline-flex;
+            gap: 4px;
+            padding: 4px;
+            background: #e9eef8;
+            border-radius: 10px;
+        }
+
+        .portfolio-currency-view-buttons button {
+            padding: 8px 12px;
+            color: #475569;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .portfolio-currency-view-buttons button.is-active {
+            color: #ffffff;
+            background: var(--color-primary);
+        }
+
+        .portfolio-currency-view-buttons button:disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
+
+        .portfolio-exchange-rate {
+            width: 100%;
+            margin: 0;
+            color: #64748b;
+            font-size: 12px;
+        }
+
         .portfolio-summary {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -267,6 +310,16 @@
             .portfolio-toolbar select {
                 width: 100%;
             }
+
+            .portfolio-currency-view {
+                width: 100%;
+                margin-left: 0;
+            }
+
+            .portfolio-currency-view-buttons {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+            }
         }
     </style>
 </head>
@@ -275,7 +328,9 @@
     <div th:replace="~{/layout/header :: header}"></div>
 
     <main class="main">
-        <section class="content">
+        <section class="content"
+                 th:attr="data-usd-krw-rate=${usdKrwExchangeRate != null ? usdKrwExchangeRate.currentPrice : null},
+                          data-usd-krw-rate-time=${usdKrwExchangeRate != null ? #temporals.format(usdKrwExchangeRate.receivedAt, 'yyyy-MM-dd HH:mm:ss') : null}">
             <div class="page-heading">
                 <span class="eyebrow">PORTFOLIO</span>
                 <h1>내 포트폴리오</h1>
@@ -301,6 +356,26 @@
                    th:href="@{/investments/orders(investmentId=${stockPortfolioPageInfo.selectedInvestment.id})}">주문 내역</a>
                 <a th:unless="${stockPortfolioPageInfo.selectedInvestment != null}"
                    th:href="@{/investments/orders}">주문 내역</a>
+                <div class="portfolio-currency-view">
+                    <strong>표시 통화</strong>
+                    <div class="portfolio-currency-view-buttons">
+                        <button type="button" class="is-active" data-currency-view="SEPARATED">통화별</button>
+                        <button type="button"
+                                data-currency-view="KRW"
+                                th:disabled="${usdKrwExchangeRate == null}">원화 환산</button>
+                        <button type="button"
+                                data-currency-view="USD"
+                                th:disabled="${usdKrwExchangeRate == null}">달러 환산</button>
+                    </div>
+                </div>
+                <p class="portfolio-exchange-rate"
+                   th:if="${usdKrwExchangeRate != null}"
+                   th:text="|적용 환율 1 USD = ${#numbers.formatDecimal(usdKrwExchangeRate.currentPrice, 1, 'COMMA', 2, 'POINT')} KRW · 기준 ${#temporals.format(usdKrwExchangeRate.receivedAt, 'yyyy-MM-dd HH:mm:ss')} · 표시용 환산 금액|">
+                    적용 환율
+                </p>
+                <p class="portfolio-exchange-rate" th:unless="${usdKrwExchangeRate != null}">
+                    USD/KRW 환율을 조회하지 못해 통화별 보기만 사용할 수 있습니다.
+                </p>
             </form>
 
             <p th:if="${#lists.isEmpty(stockPortfolioPageInfo.investments)}">
@@ -315,6 +390,7 @@
             <div class="portfolio-summary" th:if="${!#lists.isEmpty(stockPortfolioPageInfo.currencies)}">
                 <article class="portfolio-summary-card"
                          data-summary-card="true"
+                         data-native-summary-card="true"
                          th:each="currency : ${stockPortfolioPageInfo.currencies}"
                          th:attr="data-currency=${currency.name()},
                                   data-fraction-digits=${currency.fractionDigits}">
@@ -339,12 +415,32 @@
                         매입금액
                     </small>
                 </article>
+                <article class="portfolio-summary-card"
+                         data-unified-summary-card="true"
+                         hidden>
+                    <div class="portfolio-summary-heading">
+                        <span>환산 총 평가금액</span>
+                        <span class="portfolio-summary-currency" data-unified-summary-currency>KRW</span>
+                    </div>
+                    <strong class="portfolio-summary-value" data-summary-market-value="true">수신 대기</strong>
+                    <div class="portfolio-summary-grid">
+                        <div class="portfolio-summary-item">
+                            <span class="portfolio-summary-label">환산 총 평가손익</span>
+                            <strong data-summary-profit="true">-</strong>
+                        </div>
+                        <div class="portfolio-summary-item">
+                            <span class="portfolio-summary-label">환산 총 수익률</span>
+                            <strong data-summary-profit-rate="true">-</strong>
+                        </div>
+                    </div>
+                    <small class="portfolio-summary-status" data-summary-status="true">환산 계산 중</small>
+                </article>
             </div>
 
             <section class="industry-allocation"
                      th:if="${!#lists.isEmpty(stockPortfolioPageInfo.industryAllocations)}">
                 <h2>업종별 비중</h2>
-                <div class="industry-allocation-grid">
+                <div class="industry-allocation-grid" data-native-industry-grid>
                     <article class="industry-allocation-card"
                              th:each="allocation : ${stockPortfolioPageInfo.industryAllocations}">
                         <div class="industry-allocation-heading">
@@ -369,6 +465,7 @@
                         </p>
                     </article>
                 </div>
+                <div class="industry-allocation-grid" data-unified-industry-grid hidden></div>
             </section>
 
             <div class="table-scroll" th:if="${!#lists.isEmpty(stockPortfolioPageInfo.holdings)}">
@@ -391,13 +488,16 @@
                     <tbody>
                     <tr class="portfolio-row"
                         th:each="holding : ${stockPortfolioPageInfo.holdings}"
-                        th:with="industryName=${stockPortfolioPageInfo.getIndustryName(holding.stock.id)}"
+                        th:with="industryName=${stockPortfolioPageInfo.getIndustryName(holding.stock.id)},
+                                 industryGroupName=${stockPortfolioPageInfo.getIndustryGroupName(holding.stock.id)}"
                         th:attr="data-stock-id=${holding.stock.id},
                                  data-currency=${holding.currencyCode.name()},
                                  data-quantity=${holding.quantity},
                                  data-average-price=${holding.averagePurchasePrice},
                                  data-current-price=${stockPortfolioPageInfo.getValuationPrice(holding.stock.id)},
-                                 data-fraction-digits=${holding.currencyCode.fractionDigits}">
+                                 data-fraction-digits=${holding.currencyCode.fractionDigits},
+                                 data-industry-name=${industryName},
+                                 data-industry-group=${industryGroupName}">
                         <td class="portfolio-account" th:if="${stockPortfolioPageInfo.allAccounts}">
                             <div class="account-cell">
                                 <span class="primary-line" th:text="${holding.investment.securitiesCompanyCode.displayName}">증권사</span>
@@ -422,8 +522,10 @@
                         </td>
                         <td class="money-cell" th:text="${stockPortfolioPageInfo.formatQuantity(holding.quantity)}">0</td>
                         <td class="money-cell">
-                            <span th:text="${stockPortfolioPageInfo.formatDecimal(holding.averagePurchasePrice, holding.currencyCode.fractionDigits)}">0</span>
-                            <small th:text="${holding.currencyCode.name()}">KRW</small>
+                            <span class="portfolio-average-price-value"
+                                  th:text="${stockPortfolioPageInfo.formatDecimal(holding.averagePurchasePrice, holding.currencyCode.fractionDigits)}">0</span>
+                            <small class="portfolio-average-price-native"
+                                   th:text="${holding.currencyCode.name()}">KRW</small>
                         </td>
                         <td class="portfolio-current-price money-cell">
                             <span class="portfolio-current-price-value"
@@ -435,17 +537,24 @@
                                   th:unless="${stockPortfolioPageInfo.hasValuationPrice(holding.stock.id)}">
                                 수신 대기
                             </span>
+                            <small class="portfolio-current-price-native" hidden></small>
                             <small class="portfolio-price-source"
                                    th:if="${stockPortfolioPageInfo.hasValuationPrice(holding.stock.id)}"
                                    th:text="${stockPortfolioPageInfo.getValuationPriceSource(holding.stock.id)}">
                                 최근 종가
                             </small>
                         </td>
-                        <td class="portfolio-market-value money-cell">-</td>
-                        <td class="portfolio-profit money-cell">-</td>
+                        <td class="portfolio-market-value money-cell">
+                            <span class="portfolio-market-value-value">-</span>
+                            <small class="portfolio-market-value-native" hidden></small>
+                        </td>
+                        <td class="portfolio-profit money-cell">
+                            <span class="portfolio-profit-value">-</span>
+                            <small class="portfolio-profit-native" hidden></small>
+                        </td>
                         <td class="portfolio-profit-rate">-</td>
-                        <td th:with="tradingAvailable=${stockPortfolioPageInfo.isStockTradingAvailable(holding.stock.marketType)},
-                                     tradingTimeDescription=${stockPortfolioPageInfo.getStockTradingTimeDescription(holding.stock.marketType)}">
+                        <td th:with="tradingAvailable=${stockPortfolioPageInfo.isStockTradingAvailable(holding.stock)},
+                                     tradingTimeDescription=${stockPortfolioPageInfo.getStockTradingTimeDescription(holding.stock)}">
                             <a th:if="${tradingAvailable}"
                                class="table-action-link"
                                th:title="|거래 가능 시간: ${tradingTimeDescription}|"
@@ -476,10 +585,24 @@
 </div>
 <script>
     (() => {
+        const portfolioRoot = document.querySelector('.content[data-usd-krw-rate]');
         const rows = Array.from(document.querySelectorAll('.portfolio-row'));
+        const currencyViewButtons = Array.from(document.querySelectorAll('[data-currency-view]'));
+        const nativeSummaryCards = Array.from(document.querySelectorAll('[data-native-summary-card]'));
+        const unifiedSummaryCard = document.querySelector('[data-unified-summary-card]');
+        const nativeIndustryGrid = document.querySelector('[data-native-industry-grid]');
+        const unifiedIndustryGrid = document.querySelector('[data-unified-industry-grid]');
+        const usdKrwRate = toNumber(portfolioRoot?.dataset.usdKrwRate);
+        const usdKrwRateTime = portfolioRoot?.dataset.usdKrwRateTime || '';
+        let currencyView = 'SEPARATED';
+
         if (rows.length === 0) {
             return;
         }
+
+        currencyViewButtons.forEach((button) => {
+            button.addEventListener('click', () => applyCurrencyView(button.dataset.currencyView || 'SEPARATED'));
+        });
 
         const rowsByStockId = new Map();
         rows.forEach((row) => {
@@ -489,8 +612,7 @@
             rowsByStockId.set(stockId, stockRows);
         });
         const subscribedStockIds = Array.from(rowsByStockId.keys());
-        rows.forEach((row) => updateRowFromCurrentPrice(row));
-        recalculateSummary();
+        refreshPortfolioDisplay();
 
         if (!window.WebSocket) {
             return;
@@ -552,26 +674,81 @@
             updateRowFromCurrentPrice(row);
         }
 
+        function applyCurrencyView(nextView) {
+            if (nextView !== 'SEPARATED' && !isFinite(usdKrwRate)) {
+                return;
+            }
+
+            currencyView = nextView;
+            currencyViewButtons.forEach((button) => {
+                button.classList.toggle('is-active', button.dataset.currencyView === currencyView);
+            });
+            refreshPortfolioDisplay();
+        }
+
+        function refreshPortfolioDisplay() {
+            rows.forEach((row) => updateRowFromCurrentPrice(row));
+            recalculateSummary();
+            renderIndustryAllocations();
+        }
+
         function updateRowFromCurrentPrice(row) {
             const price = toNumber(row.dataset.currentPrice);
             const quantity = toNumber(row.dataset.quantity);
             const averagePrice = toNumber(row.dataset.averagePrice);
-            const fractionDigits = Number(row.dataset.fractionDigits || 0);
-            const currency = row.dataset.currency || '';
-            if (![price, quantity, averagePrice].every(isFinite)) {
+            const nativeFractionDigits = Number(row.dataset.fractionDigits || 0);
+            const nativeCurrency = row.dataset.currency || '';
+            if (![quantity, averagePrice].every(isFinite)) {
                 return;
             }
 
-            const marketValue = price * quantity;
-            const purchaseValue = averagePrice * quantity;
-            const profit = marketValue - purchaseValue;
-            const profitRate = purchaseValue === 0 ? 0 : (profit / purchaseValue) * 100;
-            const direction = profit > 0 ? 'positive' : profit < 0 ? 'negative' : 'flat';
+            const displayCurrency = currencyView === 'SEPARATED' ? nativeCurrency : currencyView;
+            const displayFractionDigits = currencyFractionDigits(displayCurrency);
+            const displayAveragePrice = convertCurrency(averagePrice, nativeCurrency, displayCurrency);
+            setText(row, '.portfolio-average-price-value',
+                formatNumber(displayAveragePrice, displayFractionDigits));
+            setSecondaryText(
+                row,
+                '.portfolio-average-price-native',
+                currencyView === 'SEPARATED'
+                    ? nativeCurrency
+                    : `${formatNumber(averagePrice, nativeFractionDigits)} ${nativeCurrency}`,
+                true);
 
-            setText(row, '.portfolio-current-price-value', `${formatNumber(price, fractionDigits)} ${currency}`);
-            setText(row, '.portfolio-market-value', `${formatNumber(marketValue, fractionDigits)} ${currency}`);
-            setDirectionalText(row, '.portfolio-profit', `${formatSignedNumber(profit, fractionDigits)} ${currency}`, direction);
+            if (!isFinite(price)) {
+                setText(row, '.portfolio-current-price-value', '수신 대기');
+                setText(row, '.portfolio-market-value-value', '-');
+                setText(row, '.portfolio-profit-value', '-');
+                setText(row, '.portfolio-profit-rate', '-');
+                setSecondaryText(row, '.portfolio-current-price-native', '', false);
+                setSecondaryText(row, '.portfolio-market-value-native', '', false);
+                setSecondaryText(row, '.portfolio-profit-native', '', false);
+                return;
+            }
+
+            const nativeMarketValue = price * quantity;
+            const nativePurchaseValue = averagePrice * quantity;
+            const nativeProfit = nativeMarketValue - nativePurchaseValue;
+            const displayPrice = convertCurrency(price, nativeCurrency, displayCurrency);
+            const displayMarketValue = convertCurrency(nativeMarketValue, nativeCurrency, displayCurrency);
+            const displayProfit = convertCurrency(nativeProfit, nativeCurrency, displayCurrency);
+            const profitRate = nativePurchaseValue === 0 ? 0 : (nativeProfit / nativePurchaseValue) * 100;
+            const direction = displayProfit > 0 ? 'positive' : displayProfit < 0 ? 'negative' : 'flat';
+
+            setText(row, '.portfolio-current-price-value',
+                `${formatNumber(displayPrice, displayFractionDigits)} ${displayCurrency}`);
+            setText(row, '.portfolio-market-value-value',
+                `${formatNumber(displayMarketValue, displayFractionDigits)} ${displayCurrency}`);
+            setDirectionalText(row, '.portfolio-profit-value',
+                `${formatSignedNumber(displayProfit, displayFractionDigits)} ${displayCurrency}`, direction);
             setDirectionalText(row, '.portfolio-profit-rate', `${profitRate.toFixed(2)}%`, direction);
+            const showNativeValue = currencyView !== 'SEPARATED' && displayCurrency !== nativeCurrency;
+            setSecondaryText(row, '.portfolio-current-price-native',
+                `${formatNumber(price, nativeFractionDigits)} ${nativeCurrency}`, showNativeValue);
+            setSecondaryText(row, '.portfolio-market-value-native',
+                `${formatNumber(nativeMarketValue, nativeFractionDigits)} ${nativeCurrency}`, showNativeValue);
+            setSecondaryText(row, '.portfolio-profit-native',
+                `${formatSignedNumber(nativeProfit, nativeFractionDigits)} ${nativeCurrency}`, showNativeValue);
         }
 
         function recalculateSummary() {
@@ -604,7 +781,17 @@
                 summariesByCurrency.set(currency, summary);
             });
 
-            document.querySelectorAll('[data-summary-card]').forEach((card) => {
+            if (currencyView !== 'SEPARATED') {
+                nativeSummaryCards.forEach((card) => card.hidden = true);
+                if (unifiedSummaryCard) {
+                    unifiedSummaryCard.hidden = false;
+                    updateUnifiedSummary(currencyView);
+                }
+                return;
+            }
+
+            nativeSummaryCards.forEach((card) => {
+                card.hidden = false;
                 const currency = card.dataset.currency || '';
                 const summary = summariesByCurrency.get(currency);
                 if (!summary) {
@@ -635,12 +822,190 @@
                 setDirectionalSummaryText(card, '[data-summary-profit]', `${formatSignedNumber(profit, fractionDigits)} ${currency}`, direction);
                 setDirectionalSummaryText(card, '[data-summary-profit-rate]', `${profitRate.toFixed(2)}%`, direction);
             });
+            if (unifiedSummaryCard) {
+                unifiedSummaryCard.hidden = true;
+            }
+        }
+
+        function updateUnifiedSummary(targetCurrency) {
+            if (!unifiedSummaryCard) {
+                return;
+            }
+
+            let purchaseValue = 0;
+            let marketValue = 0;
+            let receivedCount = 0;
+            rows.forEach((row) => {
+                const nativeCurrency = row.dataset.currency || '';
+                const quantity = toNumber(row.dataset.quantity);
+                const averagePrice = toNumber(row.dataset.averagePrice);
+                const currentPrice = toNumber(row.dataset.currentPrice);
+                if (![quantity, averagePrice].every(isFinite)) {
+                    return;
+                }
+
+                purchaseValue += convertCurrency(averagePrice * quantity, nativeCurrency, targetCurrency);
+                if (isFinite(currentPrice)) {
+                    marketValue += convertCurrency(currentPrice * quantity, nativeCurrency, targetCurrency);
+                    receivedCount += 1;
+                }
+            });
+
+            const fractionDigits = currencyFractionDigits(targetCurrency);
+            setText(unifiedSummaryCard, '[data-unified-summary-currency]', targetCurrency);
+            const status = unifiedSummaryCard.querySelector('[data-summary-status]');
+            if (status) {
+                status.textContent = `매입금액 ${formatNumber(purchaseValue, fractionDigits)} ${targetCurrency}`
+                    + ` · 적용 환율 1 USD = ${formatNumber(usdKrwRate, 2)} KRW`
+                    + (usdKrwRateTime ? ` · ${usdKrwRateTime} 기준` : '');
+            }
+
+            if (receivedCount < rows.length) {
+                setSummaryText(unifiedSummaryCard, '[data-summary-market-value]', '수신 대기');
+                setSummaryText(unifiedSummaryCard, '[data-summary-profit]', '-');
+                setSummaryText(unifiedSummaryCard, '[data-summary-profit-rate]', '-');
+                if (status) {
+                    status.textContent += ` · ${receivedCount}/${rows.length} 종목 반영`;
+                }
+                return;
+            }
+
+            const profit = marketValue - purchaseValue;
+            const profitRate = purchaseValue === 0 ? 0 : (profit / purchaseValue) * 100;
+            const direction = profit > 0 ? 'positive' : profit < 0 ? 'negative' : 'flat';
+            setSummaryText(unifiedSummaryCard, '[data-summary-market-value]',
+                `${formatNumber(marketValue, fractionDigits)} ${targetCurrency}`);
+            setDirectionalSummaryText(unifiedSummaryCard, '[data-summary-profit]',
+                `${formatSignedNumber(profit, fractionDigits)} ${targetCurrency}`, direction);
+            setDirectionalSummaryText(unifiedSummaryCard, '[data-summary-profit-rate]',
+                `${profitRate.toFixed(2)}%`, direction);
+        }
+
+        function renderIndustryAllocations() {
+            if (!nativeIndustryGrid || !unifiedIndustryGrid) {
+                return;
+            }
+
+            const unified = currencyView !== 'SEPARATED';
+            nativeIndustryGrid.hidden = unified;
+            unifiedIndustryGrid.hidden = !unified;
+            if (!unified) {
+                return;
+            }
+
+            const amountsByIndustry = new Map();
+            let totalPurchaseValue = 0;
+            rows.forEach((row) => {
+                const quantity = toNumber(row.dataset.quantity);
+                const averagePrice = toNumber(row.dataset.averagePrice);
+                const nativeCurrency = row.dataset.currency || '';
+                if (![quantity, averagePrice].every(isFinite)) {
+                    return;
+                }
+
+                const purchaseValue = convertCurrency(
+                    averagePrice * quantity,
+                    nativeCurrency,
+                    currencyView);
+                const groupName = row.dataset.industryGroup || '없음';
+                const industryName = row.dataset.industryName || '없음';
+                const key = `${groupName}\u0000${industryName}`;
+                const allocation = amountsByIndustry.get(key) || {
+                    groupName,
+                    industryName,
+                    purchaseValue: 0
+                };
+                allocation.purchaseValue += purchaseValue;
+                amountsByIndustry.set(key, allocation);
+                totalPurchaseValue += purchaseValue;
+            });
+
+            unifiedIndustryGrid.replaceChildren();
+            Array.from(amountsByIndustry.values())
+                .sort((left, right) => right.purchaseValue - left.purchaseValue
+                    || left.groupName.localeCompare(right.groupName)
+                    || left.industryName.localeCompare(right.industryName))
+                .forEach((allocation) => {
+                    const percentage = totalPurchaseValue === 0
+                        ? 0
+                        : (allocation.purchaseValue / totalPurchaseValue) * 100;
+                    unifiedIndustryGrid.appendChild(createIndustryAllocationCard(
+                        allocation,
+                        percentage,
+                        currencyView));
+                });
+        }
+
+        function createIndustryAllocationCard(allocation, percentage, currency) {
+            const card = document.createElement('article');
+            card.className = 'industry-allocation-card';
+
+            const heading = document.createElement('div');
+            heading.className = 'industry-allocation-heading';
+            const industry = document.createElement('span');
+            industry.className = 'industry-chip';
+            if (allocation.industryName === '없음') {
+                industry.classList.add('is-empty');
+            }
+            industry.textContent = allocation.industryName;
+            const tags = document.createElement('span');
+            tags.className = 'industry-allocation-tags';
+            [allocation.groupName, currency].forEach((value) => {
+                const tag = document.createElement('span');
+                tag.className = 'industry-allocation-currency';
+                tag.textContent = value;
+                tags.appendChild(tag);
+            });
+            heading.append(industry, tags);
+
+            const bar = document.createElement('div');
+            bar.className = 'industry-allocation-bar';
+            bar.setAttribute('aria-hidden', 'true');
+            const fill = document.createElement('span');
+            fill.style.width = `${percentage}%`;
+            bar.appendChild(fill);
+
+            const value = document.createElement('p');
+            value.className = 'industry-allocation-value';
+            value.textContent = `${percentage.toFixed(2)}% · 매입금액 `
+                + `${formatNumber(allocation.purchaseValue, currencyFractionDigits(currency))} ${currency}`;
+
+            card.append(heading, bar, value);
+            return card;
+        }
+
+        function convertCurrency(value, fromCurrency, toCurrency) {
+            if (!isFinite(value) || fromCurrency === toCurrency) {
+                return value;
+            }
+            if (!isFinite(usdKrwRate) || usdKrwRate <= 0) {
+                return NaN;
+            }
+            if (fromCurrency === 'USD' && toCurrency === 'KRW') {
+                return value * usdKrwRate;
+            }
+            if (fromCurrency === 'KRW' && toCurrency === 'USD') {
+                return value / usdKrwRate;
+            }
+            return NaN;
+        }
+
+        function currencyFractionDigits(currency) {
+            return currency === 'USD' ? 2 : 0;
         }
 
         function setText(row, selector, value) {
             const element = row.querySelector(selector);
             if (element) {
                 element.textContent = value;
+            }
+        }
+
+        function setSecondaryText(row, selector, value, visible) {
+            const element = row.querySelector(selector);
+            if (element) {
+                element.textContent = value;
+                element.hidden = !visible;
             }
         }
 

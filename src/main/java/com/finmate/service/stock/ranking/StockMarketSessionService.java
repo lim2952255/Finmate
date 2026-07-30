@@ -29,14 +29,15 @@ public class StockMarketSessionService {
         return isMarketOpen(marketType, referenceDateTime) || isFinalRefreshWindow(marketType, referenceDateTime);
     }
 
+    // 시장별 프리마켓, 정규장, 애프터마켓을 모두 포함한다.
     boolean isMarketOpen(StockMarketType marketType, ZonedDateTime referenceDateTime) {
-        return StockMarketSchedules.isTradingTime(marketType, referenceDateTime);
+        return StockMarketSchedules.isMarketTradingTime(marketType, referenceDateTime);
     }
 
     // 해당 시장의 정규장 또는 시간외 장 마감 직후 2분 이내인지 확인하는 메서드
     private boolean isFinalRefreshWindow(StockMarketType marketType, ZonedDateTime referenceDateTime) {
         // 해당 시장의 운영정보 (장 시작 시간 / 종료시간)을 받는다.
-        StockMarketSchedule schedule = StockMarketSchedules.get(marketType);
+        StockMarketSchedule schedule = StockMarketSchedules.getSchedule(marketType);
         // 해당 시장의 시간대를 기준으로 현재 시간을 구한다.
         ZonedDateTime marketDateTime = referenceDateTime.withZoneSameInstant(schedule.zoneId());
 
@@ -45,7 +46,7 @@ public class StockMarketSessionService {
             return false;
         }
 
-        return isWithinFinalRefreshWindow(marketDateTime, schedule.closeTime())
+        return isWithinFinalRefreshWindow(marketDateTime, schedule.regularCloseTime())
                 || isWithinFinalRefreshWindow(marketDateTime, schedule.afterHoursCloseTime());
     }
 

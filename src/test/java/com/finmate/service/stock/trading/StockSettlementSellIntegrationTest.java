@@ -121,7 +121,7 @@ class StockSettlementSellIntegrationTest extends StockSettlementIntegrationTestS
     private static MockedStatic<StockMarketSchedules> openMarket() {
         MockedStatic<StockMarketSchedules> schedules = mockStatic(StockMarketSchedules.class);
         schedules.when(() -> StockMarketSchedules.isTradingTime(
-                eq(StockMarketType.KOSPI), any(ZonedDateTime.class))).thenReturn(true);
+                any(Stock.class), any(ZonedDateTime.class))).thenReturn(true);
         return schedules;
     }
 }
