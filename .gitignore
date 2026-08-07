@@ -39,7 +39,6 @@ out/
 
 ### Summary ###
 /summary/
-SUMMARY.md
 .omx/
 .codex/*
 !.codex/config.toml
@@ -52,7 +51,7 @@ SUMMARY.md
 *.md
 !AGENTS.md
 !README.md
-!DESIGN.md
+!docs/DESIGN.md
 !docs/
 !docs/**/*.md
 .claude/

@@ -20,6 +20,7 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이�
 - 잔액·수량·잠금·원장 정합성 계약: [금융 불변식](FINANCIAL_INVARIANTS.md)
 - 주문 접수·체결·취소 흐름: [주식 거래 흐름](TRADING_FLOW.md)
 - KIS REST·WebSocket 경계: [KIS 연동](KIS_INTEGRATION.md)
+- 종목 상세 재무 학습 카드의 제품·데이터·표현 계약: [종목 상세 재무 학습 카드](STOCK_FINANCIAL_DETAIL.md)
 - 로컬 실행·설정·검증: [개발 가이드](DEVELOPMENT_GUIDE.md)
 
 > README에 JWT, FDS, 뉴스, OpenAI, React, Spring Batch, QueryDSL, AWS 배포 등이 목표로 기재되어 있으나 현재 `build.gradle`과 `src/main/java`에서 해당 구현은 확인되지 않는다. **현재 구현되지 않음**.

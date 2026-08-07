@@ -18,6 +18,12 @@ erDiagram
     Stock ||--o{ StockHolding : target
     Stock ||--o{ StockTradeTransaction : target
     Stock ||--o| DomesticStockMetadata : has
+    Stock ||--o| DomesticStockCurrentQuote : has
+    Stock ||--o| DomesticStockDetailRefreshState : refreshes
+    Stock ||--o{ DomesticStockFinancialRatio : has
+    Stock ||--o{ DomesticStockIncomeStatement : has
+    Stock ||--o{ DomesticStockBalanceSheet : has
+    Stock ||--o{ DomesticStockInvestorDailyTrade : has
     Stock ||--o| OverseasStockMetadata : has
     Stock ||--o{ StockChatMessage : discusses
     User ||--o{ StockChatMessage : writes
@@ -105,6 +111,10 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 - 국내/해외 종목 마스터 부가정보는 `DomesticStockMetadata`, `OverseasStockMetadata`에 1:1로 분리 저장한다.
 - 국내 업종코드명은 `DomesticStockSectorCode`에, 해외 거래소별 업종코드명은 `OverseasStockIndustryCode`에 저장해 종목 상세·목록·포트폴리오의 업종 코드 표시를 이름으로 변환한다.
 - 종목 상세페이지와 목록 화면은 저장된 메타데이터를 표시한다. 해외 업종코드명이 DB에 없으면 해당 거래소의 업종코드 목록을 KIS API에서 조회해 저장한 뒤 표시한다.
+- 국내 종목 상세의 현재가 투자지표는 `DomesticStockCurrentQuote`에 종목별 한 행으로 저장한다.
+- 재무비율·손익계산서·대차대조표는 `종목 + 연간/분기 구분 + 결산기간`별 행으로 저장하고, 현재 구현은 연간 응답만 적재한다.
+- 투자자매매동향은 `DomesticStockInvestorDailyTrade`에 `종목 + 시장코드 + 거래일`별로 저장한다. 이 값은 매매 수급이며 보유 지분율이 아니다.
+- `DomesticStockDetailRefreshState`는 현재가·재무비율·손익계산서·대차대조표·투자자 수급의 마지막 성공 갱신시각을 각각 보관한다.
 - 종목 검색은 `StockSearchType`으로 종목명/종목코드 검색과 업종명/업종코드 검색을 분리하고, 선택한 `StockMarketType`이 있으면 KOSPI·KOSDAQ·NASDAQ 시장 조건을 함께 적용한다. 업종 검색은 국내 대·중·소 업종코드와 업종명, 해외 거래소별 업종코드와 업종명을 대상으로 한다.
 - 국내 종목 업종 표시는 소업종, 중업종, 대업종 순서로 가장 세부적인 유효 업종 하나를 사용한다. 포트폴리오는 국내 종목을 국내 업종명 기준으로 집계하고, 해외 종목은 거래소별 업종 체계가 다르므로 거래소 그룹과 업종명을 함께 사용해 통화별 매입금액 비중을 계산한다.
 - 포트폴리오 평가손익은 브라우저 WebSocket 실시간 시세가 수신되면 실시간 가격으로 계산한다. 실시간 가격이 아직 없거나 장마감 상태이면 서버가 최신 일봉 종가를 DB에서 찾고, 부족하면 KIS 일봉 API로 최근 구간을 보충한 뒤 fallback 가격으로 내려보낸다.

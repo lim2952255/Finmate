@@ -1,6 +1,6 @@
 package com.finmate.repository.stock.metadata;
 
-import com.finmate.domain.stock.metadata.OverseasStockMetadata;
+import com.finmate.domain.stock.metadata.overseas.OverseasStockMetadata;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

@@ -30,11 +30,30 @@ WebSocket 체결값을 함께 사용하면 서로 다른 환경의 현재가·�
 | 환율·해외 지수 분봉 | `/uapi/overseas-price/v1/quotations/inquire-time-indexchartprice` | `FHKST03030200` |
 | 국내 지수 일봉 | `/uapi/domestic-stock/v1/quotations/inquire-daily-indexchartprice` | `FHKUP03500100` |
 | 국내 거래량 랭킹 | `/uapi/domestic-stock/v1/quotations/volume-rank` | `FHPST01710000` |
+| 국내 주식현재가 시세 | `/uapi/domestic-stock/v1/quotations/inquire-price` | `FHKST01010100` |
+| 국내 재무비율 | `/uapi/domestic-stock/v1/finance/financial-ratio` | `FHKST66430300` |
+| 국내 손익계산서 | `/uapi/domestic-stock/v1/finance/income-statement` | `FHKST66430200` |
+| 국내 대차대조표 | `/uapi/domestic-stock/v1/finance/balance-sheet` | `FHKST66430100` |
+| 국내 종목별 투자자매매동향(일별) | `/uapi/domestic-stock/v1/quotations/investor-trade-by-stock-daily` | `FHPTJ04160001` |
 | 해외 거래량 랭킹 | `/uapi/overseas-stock/v1/ranking/trade-vol` | `HHDFS76310010` |
 | 해외 거래대금 랭킹 | `/uapi/overseas-stock/v1/ranking/trade-pbmn` | `HHDFS76320010` |
 | 해외 업종별코드조회 | `/uapi/overseas-price/v1/quotations/industry-price` | `HHDFS76370100` |
 
 국내 거래대금도 국내 랭킹 client의 같은 경로·TR ID에 구분 파라미터를 전달한다.
+국내 종목 상세의 장중 현재가 REST 응답은 `stock:price:{symbol}` Redis 키에 기본 10초 TTL로 공유하고,
+Redis 장애 시 같은 TTL의 JVM 캐시를 fallback으로 사용한다. 브라우저에서는 KIS WebSocket 체결값이
+우선한다. 장중 현재가를 MySQL에 반복 저장하지 않고, 장이 닫힌 뒤 해당 종목의 첫 조회에서 그 거래일
+스냅샷을 한 번 저장한다. `DomesticStockDetailRefreshState`는 DB 스냅샷과 재무·투자자 API별 마지막
+성공 갱신시각을 보관한다. 기본 신선도는 재무 24시간, 투자자 수급은 장중 10분이다. 장외에는 마지막
+거래일 장마감 이후의 수급 스냅샷을 다음 거래일까지 재사용한다. 한 API의 조회가 실패해도
+다른 API의 저장 데이터와 기존 상세 화면은 반환한다. 재무 세 API는 분기 구분(`FID_DIV_CLS_CODE=1`)으로
+저장하며 상세 화면에는 최신 4개 분기를 비교해 보여준다. 기존 연간 데이터는 기간 구분값이 달라 보존되지만
+상세 화면의 기본 조회 대상에서는 제외한다. 재무 탭의 YoY, QoQ, TTM과 런레이트는 추가 KIS 호출 없이
+저장된 분기 손익계산서에서 계산한다. KIS가 제공하는 연도 누적 손익에서 같은 해의 직전 분기 누적값을
+차감해 개별 분기 실적으로 환산한다. 표에는 최신 4개 분기를 노출하고 최신 분기의 전년 동기까지 같은
+방식으로 환산하기 위해 계산 시에만 최대 6개 누적 분기를 조회한다. 비교 기준 분기가 없거나 기준 실적이
+0 이하이면 변화율은 계산하지 않는다.
+투자자매매동향은 개인·기관·외국인의 매수·매도·순매수 흐름이며 보유 지분율이 아니다.
 종목 랭킹 갱신은 `StockMarketSchedules`의 거래 가능 시간을 기준으로 판단한다. KOSPI/KOSDAQ은
 기존 KRX 운영시간을 유지하고, NASDAQ은 현지 시각 기준 프리마켓 04:00부터 정규장과
 애프터마켓을 거쳐 20:00까지 갱신한다. 정규장 또는 시간외 장 마감 직후 2분 이내에는 최종
