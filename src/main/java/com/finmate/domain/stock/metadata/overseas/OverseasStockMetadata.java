@@ -1,4 +1,4 @@
-package com.finmate.domain.stock.metadata;
+package com.finmate.domain.stock.metadata.overseas;
 
 import com.finmate.domain.stock.Stock;
 import jakarta.persistence.*;

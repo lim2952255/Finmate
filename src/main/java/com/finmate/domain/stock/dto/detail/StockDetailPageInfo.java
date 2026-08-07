@@ -78,6 +78,8 @@ public class StockDetailPageInfo {
     private final StockPriceMarker highestPriceMarker;
     private final StockPriceMarker lowestPriceMarker;
     private final StockMetadataDisplayInfo metadataDisplayInfo;
+    // 국내 종목 상세정보를 추가한다.
+    private final DomesticStockDetailInfo domesticDetailInfo;
     // 현재 종목 거래가 가능한지
     private final boolean stockTradingAvailable;
     // 종목 거래시간에 대한 설명
@@ -91,6 +93,7 @@ public class StockDetailPageInfo {
                                int savedDailyPriceCount,
                                List<StockDailyPrice> dailyPrices,
                                StockMetadataDisplayInfo metadataDisplayInfo,
+                               DomesticStockDetailInfo domesticDetailInfo,
                                boolean stockTradingAvailable,
                                String stockTradingTimeDescription) {
         this.stock = stock;
@@ -154,6 +157,8 @@ public class StockDetailPageInfo {
         this.highestPriceMarker = createHighestPriceMarker(this.dailyPrices, maxPrice, minPrice);
         this.lowestPriceMarker = createLowestPriceMarker(this.dailyPrices, maxPrice, minPrice);
         this.metadataDisplayInfo = metadataDisplayInfo;
+        // 국내 종목 상세정보를 추가
+        this.domesticDetailInfo = domesticDetailInfo;
         this.stockTradingAvailable = stockTradingAvailable;
         this.stockTradingTimeDescription = stockTradingTimeDescription;
     }

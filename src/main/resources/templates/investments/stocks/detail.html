@@ -717,6 +717,245 @@
             overflow-x: auto;
         }
 
+        .stock-detail-tabs {
+            display: flex;
+            gap: 6px;
+            margin: 24px 0 20px;
+            padding: 5px;
+            overflow-x: auto;
+            border: 1px solid #dbe3ef;
+            border-radius: 12px;
+            background: #f1f5f9;
+        }
+
+        .stock-detail-tab {
+            min-width: 96px;
+            min-height: 42px;
+            padding: 0 18px;
+            border: 0;
+            border-radius: 9px;
+            background: transparent;
+            color: #64748b;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .stock-detail-tab:hover { color: #1d4ed8; }
+
+        .stock-detail-tab[aria-selected="true"] {
+            background: #ffffff;
+            color: #1d4ed8;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+        }
+
+        .stock-detail-tab:focus-visible {
+            outline: 3px solid rgba(37, 99, 235, 0.28);
+            outline-offset: 1px;
+        }
+
+        .stock-detail-panel[hidden] { display: none; }
+
+        .detail-section-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .detail-section-header h2,
+        .detail-section-header h3 { margin: 0; }
+
+        .detail-section-header p {
+            margin: 5px 0 0;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .detail-updated-at {
+            flex: 0 0 auto;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .kis-metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .kis-metric-card {
+            min-width: 0;
+            padding: 14px;
+            border: 1px solid #dbe3ef;
+            border-radius: 11px;
+            background: #ffffff;
+        }
+
+        .kis-metric-card span {
+            display: block;
+            margin-bottom: 7px;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .kis-metric-card strong {
+            color: #0f172a;
+            font-size: 17px;
+            overflow-wrap: anywhere;
+        }
+
+        .kis-metric-card small {
+            display: block;
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 11px;
+        }
+
+        .kis-metric-card .positive { color: #dc2626; }
+        .kis-metric-card .negative { color: #2563eb; }
+        .kis-metric-card .neutral { color: #64748b; }
+
+        .financial-card-stack { display: grid; gap: 18px; }
+
+        .financial-analysis-notice {
+            margin: 0;
+            padding: 13px 15px;
+            border-radius: 10px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .financial-analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .financial-analysis-card {
+            padding: 17px;
+            border: 1px solid #dbe3ef;
+            border-radius: 12px;
+            background: #ffffff;
+        }
+
+        .financial-analysis-card h3 { margin: 0; }
+
+        .financial-analysis-card > p {
+            margin: 5px 0 15px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .financial-analysis-value {
+            display: block;
+            margin-bottom: 14px;
+            color: #0f172a;
+            font-size: 22px;
+        }
+
+        .financial-analysis-list {
+            display: grid;
+            gap: 9px;
+            margin: 0;
+        }
+
+        .financial-analysis-list div {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding-top: 9px;
+            border-top: 1px solid #eef2f7;
+        }
+
+        .financial-analysis-list dt {
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .financial-analysis-list dd {
+            margin: 0;
+            color: #0f172a;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .financial-analysis-list .positive { color: #dc2626; }
+        .financial-analysis-list .negative { color: #2563eb; }
+        .financial-analysis-list .neutral { color: #64748b; }
+
+        .financial-card {
+            padding: 18px;
+            border: 1px solid #dbe3ef;
+            border-radius: 12px;
+            background: #ffffff;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+        }
+
+        .detail-data-table {
+            width: 100%;
+            min-width: 720px;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .detail-data-table th,
+        .detail-data-table td {
+            padding: 11px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .detail-data-table th:first-child,
+        .detail-data-table td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 1;
+            background: #ffffff;
+            text-align: left;
+        }
+
+        .detail-data-table thead th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 800;
+        }
+
+        .detail-data-table thead th:first-child { background: #f8fafc; }
+        .detail-data-table tbody tr:last-child td { border-bottom: 0; }
+        .detail-data-table .positive { color: #dc2626; font-weight: 800; }
+        .detail-data-table .negative { color: #2563eb; font-weight: 800; }
+        .detail-data-table .neutral { color: #64748b; font-weight: 800; }
+
+        .detail-empty-state {
+            margin: 0;
+            padding: 22px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: #64748b;
+            text-align: center;
+        }
+
+        .investor-notice {
+            margin: 0 0 14px;
+            padding: 12px 14px;
+            border-radius: 9px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 13px;
+            line-height: 1.55;
+        }
+
         .stock-action-section {
             display: flex;
             align-items: center;
@@ -1351,6 +1590,24 @@
             .stock-chat-character-count {
                 display: none;
             }
+
+            .detail-section-header {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .kis-metric-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .financial-card {
+                padding: 14px;
+            }
+
+            .financial-analysis-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -1366,7 +1623,7 @@
                     <span th:if="${stockDetailPageInfo.stock.nameEn != null and !#strings.isEmpty(stockDetailPageInfo.stock.nameEn)}"
                           th:text="|(${stockDetailPageInfo.stock.nameEn})|">(Samsung Electronics)</span>
                 </h1>
-                <p>일봉 차트, 실시간 호가, 종목 마스터 정보를 한 화면에서 확인합니다.</p>
+                <p>실시간 시세와 기업 재무, 투자자별 매매 수급을 탭으로 확인합니다.</p>
             </div>
 
             <section>
@@ -1697,6 +1954,36 @@
                 </div>
             </section>
 
+            <div class="stock-detail-tabs" role="tablist" aria-label="종목 상세 정보">
+                <button id="stock-detail-tab-quote"
+                        class="stock-detail-tab"
+                        type="button"
+                        role="tab"
+                        aria-selected="true"
+                        aria-controls="stock-detail-panel-quote"
+                        tabindex="0">시세</button>
+                <button id="stock-detail-tab-financial"
+                        class="stock-detail-tab"
+                        type="button"
+                        role="tab"
+                        aria-selected="false"
+                        aria-controls="stock-detail-panel-financial"
+                        tabindex="-1">재무</button>
+                <button id="stock-detail-tab-investor"
+                        class="stock-detail-tab"
+                        type="button"
+                        role="tab"
+                        aria-selected="false"
+                        aria-controls="stock-detail-panel-investor"
+                        tabindex="-1">투자자</button>
+            </div>
+
+            <div id="stock-detail-panel-quote"
+                 class="stock-detail-panel"
+                 role="tabpanel"
+                 aria-labelledby="stock-detail-tab-quote"
+                 tabindex="0">
+
             <section>
                 <h2>종목 정보</h2>
 
@@ -1728,6 +2015,86 @@
                         <span th:if="${stockDetailPageInfo.latestClosePrice != null}"
                               th:text="${stockDetailPageInfo.formatPrice(stockDetailPageInfo.latestClosePrice)}">70,500</span>
                         <span th:unless="${stockDetailPageInfo.latestClosePrice != null}">데이터 없음</span>
+                    </div>
+                </div>
+
+                <div th:if="${stockDetailPageInfo.domesticDetailInfo.supported and stockDetailPageInfo.domesticDetailInfo.hasQuote()}">
+                    <div class="detail-section-header" style="margin-top: 22px;">
+                        <div>
+                            <h3>KIS 주요 시세 지표</h3>
+                            <p>한국투자증권 현재가 조회 기준 지표입니다.</p>
+                        </div>
+                        <span class="detail-updated-at"
+                              th:text="|갱신 ${stockDetailPageInfo.domesticDetailInfo.formatUpdatedAt(stockDetailPageInfo.domesticDetailInfo.quoteUpdatedAt)}|">
+                            갱신 2026.08.02 09:30
+                        </span>
+                    </div>
+                    <div class="kis-metric-grid" th:with="quote=${stockDetailPageInfo.domesticDetailInfo.quote}">
+                        <div class="kis-metric-card">
+                            <span>현재가 (원)</span>
+                            <strong id="kis-current-price"
+                                    th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.currentPrice)}">70,500.00</strong>
+                            <small id="kis-current-change-rate"
+                                   th:class="${stockDetailPageInfo.domesticDetailInfo.directionClass(quote.changeRate)}"
+                                   th:text="|전일 대비 ${stockDetailPageInfo.domesticDetailInfo.formatSignedPercent(quote.changeRate)}|">전일 대비 +1.25%</small>
+                        </div>
+                        <div class="kis-metric-card">
+                            <span>시가 / 고가 / 저가 (원)</span>
+                            <strong th:text="|${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.openPrice)} / ${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.highPrice)} / ${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.lowPrice)}|">
+                                69,800.00 / 71,000.00 / 69,500.00
+                            </strong>
+                        </div>
+                        <div class="kis-metric-card">
+                            <span>누적 거래량</span>
+                            <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatInteger(quote.accumulatedVolume)}">12,345,678</strong>
+                        </div>
+                        <div class="kis-metric-card">
+                            <span>누적 거래대금 (백만원)</span>
+                            <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.accumulatedTradeAmount)}">870,000,000.00</strong>
+                        </div>
+                        <div class="kis-metric-card">
+                            <span>PER (배)</span>
+                            <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.per)}">12.30</strong>
+                        </div>
+                        <div class="kis-metric-card">
+                            <span>PBR (배)</span>
+                            <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.pbr)}">1.40</strong>
+                        </div>
+                        <div class="kis-metric-card">
+                            <span>EPS (원)</span>
+                            <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.eps)}">5,730.00</strong>
+                        </div>
+                        <div class="kis-metric-card">
+                            <span>BPS (원)</span>
+                            <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.bps)}">52,100.00</strong>
+                        </div>
+                        <div class="kis-metric-card">
+                            <span>시가총액 (억원)</span>
+                            <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.marketCap)}">430,000.00</strong>
+                        </div>
+                        <div class="kis-metric-card">
+                            <span>상장주식 수</span>
+                            <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatInteger(quote.listedShares)}">5,969,782,550</strong>
+                        </div>
+                        <div class="kis-metric-card">
+                            <span>52주 최고가 (원)</span>
+                            <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.w52HighPrice)}">88,000.00</strong>
+                            <small th:text="${stockDetailPageInfo.domesticDetailInfo.formatDate(quote.w52HighDate)}">2026.07.01</small>
+                        </div>
+                        <div class="kis-metric-card">
+                            <span>52주 최저가 (원)</span>
+                            <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.w52LowPrice)}">52,000.00</strong>
+                            <small th:text="${stockDetailPageInfo.domesticDetailInfo.formatDate(quote.w52LowDate)}">2025.11.01</small>
+                        </div>
+                        <div class="kis-metric-card">
+                            <span>외국인 보유수량</span>
+                            <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatInteger(quote.foreignHoldingQuantity)}">3,000,000,000</strong>
+                        </div>
+                        <div class="kis-metric-card">
+                            <span>외국인 소진율</span>
+                            <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatPercent(quote.foreignExhaustionRate)}">50.25%</strong>
+                            <small>보유 비율이 아닌 KIS 소진율 지표</small>
+                        </div>
                     </div>
                 </div>
 
@@ -1774,6 +2141,324 @@
                     </p>
                 </div>
             </section>
+            </div>
+
+            <div id="stock-detail-panel-financial"
+                 class="stock-detail-panel"
+                 role="tabpanel"
+                 aria-labelledby="stock-detail-tab-financial"
+                 tabindex="0"
+                 hidden>
+                <div class="detail-section-header">
+                    <div>
+                        <h2>재무 정보</h2>
+                        <p>최근 4개 분기의 재무비율과 주요 재무제표를 비교합니다.</p>
+                    </div>
+                    <span class="detail-updated-at"
+                          th:if="${stockDetailPageInfo.domesticDetailInfo.supported}"
+                          th:text="|갱신 ${stockDetailPageInfo.domesticDetailInfo.formatUpdatedAt(stockDetailPageInfo.domesticDetailInfo.financialUpdatedAt)}|">
+                        갱신 2026.08.02 09:30
+                    </span>
+                </div>
+
+                <div class="financial-card-stack"
+                     th:if="${stockDetailPageInfo.domesticDetailInfo.supported}">
+                    <p class="financial-analysis-notice"
+                       th:if="${stockDetailPageInfo.domesticDetailInfo.hasFinancialAnalysis()}">
+                        YoY는 전년 같은 분기, QoQ는 직전 분기와 비교한 변화율입니다.
+                        TTM은 최근 실제 4개 분기의 합계이며, 런레이트는 최신 분기 실적이 유지된다고 가정한 단순 연환산 값입니다.
+                        KIS 누적 손익계산서 값은 직전 누적값을 차감해 개별 분기 실적으로 환산합니다.
+                    </p>
+
+                    <div class="financial-analysis-grid"
+                         th:if="${stockDetailPageInfo.domesticDetailInfo.hasFinancialAnalysis()}"
+                         th:with="analysis=${stockDetailPageInfo.domesticDetailInfo.financialAnalysis}">
+                        <article class="financial-analysis-card" th:with="metric=${analysis.revenue}">
+                            <h3>매출액 분석</h3>
+                            <p th:text="|${stockDetailPageInfo.domesticDetailInfo.formatQuarter(analysis.latestPeriod)} 기준 · 억원|">
+                                2026년 2분기 기준 · 억원
+                            </p>
+                            <strong class="financial-analysis-value"
+                                    th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(metric.latestQuarter)}">120,000.00</strong>
+                            <dl class="financial-analysis-list">
+                                <div>
+                                    <dt>YoY</dt>
+                                    <dd th:class="${stockDetailPageInfo.domesticDetailInfo.directionClass(metric.yoyRate)}"
+                                        th:text="${stockDetailPageInfo.domesticDetailInfo.formatSignedPercent(metric.yoyRate)}">+12.00%</dd>
+                                </div>
+                                <div>
+                                    <dt>QoQ</dt>
+                                    <dd th:class="${stockDetailPageInfo.domesticDetailInfo.directionClass(metric.qoqRate)}"
+                                        th:text="${stockDetailPageInfo.domesticDetailInfo.formatSignedPercent(metric.qoqRate)}">+3.00%</dd>
+                                </div>
+                                <div>
+                                    <dt>TTM</dt>
+                                    <dd th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(metric.ttm)}">450,000.00</dd>
+                                </div>
+                                <div>
+                                    <dt>런레이트</dt>
+                                    <dd th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(metric.runRate)}">480,000.00</dd>
+                                </div>
+                            </dl>
+                        </article>
+
+                        <article class="financial-analysis-card" th:with="metric=${analysis.operatingProfit}">
+                            <h3>영업이익 분석</h3>
+                            <p th:text="|${stockDetailPageInfo.domesticDetailInfo.formatQuarter(analysis.latestPeriod)} 기준 · 억원|">
+                                2026년 2분기 기준 · 억원
+                            </p>
+                            <strong class="financial-analysis-value"
+                                    th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(metric.latestQuarter)}">20,000.00</strong>
+                            <dl class="financial-analysis-list">
+                                <div>
+                                    <dt>YoY</dt>
+                                    <dd th:class="${stockDetailPageInfo.domesticDetailInfo.directionClass(metric.yoyRate)}"
+                                        th:text="${stockDetailPageInfo.domesticDetailInfo.formatSignedPercent(metric.yoyRate)}">+18.00%</dd>
+                                </div>
+                                <div>
+                                    <dt>QoQ</dt>
+                                    <dd th:class="${stockDetailPageInfo.domesticDetailInfo.directionClass(metric.qoqRate)}"
+                                        th:text="${stockDetailPageInfo.domesticDetailInfo.formatSignedPercent(metric.qoqRate)}">+5.00%</dd>
+                                </div>
+                                <div>
+                                    <dt>TTM</dt>
+                                    <dd th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(metric.ttm)}">72,000.00</dd>
+                                </div>
+                                <div>
+                                    <dt>런레이트</dt>
+                                    <dd th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(metric.runRate)}">80,000.00</dd>
+                                </div>
+                            </dl>
+                        </article>
+
+                        <article class="financial-analysis-card" th:with="metric=${analysis.netIncome}">
+                            <h3>당기순이익 분석</h3>
+                            <p th:text="|${stockDetailPageInfo.domesticDetailInfo.formatQuarter(analysis.latestPeriod)} 기준 · 억원|">
+                                2026년 2분기 기준 · 억원
+                            </p>
+                            <strong class="financial-analysis-value"
+                                    th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(metric.latestQuarter)}">15,000.00</strong>
+                            <dl class="financial-analysis-list">
+                                <div>
+                                    <dt>YoY</dt>
+                                    <dd th:class="${stockDetailPageInfo.domesticDetailInfo.directionClass(metric.yoyRate)}"
+                                        th:text="${stockDetailPageInfo.domesticDetailInfo.formatSignedPercent(metric.yoyRate)}">+14.00%</dd>
+                                </div>
+                                <div>
+                                    <dt>QoQ</dt>
+                                    <dd th:class="${stockDetailPageInfo.domesticDetailInfo.directionClass(metric.qoqRate)}"
+                                        th:text="${stockDetailPageInfo.domesticDetailInfo.formatSignedPercent(metric.qoqRate)}">+4.00%</dd>
+                                </div>
+                                <div>
+                                    <dt>TTM</dt>
+                                    <dd th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(metric.ttm)}">54,000.00</dd>
+                                </div>
+                                <div>
+                                    <dt>런레이트</dt>
+                                    <dd th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(metric.runRate)}">60,000.00</dd>
+                                </div>
+                            </dl>
+                        </article>
+                    </div>
+
+                    <article class="financial-card">
+                        <div class="detail-section-header">
+                            <div>
+                                <h3>재무비율</h3>
+                                <p>최근 4개 분기의 성장률, 수익성과 재무 안정성 지표입니다.</p>
+                            </div>
+                        </div>
+                        <div class="table-scroll"
+                             th:if="${!#lists.isEmpty(stockDetailPageInfo.domesticDetailInfo.financialRatios)}">
+                            <table class="detail-data-table">
+                                <thead>
+                                <tr>
+                                    <th scope="col">분기</th>
+                                    <th scope="col">매출 성장률</th>
+                                    <th scope="col">영업이익 성장률</th>
+                                    <th scope="col">순이익 성장률</th>
+                                    <th scope="col">ROE</th>
+                                    <th scope="col">EPS</th>
+                                    <th scope="col">BPS</th>
+                                    <th scope="col">유보율</th>
+                                    <th scope="col">부채비율</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="ratio : ${stockDetailPageInfo.domesticDetailInfo.financialRatios}">
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatQuarter(ratio.fiscalPeriod)}">2025년 4분기</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatPercent(ratio.salesGrowthRate)}">8.20%</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatPercent(ratio.operatingProfitGrowthRate)}">12.30%</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatPercent(ratio.netIncomeGrowthRate)}">10.10%</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatPercent(ratio.roe)}">9.50%</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(ratio.eps)}">5,730.00</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(ratio.bps)}">52,100.00</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatPercent(ratio.reserveRate)}">12,000.00%</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatPercent(ratio.debtRate)}">26.40%</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="detail-empty-state"
+                           th:if="${#lists.isEmpty(stockDetailPageInfo.domesticDetailInfo.financialRatios)}">
+                            저장된 재무비율 데이터가 없습니다.
+                        </p>
+                    </article>
+
+                    <article class="financial-card">
+                        <div class="detail-section-header">
+                            <div>
+                                <h3>손익계산서 (억원)</h3>
+                                <p>최근 4개 분기의 매출과 이익을 비교합니다.</p>
+                            </div>
+                        </div>
+                        <div class="table-scroll"
+                             th:if="${!#lists.isEmpty(stockDetailPageInfo.domesticDetailInfo.incomeStatements)}">
+                            <table class="detail-data-table">
+                                <thead>
+                                <tr>
+                                    <th scope="col">분기</th>
+                                    <th scope="col">매출액</th>
+                                    <th scope="col">영업이익</th>
+                                    <th scope="col">경상이익</th>
+                                    <th scope="col">당기순이익</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="statement : ${stockDetailPageInfo.domesticDetailInfo.incomeStatements}">
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatQuarter(statement.fiscalPeriod)}">2025년 4분기</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(statement.revenue)}">300,000.00</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(statement.operatingProfit)}">30,000.00</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(statement.ordinaryProfit)}">29,000.00</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(statement.netIncome)}">25,000.00</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="detail-empty-state"
+                           th:if="${#lists.isEmpty(stockDetailPageInfo.domesticDetailInfo.incomeStatements)}">
+                            저장된 손익계산서 데이터가 없습니다.
+                        </p>
+                    </article>
+
+                    <article class="financial-card">
+                        <div class="detail-section-header">
+                            <div>
+                                <h3>대차대조표 (억원)</h3>
+                                <p>최근 4개 분기의 자산, 부채와 자본을 비교합니다.</p>
+                            </div>
+                        </div>
+                        <div class="table-scroll"
+                             th:if="${!#lists.isEmpty(stockDetailPageInfo.domesticDetailInfo.balanceSheets)}">
+                            <table class="detail-data-table">
+                                <thead>
+                                <tr>
+                                    <th scope="col">분기</th>
+                                    <th scope="col">유동자산</th>
+                                    <th scope="col">총자산</th>
+                                    <th scope="col">유동부채</th>
+                                    <th scope="col">총부채</th>
+                                    <th scope="col">자본금</th>
+                                    <th scope="col">이익잉여금</th>
+                                    <th scope="col">자기자본</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="sheet : ${stockDetailPageInfo.domesticDetailInfo.balanceSheets}">
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatQuarter(sheet.fiscalPeriod)}">2025년 4분기</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(sheet.currentAssets)}">220,000.00</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(sheet.totalAssets)}">450,000.00</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(sheet.currentLiabilities)}">80,000.00</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(sheet.totalLiabilities)}">120,000.00</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(sheet.capital)}">900.00</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(sheet.retainedEarnings)}">300,000.00</td>
+                                    <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(sheet.totalEquity)}">330,000.00</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="detail-empty-state"
+                           th:if="${#lists.isEmpty(stockDetailPageInfo.domesticDetailInfo.balanceSheets)}">
+                            저장된 대차대조표 데이터가 없습니다.
+                        </p>
+                    </article>
+                </div>
+                <p class="detail-empty-state"
+                   th:unless="${stockDetailPageInfo.domesticDetailInfo.supported}">
+                    국내 주식에 한해 KIS 재무 정보를 제공합니다.
+                </p>
+            </div>
+
+            <div id="stock-detail-panel-investor"
+                 class="stock-detail-panel"
+                 role="tabpanel"
+                 aria-labelledby="stock-detail-tab-investor"
+                 tabindex="0"
+                 hidden>
+                <div class="detail-section-header">
+                    <div>
+                        <h2>투자자별 매매 수급</h2>
+                        <p>외국인, 개인, 기관의 일별 매수·매도·순매수 수량입니다.</p>
+                    </div>
+                    <span class="detail-updated-at"
+                          th:if="${stockDetailPageInfo.domesticDetailInfo.supported}"
+                          th:text="|갱신 ${stockDetailPageInfo.domesticDetailInfo.formatUpdatedAt(stockDetailPageInfo.domesticDetailInfo.investorUpdatedAt)}|">
+                        갱신 2026.08.02 09:30
+                    </span>
+                </div>
+                <p class="investor-notice">
+                    아래 값은 투자자별 <strong>매매 수급</strong>이며 보유 지분율이나 소유 비율을 의미하지 않습니다.
+                    순매수는 매수 수량에서 매도 수량을 뺀 값입니다.
+                </p>
+                <div class="financial-card"
+                     th:if="${stockDetailPageInfo.domesticDetailInfo.supported and stockDetailPageInfo.domesticDetailInfo.hasInvestorTrades()}">
+                    <div class="table-scroll">
+                        <table class="detail-data-table">
+                            <thead>
+                            <tr>
+                                <th scope="col">거래일</th>
+                                <th scope="col">종가</th>
+                                <th scope="col">외국인 매수</th>
+                                <th scope="col">외국인 매도</th>
+                                <th scope="col">외국인 순매수</th>
+                                <th scope="col">개인 매수</th>
+                                <th scope="col">개인 매도</th>
+                                <th scope="col">개인 순매수</th>
+                                <th scope="col">기관 매수</th>
+                                <th scope="col">기관 매도</th>
+                                <th scope="col">기관 순매수</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="trade : ${stockDetailPageInfo.domesticDetailInfo.investorTrades}">
+                                <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatDate(trade.tradeDate)}">2026.08.01</td>
+                                <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(trade.closePrice)}">70,500.00</td>
+                                <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatInteger(trade.foreignBuyQuantity)}">1,000</td>
+                                <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatInteger(trade.foreignSellQuantity)}">900</td>
+                                <td th:class="${stockDetailPageInfo.domesticDetailInfo.directionClass(trade.foreignNetQuantity)}"
+                                    th:text="${stockDetailPageInfo.domesticDetailInfo.formatSignedInteger(trade.foreignNetQuantity)}">+100</td>
+                                <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatInteger(trade.personalBuyQuantity)}">900</td>
+                                <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatInteger(trade.personalSellQuantity)}">1,100</td>
+                                <td th:class="${stockDetailPageInfo.domesticDetailInfo.directionClass(trade.personalNetQuantity)}"
+                                    th:text="${stockDetailPageInfo.domesticDetailInfo.formatSignedInteger(trade.personalNetQuantity)}">-200</td>
+                                <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatInteger(trade.institutionBuyQuantity)}">1,200</td>
+                                <td th:text="${stockDetailPageInfo.domesticDetailInfo.formatInteger(trade.institutionSellQuantity)}">1,100</td>
+                                <td th:class="${stockDetailPageInfo.domesticDetailInfo.directionClass(trade.institutionNetQuantity)}"
+                                    th:text="${stockDetailPageInfo.domesticDetailInfo.formatSignedInteger(trade.institutionNetQuantity)}">+100</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <p class="detail-empty-state"
+                   th:if="${stockDetailPageInfo.domesticDetailInfo.supported and !stockDetailPageInfo.domesticDetailInfo.hasInvestorTrades()}">
+                    저장된 투자자별 매매 수급 데이터가 없습니다.
+                </p>
+                <p class="detail-empty-state"
+                   th:unless="${stockDetailPageInfo.domesticDetailInfo.supported}">
+                    국내 주식에 한해 KIS 투자자별 매매 수급을 제공합니다.
+                </p>
+            </div>
 
             <section id="stock-chat"
                      class="stock-chat"
@@ -1875,6 +2560,50 @@
         </section>
     </main>
 </div>
+<script>
+    (() => {
+        const tabList = document.querySelector('.stock-detail-tabs[role="tablist"]');
+        if (!tabList) {
+            return;
+        }
+
+        const tabs = Array.from(tabList.querySelectorAll('[role="tab"]'));
+        const activateTab = (selectedTab, moveFocus) => {
+            tabs.forEach((tab) => {
+                const selected = tab === selectedTab;
+                const panel = document.getElementById(tab.getAttribute('aria-controls'));
+                tab.setAttribute('aria-selected', String(selected));
+                tab.tabIndex = selected ? 0 : -1;
+                if (panel) {
+                    panel.hidden = !selected;
+                }
+            });
+            if (moveFocus) {
+                selectedTab.focus();
+            }
+        };
+
+        tabs.forEach((tab, index) => {
+            tab.addEventListener('click', () => activateTab(tab, false));
+            tab.addEventListener('keydown', (event) => {
+                let nextIndex = null;
+                if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+                    nextIndex = (index + 1) % tabs.length;
+                } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+                    nextIndex = (index - 1 + tabs.length) % tabs.length;
+                } else if (event.key === 'Home') {
+                    nextIndex = 0;
+                } else if (event.key === 'End') {
+                    nextIndex = tabs.length - 1;
+                }
+                if (nextIndex !== null) {
+                    event.preventDefault();
+                    activateTab(tabs[nextIndex], true);
+                }
+            });
+        });
+    })();
+</script>
 <script>
     (() => {
         const candleLayer = document.getElementById('realtime-candle-layer');
@@ -1981,12 +2710,25 @@
             const currentBadge = document.getElementById('realtime-current-badge');
             const currentBadgePrice = document.getElementById('realtime-current-badge-price');
             const currentBadgeRate = document.getElementById('realtime-current-badge-rate');
+            const kisCurrentPrice = document.getElementById('kis-current-price');
+            const kisCurrentChangeRate = document.getElementById('kis-current-change-rate');
             const tradeTime = document.getElementById('realtime-trade-time');
             const marketSession = document.getElementById('realtime-market-session');
             const currentY = toPriceY(currentPrice);
 
             if (chartPrice) {
                 chartPrice.textContent = formattedPrice;
+            }
+
+            if (kisCurrentPrice) {
+                kisCurrentPrice.textContent = formattedPrice;
+            }
+
+            if (kisCurrentChangeRate) {
+                kisCurrentChangeRate.textContent = `전일 대비 ${formatSignedRate(changeRate, priceDirection)}`;
+                kisCurrentChangeRate.setAttribute('class', priceDirection === 'bullish'
+                    ? 'positive'
+                    : priceDirection === 'bearish' ? 'negative' : 'neutral');
             }
 
             if (priceChange) {

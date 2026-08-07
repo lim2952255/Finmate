@@ -1,12 +1,15 @@
 package com.finmate.service.stock;
 
 import com.finmate.domain.stock.Stock;
+import com.finmate.domain.stock.StockMarketType;
 import com.finmate.domain.stock.dto.detail.StockChartPeriod;
+import com.finmate.domain.stock.dto.detail.DomesticStockCurrentQuoteSnapshot;
+import com.finmate.domain.stock.dto.detail.DomesticStockDetailInfo;
 import com.finmate.domain.stock.dto.detail.StockDetailPageInfo;
 import com.finmate.domain.stock.dto.detail.StockIndustryDisplayNames;
 import com.finmate.domain.stock.dto.detail.StockMetadataDisplayInfo;
-import com.finmate.domain.stock.metadata.DomesticStockMetadata;
-import com.finmate.domain.stock.metadata.OverseasStockMetadata;
+import com.finmate.domain.stock.metadata.domestic.DomesticStockMetadata;
+import com.finmate.domain.stock.metadata.overseas.OverseasStockMetadata;
 import com.finmate.domain.stock.market.StockMarketSchedules;
 import com.finmate.domain.stock.price.StockDailyPrice;
 import com.finmate.repository.stock.StockRepository;
@@ -35,6 +38,8 @@ public class StockDetailService {
     private final StockIndustryCodeService stockIndustryCodeService;
     private final DomesticStockMetadataRepository domesticStockMetadataRepository;
     private final OverseasStockMetadataRepository overseasStockMetadataRepository;
+    private final DomesticStockDetailRefreshService domesticStockDetailRefreshService;
+    private final DomesticStockDetailQueryService domesticStockDetailQueryService;
 
     // 특정 기간동안의 특정 종목의 일봉 데이터들을 조회
     public StockDetailPageInfo getStockDetailPageInfo(Long stockId, StockChartPeriod period) {
@@ -66,6 +71,7 @@ public class StockDetailService {
                         chartStartDate,
                         expectedLatestTradeDate);
         StockMetadataDisplayInfo metadataDisplayInfo = getMetadataDisplayInfo(stock);
+        DomesticStockDetailInfo domesticDetailInfo = getDomesticDetailInfo(stock, expectedLatestTradeDate);
 
         // StockDetailPageInfo라는 DTO에 dailyPrices 리스트를 담아서 리턴한다.
         return new StockDetailPageInfo(
@@ -77,8 +83,25 @@ public class StockDetailService {
                 savedDailyPriceCount,
                 dailyPrices,
                 metadataDisplayInfo,
+                domesticDetailInfo,
                 StockMarketSchedules.isTradingTimeNow(stock),
                 StockMarketSchedules.describeTradingHours(stock));
+    }
+
+    // 국내 종목의 상세정보. 즉 재무상태표나 대차대조표 등의 정보를 DomesticStockDetailInfo라는 하나의 DTO에 담아서 리턴한다.
+    private DomesticStockDetailInfo getDomesticDetailInfo(Stock stock, LocalDate investorBaseDate) {
+        if (stock.getMarketType() != StockMarketType.KOSPI
+                && stock.getMarketType() != StockMarketType.KOSDAQ) {
+            return DomesticStockDetailInfo.unsupported();
+        }
+
+        // 종목 현재가는 Redis에 캐싱된 데이터가 있으면 캐싱된 데이터를 리턴받고, 없으면 KIS API를 통해 갱신한 다음, 데이터를 Redis에 캐싱하고 캐싱된 데이터를 받는다.
+        // 다른 데이터들은 DB에서 정보를 조회해서 데이터를 최신상태로 만든다.
+        DomesticStockCurrentQuoteSnapshot currentQuote =
+                domesticStockDetailRefreshService.refreshIfNeeded(stock, investorBaseDate);
+        // 현재가는 Redis에 캐싱하거나 캐싱되어있는 데이터를 전달하고, 없으면 DB에서 가장 최신 데이터를 조회해서 DTO를 만든다.
+        // 다른 데이터들은 DB에서 가장 최신 데이터를 조회해서 DTO를 만든다.
+        return domesticStockDetailQueryService.getDetailInfo(stock.getId(), currentQuote);
     }
     // 종목 상세 페이지를 조회하는 순간
     // 필요한 경우에만 KIS API를 호출하고

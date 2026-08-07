@@ -1,8 +1,8 @@
 package com.finmate.domain.stock.dto.detail;
 
 import com.finmate.domain.stock.Stock;
-import com.finmate.domain.stock.metadata.DomesticStockMetadata;
-import com.finmate.domain.stock.metadata.OverseasStockMetadata;
+import com.finmate.domain.stock.metadata.domestic.DomesticStockMetadata;
+import com.finmate.domain.stock.metadata.overseas.OverseasStockMetadata;
 import lombok.Getter;
 
 import java.math.BigDecimal;

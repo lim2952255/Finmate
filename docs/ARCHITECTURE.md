@@ -103,6 +103,7 @@ JPA 엔티티, enum, 정책과 DTO를 포함한다. 잔액 변경, 자산 잠금
 - 공통 설정, REST 인증·호출 제한·재시도
 - 종목 마스터 파일과 국내 업종코드 파일 다운로드
 - 일봉·랭킹 REST API client
+- 국내 종목 상세의 현재가·재무비율·손익계산서·대차대조표·투자자 일별 수급 REST client
 - KIS WebSocket approval key, 연결·재연결, 구독 메시지와 payload 파싱
 
 Redis 접근 코드는 `service.stock.ranking.StockRankingCacheService`에 있어 엄격한 계층 분리는 아니다.
@@ -143,11 +144,20 @@ Stock는 Order / Reservation / Holding / TradeTransaction의 공통 종목 참�
 
 도메인별 client가 경로·TR ID·파라미터를 정하고 `KisRestClient`가 공통 인증 헤더, 호출 제한과 응답 검증을 처리한다. 액세스 토큰은 `KisTokenService`의 JVM 메모리에 저장된다.
 
+국내 종목 상세 조회는 `DomesticStockDetailRefreshService`가 재무·투자자 API별 마지막 성공 갱신시각을
+검사한 뒤 오래된 데이터만 KIS에서 다시 받아 별도 메타데이터 엔티티에 upsert한다. 장중 현재가 REST
+응답은 `DomesticStockCurrentQuoteCacheService`가 Redis에 10초간 공유하고 WebSocket 값이 화면에서
+우선한다. MySQL 현재가 스냅샷은 장 마감 뒤 종목별 첫 조회에서 하루 한 번 갱신한다. 외부 호출 실패는
+API별로 격리하며 `DomesticStockDetailQueryService`가 캐시 현재가와 저장 이력을 화면 DTO로 조합한다.
+
 ### Redis
 
 랭킹 캐시는 `StockRankingCacheService`가 관리한다. 키는 `stock:ranking:{market}:{type}`이고 값은 `StockRankingBoard` JSON, TTL은 장중 기본 30초·장외 기본 86,400초다.
 
 환율·해외 지수 실시간 캐시는 `MarketRealtimeCacheService`가 관리한다. 키는 `market:realtime:{indicator}`이고 값은 `MarketRealtimeMessage` JSON, TTL은 기본 120초다. 세션, 토큰, WebSocket Pub/Sub 용도는 **현재 구현되지 않음**.
+
+국내 종목 상세 현재가 REST 캐시는 `DomesticStockCurrentQuoteCacheService`가 관리한다. 키는
+`stock:price:{symbol}`이고 값은 조회 시각을 포함한 현재가 스냅샷 JSON, TTL은 기본 10초다.
 
 ### WebSocket
 
