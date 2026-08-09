@@ -795,12 +795,457 @@
             background: #ffffff;
         }
 
-        .kis-metric-card span {
+        .kis-metric-card > span {
             display: block;
             margin-bottom: 7px;
             color: #64748b;
             font-size: 12px;
             font-weight: 700;
+        }
+
+        .kis-metric-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 7px;
+        }
+
+        .kis-metric-label {
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .concept-help-button {
+            display: inline-flex;
+            flex: 0 0 auto;
+            align-items: center;
+            justify-content: center;
+            width: auto;
+            min-width: 23px;
+            height: 25px;
+            padding: 0 8px;
+            border: 1px solid #bfdbfe;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #2563eb;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 800;
+            line-height: 1;
+            transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+        }
+
+        .concept-help-button:hover {
+            border-color: #60a5fa;
+            background: #dbeafe;
+            transform: translateY(-1px);
+        }
+
+        .concept-help-button:focus-visible {
+            outline: 3px solid rgba(37, 99, 235, 0.25);
+            outline-offset: 2px;
+        }
+
+        .concept-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .concept-help-button--compact {
+            width: auto;
+            height: 24px;
+            padding: 0 8px;
+            font-size: 10px;
+        }
+
+        .detail-heading-with-concept {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .concept-help-button--summary {
+            width: auto;
+            height: 28px;
+            padding: 0 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        body.concept-dialog-open { overflow: hidden; }
+
+        .concept-drawer {
+            position: fixed;
+            inset: 0 0 0 auto;
+            width: min(var(--concept-drawer-width, 540px), calc(100vw - 48px));
+            height: 100dvh;
+            max-width: none;
+            max-height: none;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow: -18px 0 48px rgba(15, 23, 42, 0.18);
+        }
+
+        .concept-drawer-resizer {
+            position: absolute;
+            z-index: 2;
+            top: 0;
+            bottom: 0;
+            left: -8px;
+            width: 16px;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            cursor: col-resize;
+            touch-action: none;
+        }
+
+        .concept-drawer-resizer::after {
+            position: absolute;
+            top: 50%;
+            left: 6px;
+            width: 4px;
+            height: 64px;
+            border-radius: 999px;
+            background: #cbd5e1;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
+            content: "";
+            transform: translateY(-50%);
+            transition: width 120ms ease, background 120ms ease;
+        }
+
+        .concept-drawer-resizer:hover::after,
+        .concept-drawer-resizer:focus-visible::after,
+        body.concept-drawer-resizing .concept-drawer-resizer::after {
+            width: 5px;
+            background: #3b82f6;
+        }
+
+        .concept-drawer-resizer:focus-visible {
+            outline: none;
+        }
+
+        body.concept-drawer-resizing {
+            cursor: col-resize;
+            user-select: none;
+        }
+
+        .concept-drawer::backdrop {
+            background: rgba(15, 23, 42, 0.38);
+            backdrop-filter: blur(2px);
+        }
+
+        .concept-drawer-shell {
+            display: flex;
+            min-height: 100%;
+            flex-direction: column;
+        }
+
+        .concept-drawer-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 30px 32px 24px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .concept-drawer-eyebrow {
+            display: block;
+            margin-bottom: 6px;
+            color: #2563eb;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .concept-drawer-title {
+            margin: 0;
+            font-size: 25px;
+            letter-spacing: -0.03em;
+        }
+
+        .concept-drawer-close {
+            display: inline-flex;
+            flex: 0 0 auto;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: #475569;
+            cursor: pointer;
+            font-size: 24px;
+            line-height: 1;
+        }
+
+        .concept-drawer-close:hover { background: #f1f5f9; }
+
+        .concept-drawer-close:focus-visible {
+            outline: 3px solid rgba(37, 99, 235, 0.25);
+            outline-offset: 2px;
+        }
+
+        .concept-drawer-content {
+            flex: 1;
+            padding: 26px 32px 42px;
+            overflow-y: auto;
+        }
+
+        .concept-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 14px 16px;
+            border: 1px solid #fecaca;
+            border-radius: 12px;
+            background: #fff7f7;
+            color: #b91c1c;
+            font-size: 13px;
+            font-weight: 750;
+        }
+
+        .concept-card-body {
+            display: grid;
+            gap: 16px;
+        }
+
+        .concept-card-summary {
+            margin: 0;
+            padding: 18px 19px;
+            border: 1px solid #bfdbfe;
+            border-radius: 13px;
+            background: #eff6ff;
+            color: #1e3a8a;
+            font-size: 15.5px;
+            font-weight: 750;
+            line-height: 1.8;
+        }
+
+        .concept-card-visual {
+            margin: 0;
+            overflow: hidden;
+            border: 1px solid #dbeafe;
+            border-radius: 14px;
+            background: linear-gradient(145deg, #f8fbff 0%, #eef5ff 100%);
+        }
+
+        .concept-card-visual img {
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 2 / 1;
+            object-fit: contain;
+        }
+
+        .concept-card-visual figcaption {
+            padding: 12px 16px 14px;
+            border-top: 1px solid rgba(191, 219, 254, 0.72);
+            color: #475569;
+            font-size: 12.5px;
+            font-weight: 700;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .concept-stock-analysis {
+            padding: 19px;
+            border: 1px solid #a7f3d0;
+            border-radius: 14px;
+            background: linear-gradient(145deg, #f0fdf9 0%, #f8fffc 100%);
+        }
+
+        .concept-stock-analysis-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 15px;
+        }
+
+        .concept-stock-analysis-eyebrow {
+            display: block;
+            margin-bottom: 4px;
+            color: #047857;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 0.04em;
+        }
+
+        .concept-stock-analysis h3 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 17px;
+        }
+
+        .concept-stock-analysis-reference {
+            margin: 2px 0 0;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .concept-stock-analysis-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 9px;
+        }
+
+        .concept-stock-analysis-metric {
+            min-width: 0;
+            padding: 12px 13px;
+            border: 1px solid #d1fae5;
+            border-radius: 11px;
+            background: rgba(255, 255, 255, 0.84);
+        }
+
+        .concept-stock-analysis-metric span {
+            display: block;
+            margin-bottom: 5px;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 750;
+        }
+
+        .concept-stock-analysis-metric strong {
+            display: block;
+            color: #0f172a;
+            font-size: 16px;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+
+        .concept-stock-analysis-formula {
+            margin: 13px 0 0;
+            padding: 11px 13px;
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 12.5px;
+            font-weight: 800;
+            line-height: 1.65;
+            word-break: keep-all;
+        }
+
+        .concept-stock-analysis-interpretation {
+            margin: 13px 0 0;
+            color: #334155;
+            font-size: 13.5px;
+            line-height: 1.75;
+            word-break: keep-all;
+        }
+
+        .concept-stock-analysis-meta {
+            margin: 12px 0 0;
+            padding-top: 11px;
+            border-top: 1px solid rgba(16, 185, 129, 0.16);
+            color: #64748b;
+            font-size: 10.5px;
+            line-height: 1.55;
+        }
+
+        .concept-stock-analysis-unavailable {
+            margin: 0;
+            padding: 14px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.72);
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.65;
+        }
+
+        .concept-card-section {
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 13px;
+            background: #ffffff;
+        }
+
+        .concept-card-section summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 0;
+            color: #0f172a;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 800;
+            list-style: none;
+        }
+
+        .concept-card-section summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .concept-card-section summary::after {
+            content: '＋';
+            flex: 0 0 auto;
+            color: #64748b;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .concept-card-section[open] summary::after {
+            content: '−';
+        }
+
+        .concept-card-section summary:focus-visible {
+            border-radius: 6px;
+            outline: 3px solid rgba(37, 99, 235, 0.22);
+            outline-offset: 4px;
+        }
+
+        .concept-card-text {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(148, 163, 184, 0.22);
+        }
+
+        .concept-card-text p {
+            margin: 0;
+            color: #475569;
+            font-size: 14.5px;
+            line-height: 1.85;
+            word-break: keep-all;
+            overflow-wrap: break-word;
+        }
+
+        .concept-card-text p + p {
+            margin-top: 16px;
+        }
+
+        .concept-card-text .concept-card-formula {
+            padding: 12px 14px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.76);
+            color: #1e293b;
+            font-weight: 750;
+            line-height: 1.7;
+        }
+
+        .concept-card-section--bakery {
+            border-color: #fde68a;
+            background: #fffbeb;
+        }
+
+        .concept-card-section--caution {
+            border-color: #fecaca;
+            background: #fff7f7;
         }
 
         .kis-metric-card strong {
@@ -831,6 +1276,25 @@
             font-size: 13px;
             line-height: 1.6;
         }
+
+        .financial-analysis-concepts {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 7px;
+        }
+
+        .financial-analysis-concepts strong {
+            margin-right: 2px;
+            color: #1e3a8a;
+        }
+
+        .financial-analysis-concept-list {
+            color: #3b5ba5;
+            font-weight: 700;
+        }
+
+        .financial-analysis-description { margin: 0; }
 
         .financial-analysis-grid {
             display: grid;
@@ -1608,6 +2072,7 @@
             .financial-analysis-grid {
                 grid-template-columns: 1fr;
             }
+
         }
     </style>
 </head>
@@ -2021,7 +2486,16 @@
                 <div th:if="${stockDetailPageInfo.domesticDetailInfo.supported and stockDetailPageInfo.domesticDetailInfo.hasQuote()}">
                     <div class="detail-section-header" style="margin-top: 22px;">
                         <div>
-                            <h3>KIS 주요 시세 지표</h3>
+                            <div class="detail-heading-with-concept">
+                                <h3>KIS 주요 시세 지표</h3>
+                                <button class="concept-help-button concept-help-button--summary" type="button"
+                                        data-concept-code="VALUATION_AND_PROFITABILITY"
+                                        data-concept-title="수익성과 기업가치의 관계"
+                                        aria-haspopup="dialog" aria-controls="stock-concept-dialog"
+                                        aria-label="PER, PBR, ROE, EPS, BPS 관계 개념 보기">
+                                    수익성과 기업가치 개념 익히기
+                                </button>
+                            </div>
                             <p>한국투자증권 현재가 조회 기준 지표입니다.</p>
                         </div>
                         <span class="detail-updated-at"
@@ -2053,27 +2527,75 @@
                             <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.accumulatedTradeAmount)}">870,000,000.00</strong>
                         </div>
                         <div class="kis-metric-card">
-                            <span>PER (배)</span>
+                            <div class="kis-metric-heading">
+                                <span class="kis-metric-label">PER (배)</span>
+                                <button class="concept-help-button" type="button"
+                                        data-concept-code="PER"
+                                        data-concept-title="PER"
+                                        aria-haspopup="dialog"
+                                        aria-controls="stock-concept-dialog"
+                                        aria-label="PER 개념 보기">개념 익히기</button>
+                            </div>
                             <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.per)}">12.30</strong>
                         </div>
                         <div class="kis-metric-card">
-                            <span>PBR (배)</span>
+                            <div class="kis-metric-heading">
+                                <span class="kis-metric-label">PBR (배)</span>
+                                <button class="concept-help-button" type="button"
+                                        data-concept-code="PBR"
+                                        data-concept-title="PBR"
+                                        aria-haspopup="dialog"
+                                        aria-controls="stock-concept-dialog"
+                                        aria-label="PBR 개념 보기">개념 익히기</button>
+                            </div>
                             <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.pbr)}">1.40</strong>
                         </div>
                         <div class="kis-metric-card">
-                            <span>EPS (원)</span>
+                            <div class="kis-metric-heading">
+                                <span class="kis-metric-label">EPS (원)</span>
+                                <button class="concept-help-button" type="button"
+                                        data-concept-code="EPS"
+                                        data-concept-title="EPS"
+                                        aria-haspopup="dialog"
+                                        aria-controls="stock-concept-dialog"
+                                        aria-label="EPS 개념 보기">개념 익히기</button>
+                            </div>
                             <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.eps)}">5,730.00</strong>
                         </div>
                         <div class="kis-metric-card">
-                            <span>BPS (원)</span>
+                            <div class="kis-metric-heading">
+                                <span class="kis-metric-label">BPS (원)</span>
+                                <button class="concept-help-button" type="button"
+                                        data-concept-code="BPS"
+                                        data-concept-title="BPS"
+                                        aria-haspopup="dialog"
+                                        aria-controls="stock-concept-dialog"
+                                        aria-label="BPS 개념 보기">개념 익히기</button>
+                            </div>
                             <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.bps)}">52,100.00</strong>
                         </div>
                         <div class="kis-metric-card">
-                            <span>시가총액 (억원)</span>
+                            <div class="kis-metric-heading">
+                                <span class="kis-metric-label">시가총액 (억원)</span>
+                                <button class="concept-help-button" type="button"
+                                        data-concept-code="MARKET_CAP"
+                                        data-concept-title="시가총액"
+                                        aria-haspopup="dialog"
+                                        aria-controls="stock-concept-dialog"
+                                        aria-label="시가총액 개념 보기">개념 익히기</button>
+                            </div>
                             <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatNumber(quote.marketCap)}">430,000.00</strong>
                         </div>
                         <div class="kis-metric-card">
-                            <span>상장주식 수</span>
+                            <div class="kis-metric-heading">
+                                <span class="kis-metric-label">상장주식 수</span>
+                                <button class="concept-help-button" type="button"
+                                        data-concept-code="LISTED_SHARES"
+                                        data-concept-title="상장주식 수"
+                                        aria-haspopup="dialog"
+                                        aria-controls="stock-concept-dialog"
+                                        aria-label="상장주식 수 개념 보기">개념 익히기</button>
+                            </div>
                             <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatInteger(quote.listedShares)}">5,969,782,550</strong>
                         </div>
                         <div class="kis-metric-card">
@@ -2087,11 +2609,27 @@
                             <small th:text="${stockDetailPageInfo.domesticDetailInfo.formatDate(quote.w52LowDate)}">2025.11.01</small>
                         </div>
                         <div class="kis-metric-card">
-                            <span>외국인 보유수량</span>
+                            <div class="kis-metric-heading">
+                                <span class="kis-metric-label">외국인 보유수량</span>
+                                <button class="concept-help-button" type="button"
+                                        data-concept-code="FOREIGN_HOLDING_QUANTITY"
+                                        data-concept-title="외국인 보유수량"
+                                        aria-haspopup="dialog"
+                                        aria-controls="stock-concept-dialog"
+                                        aria-label="외국인 보유수량 개념 보기">개념 익히기</button>
+                            </div>
                             <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatInteger(quote.foreignHoldingQuantity)}">3,000,000,000</strong>
                         </div>
                         <div class="kis-metric-card">
-                            <span>외국인 소진율</span>
+                            <div class="kis-metric-heading">
+                                <span class="kis-metric-label">외국인 소진율</span>
+                                <button class="concept-help-button" type="button"
+                                        data-concept-code="FOREIGN_EXHAUSTION_RATE"
+                                        data-concept-title="외국인 소진율"
+                                        aria-haspopup="dialog"
+                                        aria-controls="stock-concept-dialog"
+                                        aria-label="외국인 소진율 개념 보기">개념 익히기</button>
+                            </div>
                             <strong th:text="${stockDetailPageInfo.domesticDetailInfo.formatPercent(quote.foreignExhaustionRate)}">50.25%</strong>
                             <small>보유 비율이 아닌 KIS 소진율 지표</small>
                         </div>
@@ -2163,18 +2701,36 @@
 
                 <div class="financial-card-stack"
                      th:if="${stockDetailPageInfo.domesticDetailInfo.supported}">
-                    <p class="financial-analysis-notice"
-                       th:if="${stockDetailPageInfo.domesticDetailInfo.hasFinancialAnalysis()}">
-                        YoY는 전년 같은 분기, QoQ는 직전 분기와 비교한 변화율입니다.
-                        TTM은 최근 실제 4개 분기의 합계이며, 런레이트는 최신 분기 실적이 유지된다고 가정한 단순 연환산 값입니다.
-                        KIS 누적 손익계산서 값은 직전 누적값을 차감해 개별 분기 실적으로 환산합니다.
-                    </p>
+                    <div class="financial-analysis-notice"
+                        th:if="${stockDetailPageInfo.domesticDetailInfo.hasFinancialAnalysis()}">
+                        <div class="financial-analysis-concepts">
+                            <span class="concept-label">
+                                <strong>재무 분석 기준</strong>
+                                <button class="concept-help-button concept-help-button--compact" type="button"
+                                        data-concept-code="FINANCIAL_ANALYSIS_METRICS" data-concept-title="재무 분석 기준"
+                                        aria-haspopup="dialog" aria-controls="stock-concept-dialog"
+                                        aria-label="YoY, QoQ, TTM, 런레이트 개념 보기">개념 익히기</button>
+                            </span>
+                            <span class="financial-analysis-concept-list">YoY · QoQ · TTM · 런레이트</span>
+                        </div>
+                        <p class="financial-analysis-description">
+                            YoY는 전년 같은 분기, QoQ는 직전 분기와 비교한 변화율입니다.
+                            TTM은 최근 실제 4개 분기의 합계이며, 런레이트는 최신 분기 실적이 유지된다고 가정한 단순 연환산 값입니다.
+                            KIS 누적 손익계산서 값은 직전 누적값을 차감해 개별 분기 실적으로 환산합니다.
+                        </p>
+                    </div>
 
                     <div class="financial-analysis-grid"
                          th:if="${stockDetailPageInfo.domesticDetailInfo.hasFinancialAnalysis()}"
                          th:with="analysis=${stockDetailPageInfo.domesticDetailInfo.financialAnalysis}">
                         <article class="financial-analysis-card" th:with="metric=${analysis.revenue}">
-                            <h3>매출액 분석</h3>
+                            <h3 class="concept-label">
+                                <span>매출액 분석</span>
+                                <button class="concept-help-button concept-help-button--compact" type="button"
+                                        data-concept-code="REVENUE" data-concept-title="매출액"
+                                        aria-haspopup="dialog" aria-controls="stock-concept-dialog"
+                                        aria-label="매출액 개념 보기">개념 익히기</button>
+                            </h3>
                             <p th:text="|${stockDetailPageInfo.domesticDetailInfo.formatQuarter(analysis.latestPeriod)} 기준 · 억원|">
                                 2026년 2분기 기준 · 억원
                             </p>
@@ -2203,7 +2759,13 @@
                         </article>
 
                         <article class="financial-analysis-card" th:with="metric=${analysis.operatingProfit}">
-                            <h3>영업이익 분석</h3>
+                            <h3 class="concept-label">
+                                <span>영업이익 분석</span>
+                                <button class="concept-help-button concept-help-button--compact" type="button"
+                                        data-concept-code="OPERATING_PROFIT" data-concept-title="영업이익"
+                                        aria-haspopup="dialog" aria-controls="stock-concept-dialog"
+                                        aria-label="영업이익 개념 보기">개념 익히기</button>
+                            </h3>
                             <p th:text="|${stockDetailPageInfo.domesticDetailInfo.formatQuarter(analysis.latestPeriod)} 기준 · 억원|">
                                 2026년 2분기 기준 · 억원
                             </p>
@@ -2232,7 +2794,13 @@
                         </article>
 
                         <article class="financial-analysis-card" th:with="metric=${analysis.netIncome}">
-                            <h3>당기순이익 분석</h3>
+                            <h3 class="concept-label">
+                                <span>당기순이익 분석</span>
+                                <button class="concept-help-button concept-help-button--compact" type="button"
+                                        data-concept-code="NET_INCOME" data-concept-title="당기순이익"
+                                        aria-haspopup="dialog" aria-controls="stock-concept-dialog"
+                                        aria-label="당기순이익 개념 보기">개념 익히기</button>
+                            </h3>
                             <p th:text="|${stockDetailPageInfo.domesticDetailInfo.formatQuarter(analysis.latestPeriod)} 기준 · 억원|">
                                 2026년 2분기 기준 · 억원
                             </p>
@@ -2264,7 +2832,13 @@
                     <article class="financial-card">
                         <div class="detail-section-header">
                             <div>
-                                <h3>재무비율</h3>
+                                <h3 class="concept-label">
+                                    <span>재무비율</span>
+                                    <button class="concept-help-button concept-help-button--compact" type="button"
+                                            data-concept-code="FINANCIAL_RATIOS" data-concept-title="재무비율"
+                                            aria-haspopup="dialog" aria-controls="stock-concept-dialog"
+                                        aria-label="재무비율 개념 보기">개념 익히기</button>
+                                </h3>
                                 <p>최근 4개 분기의 성장률, 수익성과 재무 안정성 지표입니다.</p>
                             </div>
                         </div>
@@ -2308,7 +2882,13 @@
                     <article class="financial-card">
                         <div class="detail-section-header">
                             <div>
-                                <h3>손익계산서 (억원)</h3>
+                                <h3 class="concept-label">
+                                    <span>손익계산서 (억원)</span>
+                                    <button class="concept-help-button concept-help-button--compact" type="button"
+                                            data-concept-code="INCOME_STATEMENT" data-concept-title="손익계산서"
+                                            aria-haspopup="dialog" aria-controls="stock-concept-dialog"
+                                        aria-label="손익계산서 개념 보기">개념 익히기</button>
+                                </h3>
                                 <p>최근 4개 분기의 매출과 이익을 비교합니다.</p>
                             </div>
                         </div>
@@ -2344,7 +2924,13 @@
                     <article class="financial-card">
                         <div class="detail-section-header">
                             <div>
-                                <h3>대차대조표 (억원)</h3>
+                                <h3 class="concept-label">
+                                    <span>대차대조표 (억원)</span>
+                                    <button class="concept-help-button concept-help-button--compact" type="button"
+                                            data-concept-code="BALANCE_SHEET" data-concept-title="대차대조표"
+                                            aria-haspopup="dialog" aria-controls="stock-concept-dialog"
+                                        aria-label="대차대조표 개념 보기">개념 익히기</button>
+                                </h3>
                                 <p>최근 4개 분기의 자산, 부채와 자본을 비교합니다.</p>
                             </div>
                         </div>
@@ -2397,7 +2983,13 @@
                  hidden>
                 <div class="detail-section-header">
                     <div>
-                        <h2>투자자별 매매 수급</h2>
+                        <h2 class="concept-label">
+                            <span>투자자별 매매 수급</span>
+                            <button class="concept-help-button concept-help-button--compact" type="button"
+                                    data-concept-code="INVESTOR_TRADING_FLOW" data-concept-title="투자자별 매매 수급"
+                                    aria-haspopup="dialog" aria-controls="stock-concept-dialog"
+                                        aria-label="투자자별 매매 수급 개념 보기">개념 익히기</button>
+                        </h2>
                         <p>외국인, 개인, 기관의 일별 매수·매도·순매수 수량입니다.</p>
                     </div>
                     <span class="detail-updated-at"
@@ -2560,6 +3152,71 @@
         </section>
     </main>
 </div>
+<dialog id="stock-concept-dialog"
+        class="concept-drawer"
+        th:attr="data-stock-id=${stockDetailPageInfo.stock.id}"
+        aria-labelledby="stock-concept-dialog-title">
+    <div id="stock-concept-drawer-resizer"
+         class="concept-drawer-resizer"
+         role="separator"
+         tabindex="0"
+         aria-label="개념 카드 너비 조절"
+         aria-orientation="vertical"
+         aria-valuemin="420"
+         aria-valuemax="960"
+         aria-valuenow="540"
+         title="좌우로 드래그해 너비를 조절하세요"></div>
+    <div class="concept-drawer-shell">
+        <header class="concept-drawer-header">
+            <div>
+                <span class="concept-drawer-eyebrow">주식 개념</span>
+                <h2 id="stock-concept-dialog-title" class="concept-drawer-title">PER</h2>
+            </div>
+            <button id="stock-concept-dialog-close"
+                    class="concept-drawer-close"
+                    type="button"
+                    aria-label="개념 카드 닫기">×</button>
+        </header>
+        <div class="concept-drawer-content" aria-live="polite">
+            <p id="stock-concept-dialog-status" class="concept-placeholder" hidden></p>
+            <article id="stock-concept-dialog-content" class="concept-card-body" hidden>
+                <p id="stock-concept-summary" class="concept-card-summary"></p>
+                <figure id="stock-concept-visual" class="concept-card-visual" hidden>
+                    <img id="stock-concept-visual-image" src="" alt="">
+                    <figcaption id="stock-concept-visual-caption"></figcaption>
+                </figure>
+                <section id="stock-concept-analysis" class="concept-stock-analysis" hidden>
+                    <header class="concept-stock-analysis-header">
+                        <div>
+                            <span class="concept-stock-analysis-eyebrow">이 종목에 적용해 보기</span>
+                            <h3 id="stock-concept-analysis-heading"></h3>
+                        </div>
+                        <p id="stock-concept-analysis-reference" class="concept-stock-analysis-reference"></p>
+                    </header>
+                    <div id="stock-concept-analysis-metrics" class="concept-stock-analysis-metrics"></div>
+                    <p id="stock-concept-analysis-formula" class="concept-stock-analysis-formula" hidden></p>
+                    <p id="stock-concept-analysis-interpretation"
+                       class="concept-stock-analysis-interpretation"></p>
+                    <p id="stock-concept-analysis-meta" class="concept-stock-analysis-meta"></p>
+                    <p id="stock-concept-analysis-unavailable"
+                       class="concept-stock-analysis-unavailable" hidden></p>
+                </section>
+                <details id="stock-concept-details" class="concept-card-section" open>
+                    <summary>자세히 알아보기</summary>
+                    <div id="stock-concept-explanation" class="concept-card-text"></div>
+                </details>
+                <details id="stock-concept-bakery" class="concept-card-section concept-card-section--bakery">
+                    <summary>빵집으로 쉽게 이해하기</summary>
+                    <div id="stock-concept-bakery-example" class="concept-card-text"></div>
+                </details>
+                <details id="stock-concept-cautions" class="concept-card-section concept-card-section--caution">
+                    <summary>주의해서 볼 점</summary>
+                    <div id="stock-concept-caution" class="concept-card-text"></div>
+                </details>
+            </article>
+        </div>
+    </div>
+</dialog>
 <script>
     (() => {
         const tabList = document.querySelector('.stock-detail-tabs[role="tablist"]');
@@ -2601,6 +3258,300 @@
                     activateTab(tabs[nextIndex], true);
                 }
             });
+        });
+    })();
+</script>
+<script>
+    (() => {
+        const dialog = document.getElementById('stock-concept-dialog');
+        const drawerResizer = document.getElementById('stock-concept-drawer-resizer');
+        const title = document.getElementById('stock-concept-dialog-title');
+        const content = document.getElementById('stock-concept-dialog-content');
+        const status = document.getElementById('stock-concept-dialog-status');
+        const summary = document.getElementById('stock-concept-summary');
+        const visual = document.getElementById('stock-concept-visual');
+        const visualImage = document.getElementById('stock-concept-visual-image');
+        const visualCaption = document.getElementById('stock-concept-visual-caption');
+        const stockAnalysis = document.getElementById('stock-concept-analysis');
+        const stockAnalysisHeading = document.getElementById('stock-concept-analysis-heading');
+        const stockAnalysisReference = document.getElementById('stock-concept-analysis-reference');
+        const stockAnalysisMetrics = document.getElementById('stock-concept-analysis-metrics');
+        const stockAnalysisFormula = document.getElementById('stock-concept-analysis-formula');
+        const stockAnalysisInterpretation = document.getElementById('stock-concept-analysis-interpretation');
+        const stockAnalysisMeta = document.getElementById('stock-concept-analysis-meta');
+        const stockAnalysisUnavailable = document.getElementById('stock-concept-analysis-unavailable');
+        const explanation = document.getElementById('stock-concept-explanation');
+        const bakeryExample = document.getElementById('stock-concept-bakery-example');
+        const caution = document.getElementById('stock-concept-caution');
+        const bakerySection = document.getElementById('stock-concept-bakery');
+        const detailsSection = document.getElementById('stock-concept-details');
+        const cautionSection = document.getElementById('stock-concept-cautions');
+        const closeButton = document.getElementById('stock-concept-dialog-close');
+        const stockId = dialog ? dialog.dataset.stockId : '';
+        const conceptButtons = document.querySelectorAll(
+            '.concept-help-button[data-concept-code][data-concept-title]');
+        if (!dialog || !drawerResizer || !title || !content || !status || !summary || !visual || !visualImage
+            || !visualCaption || !stockAnalysis || !stockAnalysisHeading || !stockAnalysisReference
+            || !stockAnalysisMetrics || !stockAnalysisFormula || !stockAnalysisInterpretation
+            || !stockAnalysisMeta || !stockAnalysisUnavailable || !explanation
+            || !bakeryExample || !caution || !bakerySection || !detailsSection || !cautionSection
+            || !closeButton || !stockId || conceptButtons.length === 0) {
+            return;
+        }
+
+        let lastTrigger = null;
+        let requestController = null;
+        const drawerWidthStorageKey = 'finmate.stockConceptDrawerWidth';
+        const defaultDrawerWidth = 540;
+        const minimumDrawerWidth = 420;
+
+        const maximumDrawerWidth = () => Math.max(
+            minimumDrawerWidth,
+            Math.min(960, window.innerWidth - 48)
+        );
+
+        const applyDrawerWidth = (requestedWidth, persist) => {
+            const width = Math.min(
+                maximumDrawerWidth(),
+                Math.max(minimumDrawerWidth, Math.round(requestedWidth))
+            );
+            dialog.style.setProperty('--concept-drawer-width', `${width}px`);
+            drawerResizer.setAttribute('aria-valuemax', String(maximumDrawerWidth()));
+            drawerResizer.setAttribute('aria-valuenow', String(width));
+            if (persist) {
+                try {
+                    window.localStorage.setItem(drawerWidthStorageKey, String(width));
+                } catch (ignored) {
+                    // 브라우저 저장소를 사용할 수 없어도 현재 화면의 너비 조절은 유지한다.
+                }
+            }
+        };
+
+        try {
+            const savedDrawerWidth = Number(window.localStorage.getItem(drawerWidthStorageKey));
+            applyDrawerWidth(Number.isFinite(savedDrawerWidth) && savedDrawerWidth > 0
+                ? savedDrawerWidth
+                : defaultDrawerWidth, false);
+        } catch (ignored) {
+            applyDrawerWidth(defaultDrawerWidth, false);
+        }
+
+        drawerResizer.addEventListener('pointerdown', (event) => {
+            event.preventDefault();
+            drawerResizer.setPointerCapture(event.pointerId);
+            document.body.classList.add('concept-drawer-resizing');
+        });
+
+        drawerResizer.addEventListener('pointermove', (event) => {
+            if (!drawerResizer.hasPointerCapture(event.pointerId)) {
+                return;
+            }
+            applyDrawerWidth(window.innerWidth - event.clientX, false);
+        });
+
+        const finishDrawerResize = (event) => {
+            if (!drawerResizer.hasPointerCapture(event.pointerId)) {
+                return;
+            }
+            drawerResizer.releasePointerCapture(event.pointerId);
+            document.body.classList.remove('concept-drawer-resizing');
+            applyDrawerWidth(dialog.getBoundingClientRect().width, true);
+        };
+
+        drawerResizer.addEventListener('pointerup', finishDrawerResize);
+        drawerResizer.addEventListener('pointercancel', finishDrawerResize);
+        drawerResizer.addEventListener('dblclick', () => applyDrawerWidth(defaultDrawerWidth, true));
+        drawerResizer.addEventListener('keydown', (event) => {
+            const currentWidth = dialog.getBoundingClientRect().width || defaultDrawerWidth;
+            let nextWidth = null;
+            if (event.key === 'ArrowLeft') {
+                nextWidth = currentWidth + 24;
+            } else if (event.key === 'ArrowRight') {
+                nextWidth = currentWidth - 24;
+            } else if (event.key === 'Home') {
+                nextWidth = minimumDrawerWidth;
+            } else if (event.key === 'End') {
+                nextWidth = maximumDrawerWidth();
+            }
+            if (nextWidth !== null) {
+                event.preventDefault();
+                applyDrawerWidth(nextWidth, true);
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            applyDrawerWidth(dialog.getBoundingClientRect().width || defaultDrawerWidth, false);
+        });
+
+        const closeDialog = () => {
+            if (dialog.open) {
+                dialog.close();
+            }
+        };
+
+        const renderParagraphs = (container, text) => {
+            const paragraphs = String(text || '')
+                .split(/\n+/)
+                .map((paragraph) => paragraph.trim())
+                .filter(Boolean);
+
+            const fragment = document.createDocumentFragment();
+            paragraphs.forEach((paragraphText) => {
+                const paragraph = document.createElement('p');
+                paragraph.textContent = paragraphText;
+                if (/[=÷×]/.test(paragraphText)) {
+                    paragraph.classList.add('concept-card-formula');
+                }
+                fragment.appendChild(paragraph);
+            });
+            container.replaceChildren(fragment);
+        };
+
+        const renderVisual = (conceptVisual) => {
+            if (!conceptVisual || !conceptVisual.assetPath) {
+                visual.hidden = true;
+                visualImage.removeAttribute('src');
+                visualImage.alt = '';
+                visualCaption.textContent = '';
+                return;
+            }
+
+            visualImage.src = conceptVisual.assetPath;
+            visualImage.alt = conceptVisual.altText || '';
+            visualCaption.textContent = conceptVisual.caption || '';
+            visualCaption.hidden = !conceptVisual.caption;
+            visual.hidden = false;
+        };
+
+        const renderStockAnalysis = (analysis) => {
+            if (!analysis) {
+                stockAnalysis.hidden = true;
+                return;
+            }
+
+            stockAnalysisHeading.textContent = analysis.heading || '실제 종목 데이터';
+            stockAnalysisReference.textContent = analysis.reference || '';
+            stockAnalysisReference.hidden = !analysis.reference;
+
+            if (!analysis.available) {
+                stockAnalysisMetrics.replaceChildren();
+                stockAnalysisMetrics.hidden = true;
+                stockAnalysisFormula.hidden = true;
+                stockAnalysisInterpretation.hidden = true;
+                stockAnalysisMeta.hidden = true;
+                stockAnalysisUnavailable.textContent = analysis.unavailableReason
+                    || '설명에 필요한 실제 종목 데이터가 부족합니다.';
+                stockAnalysisUnavailable.hidden = false;
+                stockAnalysis.hidden = false;
+                return;
+            }
+
+            const metricFragment = document.createDocumentFragment();
+            (analysis.metrics || []).forEach((metric) => {
+                const item = document.createElement('div');
+                item.className = 'concept-stock-analysis-metric';
+                const label = document.createElement('span');
+                label.textContent = metric.label || '';
+                const value = document.createElement('strong');
+                value.textContent = metric.value || '-';
+                item.append(label, value);
+                metricFragment.appendChild(item);
+            });
+            stockAnalysisMetrics.replaceChildren(metricFragment);
+            stockAnalysisMetrics.hidden = false;
+
+            stockAnalysisFormula.textContent = analysis.formula || '';
+            stockAnalysisFormula.hidden = !analysis.formula;
+            stockAnalysisInterpretation.textContent = analysis.interpretation || '';
+            stockAnalysisInterpretation.hidden = !analysis.interpretation;
+
+            const metaParts = [];
+            if (analysis.updatedAt) {
+                metaParts.push(`조회 갱신 ${analysis.updatedAt}`);
+            }
+            if (analysis.source) {
+                metaParts.push(`출처 ${analysis.source}`);
+            }
+            stockAnalysisMeta.textContent = metaParts.join(' · ');
+            stockAnalysisMeta.hidden = metaParts.length === 0;
+            stockAnalysisUnavailable.hidden = true;
+            stockAnalysis.hidden = false;
+        };
+
+        conceptButtons.forEach((button) => {
+            button.addEventListener('click', async () => {
+                lastTrigger = button;
+                title.textContent = button.dataset.conceptTitle || '주식 개념';
+                status.textContent = '';
+                status.hidden = true;
+                content.hidden = true;
+                renderVisual(null);
+                renderStockAnalysis(null);
+                document.body.classList.add('concept-dialog-open');
+                if (!dialog.open) {
+                    dialog.showModal();
+                }
+
+                if (requestController) {
+                    requestController.abort();
+                }
+                requestController = new AbortController();
+
+                try {
+                    const conceptCode = encodeURIComponent(button.dataset.conceptCode || '');
+                    const encodedStockId = encodeURIComponent(stockId);
+                    const response = await fetch(`/api/stocks/${encodedStockId}/concepts/${conceptCode}`, {
+                        headers: { Accept: 'application/json' },
+                        signal: requestController.signal
+                    });
+                    if (!response.ok) {
+                        throw new Error(`개념정보 조회 실패: ${response.status}`);
+                    }
+                    const concept = await response.json();
+                    title.textContent = concept.title || button.dataset.conceptTitle || '주식 개념';
+                    summary.textContent = concept.summary || '';
+                    renderVisual(concept.visual);
+                    renderStockAnalysis(concept.stockAnalysis);
+                    renderParagraphs(explanation, concept.detailedExplanation);
+                    renderParagraphs(bakeryExample, concept.bakeryExample);
+                    renderParagraphs(caution, concept.caution);
+                    detailsSection.open = true;
+                    bakerySection.open = false;
+                    cautionSection.open = false;
+                    status.hidden = true;
+                    content.hidden = false;
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        status.textContent = '개념정보를 불러오지 못했습니다.';
+                        status.hidden = false;
+                        content.hidden = true;
+                    }
+                }
+            });
+        });
+
+        closeButton.addEventListener('click', closeDialog);
+
+        dialog.addEventListener('click', (event) => {
+            const bounds = dialog.getBoundingClientRect();
+            const clickedOutside = event.clientX < bounds.left
+                || event.clientX > bounds.right
+                || event.clientY < bounds.top
+                || event.clientY > bounds.bottom;
+            if (clickedOutside) {
+                closeDialog();
+            }
+        });
+
+        dialog.addEventListener('close', () => {
+            if (requestController) {
+                requestController.abort();
+                requestController = null;
+            }
+            document.body.classList.remove('concept-dialog-open');
+            if (lastTrigger) {
+                lastTrigger.focus();
+            }
         });
     })();
 </script>

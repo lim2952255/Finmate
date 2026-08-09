@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360" role="img" aria-labelledby="title desc">
+  <title id="title">투자자별 매수 매도와 순매수</title>
+  <desc id="desc">외국인 개인 기관 각각의 매수수량에서 매도수량을 빼 순매수를 계산하며 이는 보유 비율과 다릅니다.</desc>
+  <rect width="720" height="360" rx="24" fill="#f7faff"/>
+  <text x="36" y="44" fill="#1e3a8a" font-family="Pretendard, sans-serif" font-size="22" font-weight="800">누가 사고팔았는지 수급으로 읽기</text>
+  <text x="36" y="70" fill="#64748b" font-family="Pretendard, sans-serif" font-size="14">순매수는 일정 기간 산 수량에서 판 수량을 뺀 거래 흐름입니다.</text>
+  <g font-family="Pretendard, sans-serif">
+    <rect x="38" y="107" width="196" height="144" rx="18" fill="#fff" stroke="#bfdbfe"/>
+    <text x="136" y="137" text-anchor="middle" fill="#0f172a" font-size="18" font-weight="900">외국인</text>
+    <text x="64" y="171" fill="#64748b" font-size="13" font-weight="700">매수</text><text x="208" y="171" text-anchor="end" fill="#dc2626" font-size="15" font-weight="900">700주</text>
+    <text x="64" y="199" fill="#64748b" font-size="13" font-weight="700">매도</text><text x="208" y="199" text-anchor="end" fill="#2563eb" font-size="15" font-weight="900">500주</text>
+    <rect x="61" y="216" width="150" height="25" rx="12" fill="#fee2e2"/><text x="136" y="233" text-anchor="middle" fill="#dc2626" font-size="12" font-weight="900">순매수 +200주</text>
+    <rect x="262" y="107" width="196" height="144" rx="18" fill="#fff" stroke="#bfdbfe"/>
+    <text x="360" y="137" text-anchor="middle" fill="#0f172a" font-size="18" font-weight="900">개인</text>
+    <text x="288" y="171" fill="#64748b" font-size="13" font-weight="700">매수</text><text x="432" y="171" text-anchor="end" fill="#dc2626" font-size="15" font-weight="900">400주</text>
+    <text x="288" y="199" fill="#64748b" font-size="13" font-weight="700">매도</text><text x="432" y="199" text-anchor="end" fill="#2563eb" font-size="15" font-weight="900">650주</text>
+    <rect x="285" y="216" width="150" height="25" rx="12" fill="#dbeafe"/><text x="360" y="233" text-anchor="middle" fill="#2563eb" font-size="12" font-weight="900">순매수 −250주</text>
+    <rect x="486" y="107" width="196" height="144" rx="18" fill="#fff" stroke="#bfdbfe"/>
+    <text x="584" y="137" text-anchor="middle" fill="#0f172a" font-size="18" font-weight="900">기관</text>
+    <text x="512" y="171" fill="#64748b" font-size="13" font-weight="700">매수</text><text x="656" y="171" text-anchor="end" fill="#dc2626" font-size="15" font-weight="900">300주</text>
+    <text x="512" y="199" fill="#64748b" font-size="13" font-weight="700">매도</text><text x="656" y="199" text-anchor="end" fill="#2563eb" font-size="15" font-weight="900">250주</text>
+    <rect x="509" y="216" width="150" height="25" rx="12" fill="#fee2e2"/><text x="584" y="233" text-anchor="middle" fill="#dc2626" font-size="12" font-weight="900">순매수 +50주</text>
+    <rect x="98" y="284" width="524" height="46" rx="23" fill="#dbeafe"/>
+    <text x="360" y="304" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="900">순매수 = 매수수량 − 매도수량</text>
+    <text x="360" y="321" text-anchor="middle" fill="#475569" font-size="11" font-weight="700">현재 보유량이나 지분율을 뜻하는 값은 아닙니다.</text>
+  </g>
+</svg>

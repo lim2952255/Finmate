@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360" role="img" aria-labelledby="title desc">
+  <title id="title">EPS와 PER 계산 흐름</title>
+  <desc id="desc">빵집의 당기순이익을 주식 수로 나누어 EPS를 구하고 주가를 EPS로 나누어 PER을 계산합니다.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f8fbff"/><stop offset="1" stop-color="#eaf2ff"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#1e3a8a" flood-opacity=".10"/></filter>
+  </defs>
+  <rect width="720" height="360" rx="24" fill="url(#bg)"/>
+  <text x="36" y="44" fill="#1e3a8a" font-family="Pretendard, sans-serif" font-size="22" font-weight="800">회사가 번 이익에서 PER까지</text>
+  <text x="36" y="70" fill="#64748b" font-family="Pretendard, sans-serif" font-size="14">같은 이익을 회사 전체 기준과 한 주 기준으로 바라봅니다.</text>
+  <g filter="url(#shadow)" font-family="Pretendard, sans-serif">
+    <rect x="36" y="112" width="180" height="150" rx="18" fill="#fff" stroke="#bfdbfe"/>
+    <circle cx="126" cy="151" r="24" fill="#fef3c7"/>
+    <path d="M108 155h36l-5 14h-26zM113 149c3-14 23-14 26 0z" fill="#f59e0b"/>
+    <text x="126" y="198" text-anchor="middle" fill="#64748b" font-size="14" font-weight="700">당기순이익</text>
+    <text x="126" y="228" text-anchor="middle" fill="#0f172a" font-size="24" font-weight="900">1,000만 원</text>
+    <rect x="270" y="112" width="180" height="150" rx="18" fill="#fff" stroke="#bfdbfe"/>
+    <circle cx="360" cy="151" r="24" fill="#dbeafe"/>
+    <text x="360" y="158" text-anchor="middle" fill="#2563eb" font-size="17" font-weight="900">EPS</text>
+    <text x="360" y="198" text-anchor="middle" fill="#64748b" font-size="14" font-weight="700">한 주당 이익</text>
+    <text x="360" y="228" text-anchor="middle" fill="#0f172a" font-size="24" font-weight="900">10만 원</text>
+    <rect x="504" y="112" width="180" height="150" rx="18" fill="#fff" stroke="#93c5fd"/>
+    <circle cx="594" cy="151" r="24" fill="#2563eb"/>
+    <text x="594" y="158" text-anchor="middle" fill="#fff" font-size="17" font-weight="900">PER</text>
+    <text x="594" y="198" text-anchor="middle" fill="#64748b" font-size="14" font-weight="700">주가 ÷ EPS</text>
+    <text x="594" y="228" text-anchor="middle" fill="#0f172a" font-size="24" font-weight="900">10배</text>
+  </g>
+  <g fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M224 187h36"/><path d="m251 179 9 8-9 8"/>
+    <path d="M458 187h36"/><path d="m485 179 9 8-9 8"/>
+  </g>
+  <g font-family="Pretendard, sans-serif" font-size="12" font-weight="800" fill="#2563eb">
+    <text x="242" y="169" text-anchor="middle">÷ 주식 100주</text>
+    <text x="476" y="169" text-anchor="middle">주가 100만 원 ÷</text>
+  </g>
+  <rect x="130" y="292" width="460" height="40" rx="20" fill="#dbeafe"/>
+  <text x="360" y="317" text-anchor="middle" fill="#1e40af" font-family="Pretendard, sans-serif" font-size="15" font-weight="800">EPS는 이익을 한 주로 나누고, PER은 주가를 EPS와 비교합니다.</text>
+</svg>

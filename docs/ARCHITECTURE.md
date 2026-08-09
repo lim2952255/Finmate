@@ -14,7 +14,7 @@ com.finmate
 │  ├─ user
 │  ├─ normal.account, normal.transfer
 │  ├─ investment, investment.cash.transaction, investment.cash.exchange
-│  ├─ stock, stock.metadata, stock.price, stock.market
+│  ├─ stock, stock.concept, stock.metadata, stock.price, stock.market
 │  ├─ stock.trading, stock.trading.event
 │  └─ market, market.price
 ├─ repository
@@ -45,11 +45,13 @@ DTO가 별도의 최상위 계층이 아니라 각 도메인 하위에 배치되
 
 ### Controller
 
-Thymeleaf 화면과 폼 요청을 연결한다. `@Controller` 기반이며 JSON 전용 `@RestController` 계층은 확인되지 않는다.
+Thymeleaf 화면과 폼 요청을 연결한다. 실시간 채팅 이력과 종목 개념 패널처럼 화면에서 비동기로 조회하는
+데이터는 `@RestController`가 JSON DTO로 반환한다.
 
 - `AccountController`: 일반 계좌, 이체, 한도, 내역
 - `InvestmentController`: 투자 계좌, 예수금 이체, 포트폴리오, 주문 내역, 환율·지수
 - `StockController`: 시장별 종목/업종 검색, 관심 종목, 상세, 랭킹 데이터
+- `StockConceptController`: 종목 ID와 enum 개념 코드를 받아 종목 상세의 개념정보 JSON 반환
 - `OrderController`: 주문 화면, 일반·예약 주문 접수와 취소
 - `LoginController`: 회원가입과 로그인 화면
 
@@ -87,6 +89,12 @@ Google·Kakao의 `sub`와 Naver의 프로필 `id`는 각 공급자 내에서 사
 - `StockRealtimeSubscriptionManager`: 목적별 실시간 구독 참조 수 관리
 - `StockMarketMoverService`: KIS 랭킹 조회와 Redis 캐시 갱신
 - `StockMasterSyncService`: 종목 마스터와 국내 업종코드 스케줄 동기화
+- `StockConceptCardSyncService`: YAML의 enum별 공식 개념 카드 seed를 멱등하게 생성·갱신
+- `StockConceptCardStartupSyncRunner`: 명시적으로 활성화한 서버 시작 시 공식 개념 카드를 한 번 즉시 동기화
+- `StockConceptQueryService`: DB에 동기화된 활성 공식 개념 카드를 조회해 개념 패널 응답으로 제공
+- `StockConceptVisualCatalog`: 개념 코드별 공용 SVG 학습 그림의 정적 경로, 대체문구와 캡션을 API 응답에 결합
+- `StockConceptAnalysisService`: 요청 종목의 상세 갱신·조회 결과를 개념 코드별 실제 값, 계산식,
+  기준시점과 중립적인 설명으로 변환하며 산정 기준이 다른 값은 임의로 재계산하지 않음
 
 ### Repository
 
@@ -224,6 +232,8 @@ KIS payload는 `KisRealtimeStore`에 최신값으로 저장되고 Spring 동기 
 - `@EnableScheduling`: `FinmateApplication`
 - 주문·예약 만료: 서버 시작 즉시 한 번 실행한 뒤 기본 10초 간격. 중단 중 만료된 활성 건도 시작 시 복구
 - 종목 마스터: 국내·NASDAQ 평일 오전 8시, 각 시장 시간대. 국내 업종코드는 국내 종목 마스터와 같은 스케줄에서 함께 갱신한다.
+- 공식 주식 개념 카드: 기본 비활성화. 활성화하면 매주 월요일 오전 4시에 `stock-concepts.yml`과 DB를 멱등 동기화한다.
+- 즉시 반영이 필요하면 `STOCK_CONCEPT_SYNC_ON_STARTUP=true`로 시작 동기화를 한 번 실행하고 다시 비활성화한다.
 - 랭킹: 기본 100ms 후 시작, 이전 실행 완료 후 10초 간격
 - 구독 해제: 별도 단일 스레드 executor로 기본 60초 유예
 - KIS 재연결: 별도 단일 스레드 executor로 3초 후 재시도

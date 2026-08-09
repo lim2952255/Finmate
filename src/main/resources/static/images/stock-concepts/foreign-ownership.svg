@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360" role="img" aria-labelledby="title desc">
+  <title id="title">외국인 보유수량과 외국인 소진율</title>
+  <desc id="desc">외국인이 현재 보유한 주식 수를 외국인이 보유할 수 있는 한도와 비교하여 소진율을 계산합니다.</desc>
+  <rect width="720" height="360" rx="24" fill="#f5f9ff"/>
+  <text x="36" y="44" fill="#1e3a8a" font-family="Pretendard, sans-serif" font-size="22" font-weight="800">보유한 수량과 사용할 수 있는 한도</text>
+  <text x="36" y="70" fill="#64748b" font-family="Pretendard, sans-serif" font-size="14">소진율은 전체 주식의 보유 비율이 아니라 외국인 보유 한도의 사용 비율입니다.</text>
+  <g font-family="Pretendard, sans-serif">
+    <rect x="54" y="113" width="250" height="132" rx="20" fill="#fff" stroke="#bfdbfe"/>
+    <text x="78" y="145" fill="#64748b" font-size="14" font-weight="700">외국인 보유 가능 수량</text>
+    <text x="78" y="181" fill="#0f172a" font-size="25" font-weight="900">1,000주</text>
+    <rect x="78" y="203" width="202" height="16" rx="8" fill="#e2e8f0"/>
+    <rect x="78" y="203" width="121" height="16" rx="8" fill="#60a5fa"/>
+    <text x="330" y="181" text-anchor="middle" fill="#2563eb" font-size="30" font-weight="900">→</text>
+    <rect x="356" y="113" width="310" height="132" rx="20" fill="#eff6ff" stroke="#93c5fd"/>
+    <text x="382" y="145" fill="#2563eb" font-size="14" font-weight="800">현재 외국인 보유수량</text>
+    <text x="382" y="181" fill="#0f172a" font-size="25" font-weight="900">600주</text>
+    <rect x="510" y="143" width="128" height="72" rx="16" fill="#2563eb"/>
+    <text x="574" y="169" text-anchor="middle" fill="#dbeafe" font-size="12" font-weight="800">외국인 소진율</text>
+    <text x="574" y="200" text-anchor="middle" fill="#fff" font-size="25" font-weight="900">60%</text>
+    <rect x="90" y="279" width="540" height="44" rx="22" fill="#dbeafe"/>
+    <text x="360" y="306" text-anchor="middle" fill="#1e40af" font-size="15" font-weight="800">600주 ÷ 보유 가능 1,000주 × 100 = 60%</text>
+  </g>
+</svg>
