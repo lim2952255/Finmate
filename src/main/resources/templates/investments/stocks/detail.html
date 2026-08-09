@@ -1356,6 +1356,199 @@
         .financial-analysis-list .negative { color: #2563eb; }
         .financial-analysis-list .neutral { color: #64748b; }
 
+        .financial-chart-dashboard {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .financial-chart-card {
+            min-width: 0;
+            padding: 18px;
+            border: 1px solid #dbe3ef;
+            border-radius: 12px;
+            background: #ffffff;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+        }
+
+        .financial-chart-card--wide {
+            grid-column: 1 / -1;
+        }
+
+        .financial-chart-heading {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .financial-chart-heading h3 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 16px;
+        }
+
+        .financial-chart-heading p {
+            margin: 5px 0 0;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .financial-chart-unit {
+            flex: 0 0 auto;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .financial-svg-chart {
+            display: block;
+            width: 100%;
+            height: auto;
+            overflow: visible;
+        }
+
+        .financial-svg-chart text {
+            fill: #64748b;
+            font-family: inherit;
+            font-size: 11px;
+        }
+
+        .financial-svg-chart .financial-svg-title {
+            fill: #0f172a;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .financial-svg-chart .financial-svg-value {
+            fill: #334155;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .financial-svg-chart .financial-svg-grid {
+            stroke: #e2e8f0;
+            stroke-width: 1;
+        }
+
+        .financial-svg-chart .financial-svg-zero {
+            stroke: #94a3b8;
+            stroke-width: 1.4;
+        }
+
+        .financial-svg-chart .financial-svg-series--revenue {
+            fill: #3b82f6;
+            stroke: #3b82f6;
+        }
+
+        .financial-svg-chart .financial-svg-series--operating {
+            fill: #14b8a6;
+            stroke: #14b8a6;
+        }
+
+        .financial-svg-chart .financial-svg-series--net-income {
+            fill: #8b5cf6;
+            stroke: #8b5cf6;
+        }
+
+        .financial-svg-chart .financial-svg-series--yoy {
+            fill: #2563eb;
+            stroke: #2563eb;
+        }
+
+        .financial-svg-chart .financial-svg-series--qoq {
+            fill: #f59e0b;
+            stroke: #f59e0b;
+        }
+
+        .financial-svg-chart .financial-svg-series--ttm {
+            fill: #60a5fa;
+            stroke: #60a5fa;
+        }
+
+        .financial-svg-chart .financial-svg-series--run-rate {
+            fill: #34d399;
+            stroke: #34d399;
+        }
+
+        .financial-svg-chart .financial-svg-series--roe {
+            fill: #f59e0b;
+            stroke: #f59e0b;
+        }
+
+        .financial-svg-chart .financial-svg-series--eps {
+            fill: #3b82f6;
+            stroke: #3b82f6;
+        }
+
+        .financial-svg-chart .financial-svg-series--bps {
+            fill: #8b5cf6;
+            stroke: #8b5cf6;
+        }
+
+        .financial-svg-chart .financial-svg-series--liabilities {
+            fill: #94a3b8;
+            stroke: #94a3b8;
+        }
+
+        .financial-svg-chart .financial-svg-series--equity {
+            fill: #22c55e;
+            stroke: #22c55e;
+        }
+
+        .financial-svg-chart .financial-svg-line {
+            fill: none;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .financial-chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 12px 0 0;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .financial-chart-legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .financial-chart-legend i {
+            width: 9px;
+            height: 9px;
+            border-radius: 3px;
+        }
+
+        .financial-chart-legend .revenue { background: #3b82f6; }
+        .financial-chart-legend .operating { background: #14b8a6; }
+        .financial-chart-legend .net-income { background: #8b5cf6; }
+        .financial-chart-legend .yoy { background: #2563eb; }
+        .financial-chart-legend .qoq { background: #f59e0b; }
+        .financial-chart-legend .ttm { background: #60a5fa; }
+        .financial-chart-legend .run-rate { background: #34d399; }
+        .financial-chart-legend .liabilities { background: #94a3b8; }
+        .financial-chart-legend .equity { background: #22c55e; }
+
+        .financial-chart-empty {
+            margin: 0;
+            padding: 26px 12px;
+            color: #94a3b8;
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+        }
+
         .financial-card {
             padding: 18px;
             border: 1px solid #dbe3ef;
@@ -2071,6 +2264,14 @@
 
             .financial-analysis-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .financial-chart-dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            .financial-chart-card--wide {
+                grid-column: auto;
             }
 
         }
@@ -2829,6 +3030,152 @@
                         </article>
                     </div>
 
+                    <section class="financial-chart-dashboard"
+                             aria-label="최근 4개 분기 재무 추이 차트"
+                             th:if="${!#lists.isEmpty(stockDetailPageInfo.domesticDetailInfo.incomeStatements)
+                                || !#lists.isEmpty(stockDetailPageInfo.domesticDetailInfo.financialRatios)
+                                || !#lists.isEmpty(stockDetailPageInfo.domesticDetailInfo.balanceSheets)}">
+                        <article class="financial-chart-card financial-chart-card--wide"
+                                 th:if="${!#lists.isEmpty(stockDetailPageInfo.domesticDetailInfo.incomeStatements)}">
+                            <div class="financial-chart-heading">
+                                <div>
+                                    <h3>분기 실적 흐름</h3>
+                                    <p>각 지표는 독립된 축으로 표시해 매출 규모에 가려지지 않고 이익의 방향도 함께 볼 수 있습니다.</p>
+                                </div>
+                                <span class="financial-chart-unit">억원</span>
+                            </div>
+                            <div id="financial-income-chart-data" hidden>
+                                <i th:each="statement : ${stockDetailPageInfo.domesticDetailInfo.incomeStatements}"
+                                   th:attr="data-period=${statement.fiscalPeriod},
+                                            data-revenue=${statement.revenue},
+                                            data-operating-profit=${statement.operatingProfit},
+                                            data-net-income=${statement.netIncome}"></i>
+                            </div>
+                            <svg id="financial-income-chart" class="financial-svg-chart"
+                                 viewBox="0 0 960 340" role="img"
+                                 aria-labelledby="financial-income-chart-title financial-income-chart-desc">
+                                <title id="financial-income-chart-title">최근 4개 분기 매출액, 영업이익, 당기순이익 추이</title>
+                                <desc id="financial-income-chart-desc">매출액, 영업이익, 당기순이익을 각각 독립된 세로 막대 차트로 비교합니다.</desc>
+                            </svg>
+                            <div class="financial-chart-legend" aria-hidden="true">
+                                <span><i class="revenue"></i>매출액</span>
+                                <span><i class="operating"></i>영업이익</span>
+                                <span><i class="net-income"></i>당기순이익</span>
+                            </div>
+                        </article>
+
+                        <article class="financial-chart-card"
+                                 th:if="${stockDetailPageInfo.domesticDetailInfo.hasFinancialAnalysis()}"
+                                 th:with="analysis=${stockDetailPageInfo.domesticDetailInfo.financialAnalysis}">
+                            <div class="financial-chart-heading">
+                                <div>
+                                    <h3>성장 속도 비교</h3>
+                                    <p>최신 분기의 전년 동기 대비와 직전 분기 대비 변화율입니다.</p>
+                                </div>
+                                <span class="financial-chart-unit">%</span>
+                            </div>
+                            <div id="financial-growth-chart-data" hidden>
+                                <i data-label="매출"
+                                   th:attr="data-yoy=${analysis.revenue.yoyRate},data-qoq=${analysis.revenue.qoqRate}"></i>
+                                <i data-label="영업이익"
+                                   th:attr="data-yoy=${analysis.operatingProfit.yoyRate},data-qoq=${analysis.operatingProfit.qoqRate}"></i>
+                                <i data-label="순이익"
+                                   th:attr="data-yoy=${analysis.netIncome.yoyRate},data-qoq=${analysis.netIncome.qoqRate}"></i>
+                            </div>
+                            <svg id="financial-growth-chart" class="financial-svg-chart"
+                                 viewBox="0 0 460 300" role="img"
+                                 aria-labelledby="financial-growth-chart-title financial-growth-chart-desc">
+                                <title id="financial-growth-chart-title">최신 분기 YoY와 QoQ 비교</title>
+                                <desc id="financial-growth-chart-desc">매출, 영업이익, 순이익의 전년 동기 대비와 직전 분기 대비 변화율을 영점 기준 막대로 비교합니다.</desc>
+                            </svg>
+                            <div class="financial-chart-legend" aria-hidden="true">
+                                <span><i class="yoy"></i>YoY</span>
+                                <span><i class="qoq"></i>QoQ</span>
+                            </div>
+                        </article>
+
+                        <article class="financial-chart-card"
+                                 th:if="${stockDetailPageInfo.domesticDetailInfo.hasFinancialAnalysis()}"
+                                 th:with="analysis=${stockDetailPageInfo.domesticDetailInfo.financialAnalysis}">
+                            <div class="financial-chart-heading">
+                                <div>
+                                    <h3>TTM과 런레이트</h3>
+                                    <p>최근 실제 4개 분기 합계와 최신 분기를 4배 한 단순 연환산을 비교합니다.</p>
+                                </div>
+                                <span class="financial-chart-unit">억원</span>
+                            </div>
+                            <div id="financial-annualized-chart-data" hidden>
+                                <i data-label="매출"
+                                   th:attr="data-ttm=${analysis.revenue.ttm},data-run-rate=${analysis.revenue.runRate}"></i>
+                                <i data-label="영업이익"
+                                   th:attr="data-ttm=${analysis.operatingProfit.ttm},data-run-rate=${analysis.operatingProfit.runRate}"></i>
+                                <i data-label="순이익"
+                                   th:attr="data-ttm=${analysis.netIncome.ttm},data-run-rate=${analysis.netIncome.runRate}"></i>
+                            </div>
+                            <svg id="financial-annualized-chart" class="financial-svg-chart"
+                                 viewBox="0 0 460 300" role="img"
+                                 aria-labelledby="financial-annualized-chart-title financial-annualized-chart-desc">
+                                <title id="financial-annualized-chart-title">TTM과 런레이트 비교</title>
+                                <desc id="financial-annualized-chart-desc">매출, 영업이익, 순이익별로 최근 12개월 실제 합계와 최신 분기 단순 연환산을 비교합니다.</desc>
+                            </svg>
+                            <div class="financial-chart-legend" aria-hidden="true">
+                                <span><i class="ttm"></i>TTM</span>
+                                <span><i class="run-rate"></i>런레이트</span>
+                            </div>
+                        </article>
+
+                        <article class="financial-chart-card financial-chart-card--wide"
+                                 th:if="${!#lists.isEmpty(stockDetailPageInfo.domesticDetailInfo.financialRatios)}">
+                            <div class="financial-chart-heading">
+                                <div>
+                                    <h3>주당 지표와 수익성 추이</h3>
+                                    <p>단위와 규모가 다른 ROE, EPS, BPS는 독립된 축으로 최근 분기 방향을 비교합니다.</p>
+                                </div>
+                                <span class="financial-chart-unit">ROE % · EPS/BPS 원</span>
+                            </div>
+                            <div id="financial-ratio-chart-data" hidden>
+                                <i th:each="ratio : ${stockDetailPageInfo.domesticDetailInfo.financialRatios}"
+                                   th:attr="data-period=${ratio.fiscalPeriod},
+                                            data-roe=${ratio.roe},
+                                            data-eps=${ratio.eps},
+                                            data-bps=${ratio.bps}"></i>
+                            </div>
+                            <svg id="financial-ratio-chart" class="financial-svg-chart"
+                                 viewBox="0 0 960 330" role="img"
+                                 aria-labelledby="financial-ratio-chart-title financial-ratio-chart-desc">
+                                <title id="financial-ratio-chart-title">최근 4개 분기 ROE, EPS, BPS 추이</title>
+                                <desc id="financial-ratio-chart-desc">ROE, EPS, BPS를 각각 독립된 선 차트로 표시합니다.</desc>
+                            </svg>
+                        </article>
+
+                        <article class="financial-chart-card financial-chart-card--wide"
+                                 th:if="${!#lists.isEmpty(stockDetailPageInfo.domesticDetailInfo.balanceSheets)}">
+                            <div class="financial-chart-heading">
+                                <div>
+                                    <h3>부채와 자기자본 구성</h3>
+                                    <p>최근 4개 분기의 총부채와 자기자본을 같은 기준축에서 나란히 비교합니다.</p>
+                                </div>
+                                <span class="financial-chart-unit">억원</span>
+                            </div>
+                            <div id="financial-balance-chart-data" hidden>
+                                <i th:each="sheet : ${stockDetailPageInfo.domesticDetailInfo.balanceSheets}"
+                                   th:attr="data-period=${sheet.fiscalPeriod},
+                                            data-liabilities=${sheet.totalLiabilities},
+                                            data-equity=${sheet.totalEquity}"></i>
+                            </div>
+                            <svg id="financial-balance-chart" class="financial-svg-chart"
+                                 viewBox="0 0 960 300" role="img"
+                                 aria-labelledby="financial-balance-chart-title financial-balance-chart-desc">
+                                <title id="financial-balance-chart-title">최근 4개 분기 총부채와 자기자본 구성</title>
+                                <desc id="financial-balance-chart-desc">분기별 총부채와 자기자본을 나란한 막대로 표시합니다.</desc>
+                            </svg>
+                            <div class="financial-chart-legend" aria-hidden="true">
+                                <span><i class="liabilities"></i>총부채</span>
+                                <span><i class="equity"></i>자기자본</span>
+                            </div>
+                        </article>
+                    </section>
+
                     <article class="financial-card">
                         <div class="detail-section-header">
                             <div>
@@ -3259,6 +3606,440 @@
                 }
             });
         });
+    })();
+</script>
+<script>
+    (() => {
+        const namespace = 'http://www.w3.org/2000/svg';
+        const numberFormatter = new Intl.NumberFormat('ko-KR', {
+            notation: 'compact',
+            maximumFractionDigits: 1
+        });
+        const exactNumberFormatter = new Intl.NumberFormat('ko-KR', {
+            maximumFractionDigits: 2
+        });
+
+        const svgElement = (name, attributes = {}) => {
+            const element = document.createElementNS(namespace, name);
+            Object.entries(attributes).forEach(([key, value]) => {
+                if (value !== null && value !== undefined) {
+                    element.setAttribute(key, String(value));
+                }
+            });
+            return element;
+        };
+
+        const addText = (svg, value, x, y, className, anchor = 'middle') => {
+            const element = svgElement('text', {x, y, 'text-anchor': anchor, class: className});
+            element.textContent = value;
+            svg.appendChild(element);
+            return element;
+        };
+
+        const addLine = (svg, x1, y1, x2, y2, className) => {
+            const element = svgElement('line', {x1, y1, x2, y2, class: className});
+            svg.appendChild(element);
+            return element;
+        };
+
+        const addRect = (svg, x, y, width, height, className, tooltip, radius = 4) => {
+            const element = svgElement('rect', {
+                x,
+                y,
+                width: Math.max(0, width),
+                height: Math.max(1, height),
+                rx: radius,
+                class: className
+            });
+            if (tooltip) {
+                const title = svgElement('title');
+                title.textContent = tooltip;
+                element.appendChild(title);
+            }
+            svg.appendChild(element);
+            return element;
+        };
+
+        const resetSvg = (svg, titleText, descriptionText) => {
+            if (!svg) {
+                return false;
+            }
+            const titleId = `${svg.id}-title`;
+            const descriptionId = `${svg.id}-desc`;
+            const title = svgElement('title', {id: titleId});
+            title.textContent = titleText;
+            const description = svgElement('desc', {id: descriptionId});
+            description.textContent = descriptionText;
+            svg.replaceChildren(title, description);
+            svg.setAttribute('aria-labelledby', `${titleId} ${descriptionId}`);
+            return true;
+        };
+
+        const parseNumber = (value) => {
+            if (value === undefined || value === null || value === '') {
+                return null;
+            }
+            const number = Number(value);
+            return Number.isFinite(number) ? number : null;
+        };
+
+        const compactNumber = (value) => value === null ? '-' : numberFormatter.format(value);
+        const exactNumber = (value) => value === null ? '-' : exactNumberFormatter.format(value);
+        const percent = (value) => value === null ? '-' : `${value > 0 ? '+' : ''}${exactNumber(value)}%`;
+
+        const quarterLabel = (period) => {
+            if (!period) {
+                return '-';
+            }
+            const parts = period.split('-').map(Number);
+            if (parts.length < 2 || !parts[0] || !parts[1]) {
+                return period;
+            }
+            return `${String(parts[0]).slice(-2)}.${Math.ceil(parts[1] / 3)}Q`;
+        };
+
+        const readPoints = (containerId, mapper) => {
+            const container = document.getElementById(containerId);
+            return container
+                ? Array.from(container.children).map((element) => mapper(element.dataset))
+                : [];
+        };
+
+        const chronological = (points) => points
+            .filter((point) => point.period)
+            .sort((left, right) => left.period.localeCompare(right.period));
+
+        const domain = (values, includeZero = true) => {
+            const numbers = values.filter((value) => value !== null);
+            if (numbers.length === 0) {
+                return null;
+            }
+            let minimum = Math.min(...numbers);
+            let maximum = Math.max(...numbers);
+            if (includeZero) {
+                minimum = Math.min(0, minimum);
+                maximum = Math.max(0, maximum);
+            }
+            if (minimum === maximum) {
+                const padding = Math.max(Math.abs(minimum) * 0.15, 1);
+                minimum -= padding;
+                maximum += padding;
+            } else {
+                const padding = (maximum - minimum) * 0.12;
+                if (includeZero && minimum === 0) {
+                    maximum += padding;
+                } else if (includeZero && maximum === 0) {
+                    minimum -= padding;
+                } else {
+                    minimum -= padding;
+                    maximum += padding;
+                }
+            }
+            return {minimum, maximum};
+        };
+
+        const scale = (value, sourceMinimum, sourceMaximum, targetMinimum, targetMaximum) =>
+            targetMinimum + ((value - sourceMinimum) / (sourceMaximum - sourceMinimum))
+            * (targetMaximum - targetMinimum);
+
+        const renderEmpty = (svg, message, width, height) => {
+            addText(svg, message, width / 2, height / 2, 'financial-svg-value');
+        };
+
+        const renderIncomeChart = () => {
+            const svg = document.getElementById('financial-income-chart');
+            if (!resetSvg(svg,
+                '최근 4개 분기 매출액, 영업이익, 당기순이익 추이',
+                '매출액, 영업이익, 당기순이익을 각각 독립된 세로 막대 차트로 비교합니다.')) {
+                return;
+            }
+            const points = chronological(readPoints('financial-income-chart-data', (data) => ({
+                period: data.period,
+                revenue: parseNumber(data.revenue),
+                operatingProfit: parseNumber(data.operatingProfit),
+                netIncome: parseNumber(data.netIncome)
+            })));
+            if (points.length === 0) {
+                renderEmpty(svg, '표시할 분기 실적이 없습니다.', 960, 340);
+                return;
+            }
+
+            const series = [
+                {key: 'revenue', label: '매출액', className: 'financial-svg-series--revenue'},
+                {key: 'operatingProfit', label: '영업이익', className: 'financial-svg-series--operating'},
+                {key: 'netIncome', label: '당기순이익', className: 'financial-svg-series--net-income'}
+            ];
+            const panelWidth = 296;
+            const panelGap = 20;
+            const panelStart = 16;
+            const plotTop = 48;
+            const plotBottom = 282;
+
+            series.forEach((item, panelIndex) => {
+                const panelX = panelStart + panelIndex * (panelWidth + panelGap);
+                const values = points.map((point) => point[item.key]);
+                const valueDomain = domain(values);
+                addText(svg, item.label, panelX, 22, 'financial-svg-title', 'start');
+                if (!valueDomain) {
+                    addText(svg, '데이터 없음', panelX + panelWidth / 2, 160, 'financial-svg-value');
+                    return;
+                }
+                const y = (value) => scale(value, valueDomain.maximum, valueDomain.minimum, plotTop, plotBottom);
+                const zeroY = y(0);
+                addLine(svg, panelX, zeroY, panelX + panelWidth, zeroY, 'financial-svg-zero');
+                addLine(svg, panelX, plotTop, panelX + panelWidth, plotTop, 'financial-svg-grid');
+                addLine(svg, panelX, plotBottom, panelX + panelWidth, plotBottom, 'financial-svg-grid');
+
+                const slotWidth = panelWidth / points.length;
+                const barWidth = Math.min(42, slotWidth * 0.52);
+                points.forEach((point, index) => {
+                    const value = point[item.key];
+                    const centerX = panelX + slotWidth * index + slotWidth / 2;
+                    addText(svg, quarterLabel(point.period), centerX, 313, '', 'middle');
+                    if (value === null) {
+                        addText(svg, '-', centerX, zeroY - 8, 'financial-svg-value');
+                        return;
+                    }
+                    const valueY = y(value);
+                    addRect(svg, centerX - barWidth / 2, Math.min(valueY, zeroY), barWidth,
+                        Math.abs(zeroY - valueY), item.className,
+                        `${quarterLabel(point.period)} ${item.label} ${exactNumber(value)}억원`);
+                    const labelY = value >= 0
+                        ? Math.max(plotTop + 10, valueY - 7)
+                        : Math.min(plotBottom - 3, valueY + 14);
+                    addText(svg, compactNumber(value), centerX, labelY, 'financial-svg-value');
+                });
+            });
+        };
+
+        const renderGrowthChart = () => {
+            const svg = document.getElementById('financial-growth-chart');
+            if (!resetSvg(svg, '최신 분기 YoY와 QoQ 비교',
+                '매출, 영업이익, 순이익의 전년 동기 대비와 직전 분기 대비 변화율입니다.')) {
+                return;
+            }
+            const points = readPoints('financial-growth-chart-data', (data) => ({
+                label: data.label,
+                yoy: parseNumber(data.yoy),
+                qoq: parseNumber(data.qoq)
+            }));
+            const valueDomain = domain(points.flatMap((point) => [point.yoy, point.qoq]));
+            if (!valueDomain) {
+                renderEmpty(svg, '비교할 성장률 데이터가 없습니다.', 460, 300);
+                return;
+            }
+
+            const plotLeft = 36;
+            const plotRight = 444;
+            const plotTop = 24;
+            const plotBottom = 242;
+            const y = (value) => scale(value, valueDomain.maximum, valueDomain.minimum, plotTop, plotBottom);
+            const zeroY = y(0);
+            addLine(svg, plotLeft, zeroY, plotRight, zeroY, 'financial-svg-zero');
+            addLine(svg, plotLeft, plotTop, plotRight, plotTop, 'financial-svg-grid');
+            addLine(svg, plotLeft, plotBottom, plotRight, plotBottom, 'financial-svg-grid');
+            addText(svg, percent(valueDomain.maximum), plotLeft, plotTop + 10, '', 'start');
+            addText(svg, percent(valueDomain.minimum), plotLeft, plotBottom - 4, '', 'start');
+
+            const groupWidth = (plotRight - plotLeft) / points.length;
+            const barWidth = 34;
+            points.forEach((point, index) => {
+                const centerX = plotLeft + groupWidth * index + groupWidth / 2;
+                [
+                    {value: point.yoy, offset: -barWidth - 3, className: 'financial-svg-series--yoy', label: 'YoY'},
+                    {value: point.qoq, offset: 3, className: 'financial-svg-series--qoq', label: 'QoQ'}
+                ].forEach((bar) => {
+                    if (bar.value === null) {
+                        return;
+                    }
+                    const valueY = y(bar.value);
+                    const x = centerX + bar.offset;
+                    addRect(svg, x, Math.min(valueY, zeroY), barWidth, Math.abs(zeroY - valueY),
+                        bar.className, `${point.label} ${bar.label} ${percent(bar.value)}`);
+                    addText(svg, percent(bar.value), x + barWidth / 2,
+                        bar.value >= 0 ? Math.max(plotTop + 10, valueY - 7) : Math.min(plotBottom - 3, valueY + 14),
+                        'financial-svg-value');
+                });
+                addText(svg, point.label, centerX, 272, 'financial-svg-title');
+            });
+        };
+
+        const renderAnnualizedChart = () => {
+            const svg = document.getElementById('financial-annualized-chart');
+            if (!resetSvg(svg, 'TTM과 런레이트 비교',
+                '각 지표 안에서 최근 12개월 실제 합계와 최신 분기 단순 연환산을 비교합니다.')) {
+                return;
+            }
+            const points = readPoints('financial-annualized-chart-data', (data) => ({
+                label: data.label,
+                ttm: parseNumber(data.ttm),
+                runRate: parseNumber(data.runRate)
+            }));
+            if (points.every((point) => point.ttm === null && point.runRate === null)) {
+                renderEmpty(svg, '비교할 연환산 데이터가 없습니다.', 460, 300);
+                return;
+            }
+
+            const plotLeft = 92;
+            const plotRight = 438;
+            points.forEach((point, index) => {
+                const rowTop = 28 + index * 86;
+                const valueDomain = domain([point.ttm, point.runRate]);
+                addText(svg, point.label, 12, rowTop + 32, 'financial-svg-title', 'start');
+                if (!valueDomain) {
+                    addText(svg, '데이터 없음', plotLeft, rowTop + 32, 'financial-svg-value', 'start');
+                    return;
+                }
+                const x = (value) => scale(value, valueDomain.minimum, valueDomain.maximum, plotLeft, plotRight);
+                const zeroX = x(0);
+                addLine(svg, plotLeft, rowTop + 70, plotRight, rowTop + 70, 'financial-svg-grid');
+                addLine(svg, zeroX, rowTop, zeroX, rowTop + 62, 'financial-svg-zero');
+                [
+                    {value: point.ttm, y: rowTop + 7, className: 'financial-svg-series--ttm', label: 'TTM'},
+                    {value: point.runRate, y: rowTop + 38, className: 'financial-svg-series--run-rate', label: '런레이트'}
+                ].forEach((bar) => {
+                    if (bar.value === null) {
+                        return;
+                    }
+                    const valueX = x(bar.value);
+                    addRect(svg, Math.min(zeroX, valueX), bar.y, Math.abs(valueX - zeroX), 20,
+                        bar.className, `${point.label} ${bar.label} ${exactNumber(bar.value)}억원`, 3);
+                    const labelX = bar.value >= 0 ? Math.min(plotRight - 2, valueX + 5) : Math.max(plotLeft + 2, valueX - 5);
+                    addText(svg, compactNumber(bar.value), labelX, bar.y + 15, 'financial-svg-value',
+                        bar.value >= 0 ? 'start' : 'end');
+                });
+            });
+        };
+
+        const renderRatioChart = () => {
+            const svg = document.getElementById('financial-ratio-chart');
+            if (!resetSvg(svg, '최근 4개 분기 ROE, EPS, BPS 추이',
+                'ROE, EPS, BPS를 각각 독립된 선 차트로 표시합니다.')) {
+                return;
+            }
+            const points = chronological(readPoints('financial-ratio-chart-data', (data) => ({
+                period: data.period,
+                roe: parseNumber(data.roe),
+                eps: parseNumber(data.eps),
+                bps: parseNumber(data.bps)
+            })));
+            if (points.length === 0) {
+                renderEmpty(svg, '표시할 재무비율 데이터가 없습니다.', 960, 330);
+                return;
+            }
+            const series = [
+                {key: 'roe', label: 'ROE', unit: '%', className: 'financial-svg-series--roe'},
+                {key: 'eps', label: 'EPS', unit: '원', className: 'financial-svg-series--eps'},
+                {key: 'bps', label: 'BPS', unit: '원', className: 'financial-svg-series--bps'}
+            ];
+            const panelWidth = 296;
+            const panelGap = 20;
+            const panelStart = 16;
+            const plotTop = 54;
+            const plotBottom = 248;
+
+            series.forEach((item, panelIndex) => {
+                const panelX = panelStart + panelIndex * (panelWidth + panelGap);
+                const values = points.map((point) => point[item.key]);
+                const valueDomain = domain(values, false);
+                addText(svg, `${item.label} (${item.unit})`, panelX, 23, 'financial-svg-title', 'start');
+                if (!valueDomain) {
+                    addText(svg, '데이터 없음', panelX + panelWidth / 2, 150, 'financial-svg-value');
+                    return;
+                }
+                addLine(svg, panelX, plotTop, panelX + panelWidth, plotTop, 'financial-svg-grid');
+                addLine(svg, panelX, plotBottom, panelX + panelWidth, plotBottom, 'financial-svg-grid');
+                const x = (index) => points.length === 1
+                    ? panelX + panelWidth / 2
+                    : panelX + (panelWidth * index / (points.length - 1));
+                const y = (value) => scale(value, valueDomain.maximum, valueDomain.minimum, plotTop, plotBottom);
+                const pathParts = [];
+                points.forEach((point, index) => {
+                    const value = point[item.key];
+                    if (value === null) {
+                        return;
+                    }
+                    pathParts.push(`${pathParts.length === 0 ? 'M' : 'L'} ${x(index)} ${y(value)}`);
+                });
+                if (pathParts.length > 1) {
+                    svg.appendChild(svgElement('path', {
+                        d: pathParts.join(' '),
+                        class: `${item.className} financial-svg-line`
+                    }));
+                }
+                points.forEach((point, index) => {
+                    const value = point[item.key];
+                    const pointX = x(index);
+                    addText(svg, quarterLabel(point.period), pointX, 282, '');
+                    if (value === null) {
+                        return;
+                    }
+                    const pointY = y(value);
+                    const circle = svgElement('circle', {cx: pointX, cy: pointY, r: 4.5, class: item.className});
+                    const title = svgElement('title');
+                    title.textContent = `${quarterLabel(point.period)} ${item.label} ${exactNumber(value)}${item.unit}`;
+                    circle.appendChild(title);
+                    svg.appendChild(circle);
+                    addText(svg, compactNumber(value), pointX,
+                        Math.max(plotTop + 9, pointY - 10), 'financial-svg-value');
+                });
+            });
+        };
+
+        const renderBalanceChart = () => {
+            const svg = document.getElementById('financial-balance-chart');
+            if (!resetSvg(svg, '최근 4개 분기 총부채와 자기자본 비교',
+                '분기별 총부채와 자기자본을 영점 기준 막대로 나란히 비교합니다.')) {
+                return;
+            }
+            const points = chronological(readPoints('financial-balance-chart-data', (data) => ({
+                period: data.period,
+                liabilities: parseNumber(data.liabilities),
+                equity: parseNumber(data.equity)
+            })));
+            const valueDomain = domain(points.flatMap((point) => [point.liabilities, point.equity]));
+            if (!valueDomain) {
+                renderEmpty(svg, '표시할 재무상태 데이터가 없습니다.', 960, 300);
+                return;
+            }
+            const plotLeft = 50;
+            const plotRight = 940;
+            const plotTop = 25;
+            const plotBottom = 240;
+            const y = (value) => scale(value, valueDomain.maximum, valueDomain.minimum, plotTop, plotBottom);
+            const zeroY = y(0);
+            addLine(svg, plotLeft, zeroY, plotRight, zeroY, 'financial-svg-zero');
+            addLine(svg, plotLeft, plotTop, plotRight, plotTop, 'financial-svg-grid');
+            addLine(svg, plotLeft, plotBottom, plotRight, plotBottom, 'financial-svg-grid');
+            const groupWidth = (plotRight - plotLeft) / points.length;
+            const barWidth = Math.min(64, groupWidth * 0.28);
+            points.forEach((point, index) => {
+                const centerX = plotLeft + groupWidth * index + groupWidth / 2;
+                [
+                    {value: point.liabilities, x: centerX - barWidth - 4,
+                        className: 'financial-svg-series--liabilities', label: '총부채'},
+                    {value: point.equity, x: centerX + 4,
+                        className: 'financial-svg-series--equity', label: '자기자본'}
+                ].forEach((bar) => {
+                    if (bar.value === null) {
+                        return;
+                    }
+                    const valueY = y(bar.value);
+                    addRect(svg, bar.x, Math.min(valueY, zeroY), barWidth, Math.abs(zeroY - valueY),
+                        bar.className, `${quarterLabel(point.period)} ${bar.label} ${exactNumber(bar.value)}억원`);
+                    addText(svg, compactNumber(bar.value), bar.x + barWidth / 2,
+                        bar.value >= 0 ? Math.max(plotTop + 10, valueY - 7) : Math.min(plotBottom - 3, valueY + 14),
+                        'financial-svg-value');
+                });
+                addText(svg, quarterLabel(point.period), centerX, 273, 'financial-svg-title');
+            });
+        };
+
+        renderIncomeChart();
+        renderGrowthChart();
+        renderAnnualizedChart();
+        renderRatioChart();
+        renderBalanceChart();
     })();
 </script>
 <script>
