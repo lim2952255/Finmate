@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360" role="img" aria-labelledby="title desc">
+  <title id="title">주가와 상장주식 수로 시가총액 계산하기</title>
+  <desc id="desc">한 주의 가격에 회사가 발행한 전체 상장주식 수를 곱하면 회사 전체의 시장가치인 시가총액이 됩니다.</desc>
+  <rect width="720" height="360" rx="24" fill="#f4f8ff"/>
+  <text x="36" y="44" fill="#1e3a8a" font-family="Pretendard, sans-serif" font-size="22" font-weight="800">한 조각의 가격 × 전체 조각 수</text>
+  <text x="36" y="70" fill="#64748b" font-family="Pretendard, sans-serif" font-size="14">주가는 한 주의 가격, 시가총액은 회사 전체의 시장가격입니다.</text>
+  <g font-family="Pretendard, sans-serif">
+    <rect x="55" y="108" width="180" height="132" rx="20" fill="#fff" stroke="#bfdbfe"/>
+    <circle cx="145" cy="147" r="24" fill="#dbeafe"/>
+    <text x="145" y="154" text-anchor="middle" fill="#2563eb" font-size="20" font-weight="900">₩</text>
+    <text x="145" y="191" text-anchor="middle" fill="#64748b" font-size="14" font-weight="700">주가</text>
+    <text x="145" y="220" text-anchor="middle" fill="#0f172a" font-size="23" font-weight="900">10만 원</text>
+    <text x="270" y="183" text-anchor="middle" fill="#2563eb" font-size="34" font-weight="900">×</text>
+    <rect x="305" y="108" width="180" height="132" rx="20" fill="#fff" stroke="#bfdbfe"/>
+    <g fill="#93c5fd"><circle cx="370" cy="144" r="11"/><circle cx="395" cy="144" r="11"/><circle cx="420" cy="144" r="11"/><circle cx="382" cy="169" r="11"/><circle cx="407" cy="169" r="11"/></g>
+    <text x="395" y="201" text-anchor="middle" fill="#64748b" font-size="14" font-weight="700">상장주식 수</text>
+    <text x="395" y="228" text-anchor="middle" fill="#0f172a" font-size="23" font-weight="900">100주</text>
+    <text x="520" y="183" text-anchor="middle" fill="#2563eb" font-size="34" font-weight="900">=</text>
+    <rect x="555" y="108" width="130" height="132" rx="20" fill="#2563eb"/>
+    <text x="620" y="154" text-anchor="middle" fill="#dbeafe" font-size="14" font-weight="800">시가총액</text>
+    <text x="620" y="193" text-anchor="middle" fill="#fff" font-size="24" font-weight="900">1,000만</text>
+    <text x="620" y="220" text-anchor="middle" fill="#dbeafe" font-size="13" font-weight="700">회사 전체 가격</text>
+    <rect x="125" y="278" width="470" height="42" rx="21" fill="#dbeafe"/>
+    <text x="360" y="305" text-anchor="middle" fill="#1e40af" font-size="15" font-weight="800">주가가 변하면 주식 수가 그대로여도 시가총액은 함께 변합니다.</text>
+  </g>
+</svg>

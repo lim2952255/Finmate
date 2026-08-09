@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360" role="img" aria-labelledby="title desc">
+  <title id="title">BPS와 PBR 계산 흐름</title>
+  <desc id="desc">자산에서 부채를 빼 자기자본을 구하고 주식 수로 나누어 BPS를 계산한 뒤 주가와 비교해 PBR을 구합니다.</desc>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f8fbff"/><stop offset="1" stop-color="#edf7ff"/></linearGradient></defs>
+  <rect width="720" height="360" rx="24" fill="url(#bg)"/>
+  <text x="36" y="44" fill="#1e3a8a" font-family="Pretendard, sans-serif" font-size="22" font-weight="800">회사에 남은 순자산에서 PBR까지</text>
+  <text x="36" y="70" fill="#64748b" font-family="Pretendard, sans-serif" font-size="14">회사가 가진 것에서 갚아야 할 것을 빼고 한 주 기준으로 바꿉니다.</text>
+  <g font-family="Pretendard, sans-serif">
+    <rect x="36" y="105" width="145" height="108" rx="16" fill="#fff" stroke="#bfdbfe"/>
+    <text x="108" y="137" text-anchor="middle" fill="#64748b" font-size="14" font-weight="700">자산</text>
+    <text x="108" y="174" text-anchor="middle" fill="#0f172a" font-size="23" font-weight="900">1억 5천</text>
+    <text x="199" y="168" text-anchor="middle" fill="#64748b" font-size="28" font-weight="800">−</text>
+    <rect x="217" y="105" width="128" height="108" rx="16" fill="#fff" stroke="#fecaca"/>
+    <text x="281" y="137" text-anchor="middle" fill="#64748b" font-size="14" font-weight="700">부채</text>
+    <text x="281" y="174" text-anchor="middle" fill="#dc2626" font-size="23" font-weight="900">5천만</text>
+    <text x="363" y="168" text-anchor="middle" fill="#64748b" font-size="28" font-weight="800">=</text>
+    <rect x="381" y="105" width="145" height="108" rx="16" fill="#eff6ff" stroke="#93c5fd"/>
+    <text x="453" y="137" text-anchor="middle" fill="#2563eb" font-size="14" font-weight="800">자기자본</text>
+    <text x="453" y="174" text-anchor="middle" fill="#0f172a" font-size="23" font-weight="900">1억 원</text>
+    <path d="M535 159h30" stroke="#60a5fa" stroke-width="3" stroke-linecap="round"/><path d="m558 151 9 8-9 8" fill="none" stroke="#60a5fa" stroke-width="3"/>
+    <rect x="575" y="105" width="109" height="108" rx="16" fill="#2563eb"/>
+    <text x="629" y="137" text-anchor="middle" fill="#dbeafe" font-size="13" font-weight="800">÷ 100주</text>
+    <text x="629" y="174" text-anchor="middle" fill="#fff" font-size="23" font-weight="900">BPS 10만</text>
+    <rect x="150" y="253" width="420" height="72" rx="20" fill="#fff" stroke="#bfdbfe"/>
+    <text x="360" y="281" text-anchor="middle" fill="#64748b" font-size="14" font-weight="700">현재 주가 15만 원 ÷ BPS 10만 원</text>
+    <text x="360" y="310" text-anchor="middle" fill="#1d4ed8" font-size="23" font-weight="900">PBR = 1.5배</text>
+  </g>
+</svg>

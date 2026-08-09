@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class StockChatController {
     private final StockChatService stockChatService;
 
+    // 종목 상세페이지에 접속하면 해당 API를 호출하고, 이 경우에 Chat History 정보를 리턴한다.
     @GetMapping("/messages")
     public StockChatHistoryResponse getMessages(
             @PathVariable Long stockId,

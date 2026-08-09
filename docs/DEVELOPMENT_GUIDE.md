@@ -90,10 +90,17 @@ STOCK_RANKING_CLOSED_CACHE_TTL_SECONDS=86400
 TRADING_EXPIRATION_INTERVAL_MILLIS=10000
 TRADING_EXPIRATION_INITIAL_DELAY_MILLIS=0
 TRADING_EXPIRATION_ENABLED=true
+STOCK_CONCEPT_SYNC_ENABLED=false
+STOCK_CONCEPT_SYNC_ON_STARTUP=false
+STOCK_CONCEPT_SYNC_CRON=0 0 4 * * MON
+STOCK_CONCEPT_SYNC_ZONE=Asia/Seoul
 ```
 
 국내 업종코드 파일은 국내 종목 마스터와 같은 `STOCK_MASTER_DOMESTIC_SYNC_CRON` / `STOCK_MASTER_DOMESTIC_SYNC_ZONE` 설정으로 함께 갱신된다.
 주문 만료 스케줄러는 기본 10초 간격으로 만료된 활성 주문·예약을 처리하고, 서버 시작 직후에는 중단 중 만료된 건을 즉시 복구한다.
+공식 주식 개념 카드 동기화는 검토 전 DB 변경을 막기 위해 기본 비활성화되어 있다. `STOCK_CONCEPT_SYNC_ENABLED=true`로 활성화하면
+기본적으로 매주 월요일 오전 4시에 `src/main/resources/stock-concepts/stock-concepts.yml`을 DB에 멱등 반영한다.
+변경사항을 즉시 반영할 때는 `STOCK_CONCEPT_SYNC_ON_STARTUP=true`로 애플리케이션을 한 번 시작한 뒤 다시 `false`로 되돌린다.
 
 ## 3. MySQL과 Redis 실행
 

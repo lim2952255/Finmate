@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360" role="img" aria-labelledby="title desc">
+  <title id="title">재무비율로 성장성 수익성 안정성 살펴보기</title>
+  <desc id="desc">재무비율을 성장성, 수익성, 재무 안정성의 세 영역으로 구분해 함께 살펴봅니다.</desc>
+  <rect width="720" height="360" rx="24" fill="#f7faff"/>
+  <text x="36" y="44" fill="#1e3a8a" font-family="Pretendard, sans-serif" font-size="22" font-weight="800">회사를 세 방향에서 건강검진하기</text>
+  <text x="36" y="70" fill="#64748b" font-family="Pretendard, sans-serif" font-size="14">한 가지 비율이 아니라 성장성·수익성·안정성을 함께 살펴봅니다.</text>
+  <g font-family="Pretendard, sans-serif">
+    <rect x="42" y="109" width="196" height="170" rx="20" fill="#fff" stroke="#bfdbfe"/>
+    <circle cx="140" cy="151" r="27" fill="#dbeafe"/><path d="M125 157l13-13 10 8 16-18" fill="none" stroke="#2563eb" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="140" y="199" text-anchor="middle" fill="#0f172a" font-size="19" font-weight="900">성장성</text>
+    <text x="140" y="228" text-anchor="middle" fill="#475569" font-size="13" font-weight="700">매출·영업이익</text><text x="140" y="248" text-anchor="middle" fill="#475569" font-size="13" font-weight="700">순이익 성장률</text>
+    <rect x="262" y="109" width="196" height="170" rx="20" fill="#fff" stroke="#bfdbfe"/>
+    <circle cx="360" cy="151" r="27" fill="#dbeafe"/><text x="360" y="159" text-anchor="middle" fill="#2563eb" font-size="20" font-weight="900">%</text>
+    <text x="360" y="199" text-anchor="middle" fill="#0f172a" font-size="19" font-weight="900">수익성</text>
+    <text x="360" y="228" text-anchor="middle" fill="#475569" font-size="13" font-weight="700">ROE·EPS</text><text x="360" y="248" text-anchor="middle" fill="#475569" font-size="13" font-weight="700">이익 창출력</text>
+    <rect x="482" y="109" width="196" height="170" rx="20" fill="#fff" stroke="#bfdbfe"/>
+    <circle cx="580" cy="151" r="27" fill="#dbeafe"/><path d="M580 132l17 7v13c0 12-8 20-17 25-9-5-17-13-17-25v-13z" fill="none" stroke="#2563eb" stroke-width="3"/>
+    <text x="580" y="199" text-anchor="middle" fill="#0f172a" font-size="19" font-weight="900">안정성</text>
+    <text x="580" y="228" text-anchor="middle" fill="#475569" font-size="13" font-weight="700">부채비율·유보율</text><text x="580" y="248" text-anchor="middle" fill="#475569" font-size="13" font-weight="700">재무 부담</text>
+    <rect x="155" y="302" width="410" height="34" rx="17" fill="#dbeafe"/>
+    <text x="360" y="324" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="800">업종과 기간이 같은 기업끼리 비교해야 의미가 선명해집니다.</text>
+  </g>
+</svg>

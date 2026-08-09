@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360" role="img" aria-labelledby="title desc">
+  <title id="title">PER PBR ROE의 관계</title>
+  <desc id="desc">시가총액, 당기순이익, 자기자본을 삼각형 꼭짓점에 두고 각 관계를 PER, PBR, ROE로 표시합니다.</desc>
+  <defs><linearGradient id="tri" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#bfdbfe"/><stop offset="1" stop-color="#dbeafe" stop-opacity=".35"/></linearGradient></defs>
+  <rect width="720" height="360" rx="24" fill="#f7faff"/>
+  <text x="36" y="44" fill="#1e3a8a" font-family="Pretendard, sans-serif" font-size="22" font-weight="800">가격·이익·자본을 연결해서 보기</text>
+  <text x="36" y="70" fill="#64748b" font-family="Pretendard, sans-serif" font-size="14">각 지표는 독립된 숫자가 아니라 같은 세 값을 서로 비교한 결과입니다.</text>
+  <path d="M360 128 160 285h400z" fill="url(#tri)" stroke="#60a5fa" stroke-width="3" stroke-linejoin="round"/>
+  <g font-family="Pretendard, sans-serif" text-anchor="middle">
+    <circle cx="360" cy="128" r="42" fill="#2563eb"/>
+    <text x="360" y="123" fill="#dbeafe" font-size="12" font-weight="800">가격</text>
+    <text x="360" y="143" fill="#fff" font-size="15" font-weight="900">시가총액</text>
+    <circle cx="160" cy="285" r="44" fill="#fff" stroke="#93c5fd" stroke-width="2"/>
+    <text x="160" y="280" fill="#64748b" font-size="13" font-weight="800">자본</text>
+    <text x="160" y="301" fill="#0f172a" font-size="16" font-weight="900">자기자본</text>
+    <circle cx="560" cy="285" r="44" fill="#fff" stroke="#93c5fd" stroke-width="2"/>
+    <text x="560" y="280" fill="#64748b" font-size="13" font-weight="800">이익</text>
+    <text x="560" y="301" fill="#0f172a" font-size="16" font-weight="900">당기순이익</text>
+    <rect x="203" y="167" width="80" height="36" rx="18" fill="#fff" stroke="#bfdbfe"/>
+    <text x="243" y="191" fill="#2563eb" font-size="16" font-weight="900">PBR</text>
+    <rect x="437" y="167" width="80" height="36" rx="18" fill="#fff" stroke="#bfdbfe"/>
+    <text x="477" y="191" fill="#2563eb" font-size="16" font-weight="900">PER</text>
+    <rect x="320" y="264" width="80" height="36" rx="18" fill="#fff" stroke="#bfdbfe"/>
+    <text x="360" y="288" fill="#2563eb" font-size="16" font-weight="900">ROE</text>
+  </g>
+</svg>

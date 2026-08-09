@@ -135,7 +135,7 @@ public class DomesticStockDetailRefreshService {
         return currentQuote;
     }
 
-    // 현재가 걍신 처리 로직
+    // 현재가 갱신 처리 로직
     private DomesticStockCurrentQuoteSnapshot resolveCurrentQuote(Stock stock,
                                                                   DomesticStockDetailRefreshState state,
                                                                   LocalDateTime now) {

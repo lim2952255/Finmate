@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360" role="img" aria-labelledby="title desc">
+  <title id="title">손익계산서의 이익 흐름</title>
+  <desc id="desc">빵집 매출액에서 영업비용을 빼 영업이익을 구하고 영업외손익과 세금을 반영해 당기순이익에 이르는 과정입니다.</desc>
+  <rect width="720" height="360" rx="24" fill="#f7faff"/>
+  <text x="36" y="44" fill="#1e3a8a" font-family="Pretendard, sans-serif" font-size="22" font-weight="800">매출에서 최종 이익이 남기까지</text>
+  <text x="36" y="70" fill="#64748b" font-family="Pretendard, sans-serif" font-size="14">손익계산서는 일정 기간 동안 번 돈과 사용한 비용의 흐름을 보여줍니다.</text>
+  <g font-family="Pretendard, sans-serif">
+    <rect x="40" y="108" width="150" height="128" rx="18" fill="#2563eb"/>
+    <text x="115" y="144" text-anchor="middle" fill="#dbeafe" font-size="13" font-weight="800">빵 판매 규모</text>
+    <text x="115" y="177" text-anchor="middle" fill="#fff" font-size="23" font-weight="900">매출액</text>
+    <text x="115" y="211" text-anchor="middle" fill="#fff" font-size="20" font-weight="800">1,200만</text>
+    <path d="M204 172h50" stroke="#60a5fa" stroke-width="3"/><path d="m245 164 9 8-9 8" fill="none" stroke="#60a5fa" stroke-width="3"/>
+    <text x="229" y="151" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="800">− 영업비용</text>
+    <rect x="268" y="108" width="150" height="128" rx="18" fill="#fff" stroke="#93c5fd"/>
+    <text x="343" y="144" text-anchor="middle" fill="#64748b" font-size="13" font-weight="800">본업에서 남은 돈</text>
+    <text x="343" y="177" text-anchor="middle" fill="#0f172a" font-size="22" font-weight="900">영업이익</text>
+    <text x="343" y="211" text-anchor="middle" fill="#2563eb" font-size="20" font-weight="800">350만</text>
+    <path d="M432 172h50" stroke="#60a5fa" stroke-width="3"/><path d="m473 164 9 8-9 8" fill="none" stroke="#60a5fa" stroke-width="3"/>
+    <text x="457" y="143" text-anchor="middle" fill="#64748b" font-size="9" font-weight="800">± 영업외손익</text><text x="457" y="156" text-anchor="middle" fill="#dc2626" font-size="9" font-weight="800">− 세금</text>
+    <rect x="496" y="108" width="184" height="128" rx="18" fill="#eff6ff" stroke="#60a5fa"/>
+    <text x="588" y="144" text-anchor="middle" fill="#64748b" font-size="13" font-weight="800">최종적으로 남은 돈</text>
+    <text x="588" y="177" text-anchor="middle" fill="#0f172a" font-size="22" font-weight="900">당기순이익</text>
+    <text x="588" y="211" text-anchor="middle" fill="#2563eb" font-size="20" font-weight="800">250만</text>
+    <rect x="109" y="275" width="502" height="44" rx="22" fill="#dbeafe"/>
+    <text x="360" y="302" text-anchor="middle" fill="#1e40af" font-size="15" font-weight="800">매출이 커도 비용이 더 빠르게 늘면 최종 이익은 줄어들 수 있습니다.</text>
+  </g>
+</svg>
