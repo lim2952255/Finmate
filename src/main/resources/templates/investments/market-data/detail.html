@@ -450,6 +450,38 @@
             filter: drop-shadow(0 4px 5px rgba(37, 99, 235, 0.16));
         }
 
+        .chart-extrema-point {
+            stroke: #ffffff;
+            stroke-width: 2.5;
+            pointer-events: none;
+        }
+
+        .chart-extrema-point.maximum {
+            fill: #dc2626;
+        }
+
+        .chart-extrema-point.minimum {
+            fill: #2563eb;
+        }
+
+        .chart-extrema-label {
+            font-size: 12px;
+            font-weight: 900;
+            paint-order: stroke;
+            stroke: #ffffff;
+            stroke-width: 4px;
+            stroke-linejoin: round;
+            pointer-events: none;
+        }
+
+        .chart-extrema-label.maximum {
+            fill: #dc2626;
+        }
+
+        .chart-extrema-label.minimum {
+            fill: #2563eb;
+        }
+
         .chart-hover-target {
             fill: transparent;
             pointer-events: all;
@@ -469,6 +501,13 @@
             stroke-dasharray: 4 4;
             stroke-width: 1;
             opacity: 0.74;
+        }
+
+        .chart-crosshair-point {
+            fill: #2563eb;
+            stroke: #ffffff;
+            stroke-width: 2.5;
+            filter: drop-shadow(0 2px 4px rgba(37, 99, 235, 0.28));
         }
 
         .chart-crosshair-badge {
@@ -882,6 +921,7 @@
                                 <polyline id="market-chart-line"
                                           class="market-line"
                                           th:attr="points=${marketIndicatorPageInfo.chartPolylinePoints()}"></polyline>
+                                <g id="market-chart-extrema" aria-hidden="true"></g>
 
                                 <g th:if="${marketIndicatorPageInfo.hasLatestPriceLine()}">
                                     <line id="market-chart-current-line"
@@ -937,6 +977,9 @@
                                     <line id="market-crosshair-horizontal"
                                           class="chart-crosshair-line"
                                           th:attr="x1=${marketIndicatorPageInfo.chartLeft()},x2=${marketIndicatorPageInfo.chartRight()}"></line>
+                                    <circle id="market-crosshair-point"
+                                            class="chart-crosshair-point"
+                                            r="5"></circle>
                                     <rect id="market-crosshair-price-badge"
                                           class="chart-crosshair-badge"
                                           rx="4"
@@ -1282,6 +1325,7 @@
                 latestHoverTarget.dataset.close = formatNumber(currentPrice, priceFractionDigits);
                 latestHoverTarget.dataset.closeRaw = String(currentPrice);
             }
+            window.dispatchEvent(new CustomEvent('market-chart:data-updated'));
         }
 
         function realtimeTimeText(quote) {
@@ -1414,10 +1458,12 @@
         const crosshair = document.getElementById('market-chart-crosshair');
         const crosshairVertical = document.getElementById('market-crosshair-vertical');
         const crosshairHorizontal = document.getElementById('market-crosshair-horizontal');
+        const crosshairPoint = document.getElementById('market-crosshair-point');
         const crosshairPriceBadge = document.getElementById('market-crosshair-price-badge');
         const crosshairPriceText = document.getElementById('market-crosshair-price-text');
         const crosshairDateBadge = document.getElementById('market-crosshair-date-badge');
         const crosshairDateText = document.getElementById('market-crosshair-date-text');
+        const extremaLayer = document.getElementById('market-chart-extrema');
         const chartMaxPrice = toNumber(dataLayer.dataset.chartMaxPrice);
         const chartMinPrice = toNumber(dataLayer.dataset.chartMinPrice);
         const chartLeft = toNumber(dataLayer.dataset.chartLeft);
@@ -1438,6 +1484,11 @@
         }
 
         refreshHoverTargets();
+        renderExtremaMarkers();
+        window.addEventListener('market-chart:data-updated', () => {
+            refreshHoverTargets();
+            renderExtremaMarkers();
+        });
 
         chartScroll.addEventListener('mousemove', (event) => {
             const point = toSvgPoint(event);
@@ -1446,15 +1497,14 @@
                 return;
             }
 
-            const target = findNearestHoverTarget(point.x);
-            if (!target) {
+            const hoverTarget = findNearestHoverTarget(point.x);
+            if (!hoverTarget) {
                 hideChartPointer();
                 return;
             }
 
-            const cursorPrice = toCursorPrice(point.y);
-            showCrosshair(point, cursorPrice, target);
-            showTooltip(target, event, cursorPrice);
+            showCrosshair(hoverTarget);
+            showTooltip(hoverTarget.target, event);
         });
 
         chartScroll.addEventListener('mouseleave', hideChartPointer);
@@ -1477,31 +1527,86 @@
                 return null;
             }
 
-            return hoverTargets.reduce((nearest, item) => {
+            const nearest = hoverTargets.reduce((currentNearest, item) => {
                 const distance = Math.abs(item.centerX - x);
-                if (distance < nearest.distance) {
+                if (distance < currentNearest.distance) {
                     return {
-                        target: item.target,
+                        item,
                         distance
                     };
                 }
 
-                return nearest;
+                return currentNearest;
             }, {
-                target: null,
+                item: null,
                 distance: Number.POSITIVE_INFINITY
-            }).target;
+            });
+            return nearest.item;
         }
 
-        function showCrosshair(point, cursorPrice, target) {
+        function renderExtremaMarkers() {
+            if (!extremaLayer || hoverTargets.length === 0) {
+                return;
+            }
+
+            const candidates = hoverTargets
+                    .map((item) => ({
+                        ...item,
+                        close: toNumber(item.target.dataset.closeRaw)
+                    }))
+                    .filter((item) => Number.isFinite(item.close));
+            if (candidates.length === 0) {
+                extremaLayer.replaceChildren();
+                return;
+            }
+
+            const maximum = candidates.reduce((current, candidate) =>
+                    candidate.close > current.close ? candidate : current);
+            const minimum = candidates.reduce((current, candidate) =>
+                    candidate.close < current.close ? candidate : current);
+            const elements = [createExtremaMarker(maximum, 'maximum', '최고')];
+            if (minimum !== maximum) {
+                elements.push(createExtremaMarker(minimum, 'minimum', '최저'));
+            }
+            extremaLayer.replaceChildren(...elements);
+        }
+
+        function createExtremaMarker(extrema, className, label) {
+            const namespace = 'http://www.w3.org/2000/svg';
+            const group = document.createElementNS(namespace, 'g');
+            const pointX = clamp(extrema.centerX, chartLeft, priceAxisX);
+            const pointY = toPriceY(extrema.close);
+            const textAnchor = pointX > (chartLeft + priceAxisX) / 2 ? 'end' : 'start';
+            const textX = pointX + (textAnchor === 'end' ? -10 : 10);
+            const textY = className === 'maximum'
+                    ? Math.max(priceAreaTop + 14, pointY - 11)
+                    : Math.min(priceAreaBottom - 5, pointY + 19);
+            const circle = document.createElementNS(namespace, 'circle');
+            circle.setAttribute('cx', formatCoordinate(pointX));
+            circle.setAttribute('cy', formatCoordinate(pointY));
+            circle.setAttribute('r', '5.5');
+            circle.setAttribute('class', `chart-extrema-point ${className}`);
+            const text = document.createElementNS(namespace, 'text');
+            text.setAttribute('x', formatCoordinate(textX));
+            text.setAttribute('y', formatCoordinate(textY));
+            text.setAttribute('text-anchor', textAnchor);
+            text.setAttribute('class', `chart-extrema-label ${className}`);
+            text.textContent = `${label} ${formatPrice(extrema.close)} · ${extrema.target.dataset.date || '-'}`;
+            group.append(circle, text);
+            return group;
+        }
+
+        function showCrosshair(hoverTarget) {
             if (!crosshair || !crosshairVertical || !crosshairHorizontal) {
                 return;
             }
 
-            const x = clamp(point.x, chartLeft, priceAxisX);
-            const y = clamp(point.y, priceAreaTop, priceAreaBottom);
+            const target = hoverTarget.target;
+            const x = clamp(hoverTarget.centerX, chartLeft, priceAxisX);
+            const selectedPrice = toNumber(target.dataset.closeRaw);
+            const y = toPriceY(selectedPrice);
             const dateLabel = target.dataset.date || '-';
-            const priceLabel = formatPrice(cursorPrice);
+            const priceLabel = formatPrice(selectedPrice);
 
             crosshair.classList.add('visible');
             crosshair.setAttribute('aria-hidden', 'false');
@@ -1513,6 +1618,11 @@
             crosshairHorizontal.setAttribute('x2', formatCoordinate(priceAxisX));
             crosshairHorizontal.setAttribute('y1', formatCoordinate(y));
             crosshairHorizontal.setAttribute('y2', formatCoordinate(y));
+
+            if (crosshairPoint) {
+                crosshairPoint.setAttribute('cx', formatCoordinate(x));
+                crosshairPoint.setAttribute('cy', formatCoordinate(y));
+            }
 
             if (crosshairPriceBadge && crosshairPriceText) {
                 crosshairPriceBadge.setAttribute('y', formatCoordinate(y - 11));
@@ -1533,14 +1643,13 @@
             }
         }
 
-        function showTooltip(target, event, cursorPrice) {
+        function showTooltip(target, event) {
             tooltip.innerHTML = `
                 <div class="chart-tooltip-title">${escapeHtml(target.dataset.date || '-')}</div>
-                ${tooltipRow('커서 가격', formatPrice(cursorPrice))}
+                ${tooltipRow('종가', target.dataset.close)}
                 ${tooltipRow('시가', target.dataset.open)}
                 ${tooltipRow('고가', target.dataset.high)}
                 ${tooltipRow('저가', target.dataset.low)}
-                ${tooltipRow('종가', target.dataset.close)}
                 ${tooltipRow('거래량', target.dataset.volume)}
             `;
             tooltip.classList.add('visible');
@@ -1598,14 +1707,13 @@
                     && point.y <= priceAreaBottom;
         }
 
-        function toCursorPrice(y) {
-            if (chartMaxPrice <= chartMinPrice || priceAreaHeight <= 0) {
-                return chartMaxPrice;
+        function toPriceY(price) {
+            if (!Number.isFinite(price) || chartMaxPrice <= chartMinPrice || priceAreaHeight <= 0) {
+                return priceAreaBottom;
             }
 
-            const clampedY = clamp(y, priceAreaTop, priceAreaBottom);
-            const rate = (clampedY - priceAreaTop) / priceAreaHeight;
-            return chartMaxPrice - (chartMaxPrice - chartMinPrice) * rate;
+            const rate = (chartMaxPrice - price) / (chartMaxPrice - chartMinPrice);
+            return clamp(priceAreaTop + priceAreaHeight * rate, priceAreaTop, priceAreaBottom);
         }
 
         function hideChartPointer() {

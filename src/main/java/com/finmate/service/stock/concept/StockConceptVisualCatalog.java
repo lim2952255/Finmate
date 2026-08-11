@@ -26,6 +26,10 @@ public class StockConceptVisualCatalog {
     private Map<StockConceptCode, StockConceptVisualResponse> createVisuals() {
         Map<StockConceptCode, StockConceptVisualResponse> catalog = new EnumMap<>(StockConceptCode.class);
 
+        register(catalog, "daily-candle-chart.svg",
+                "빨간 양봉과 파란 음봉에 시가, 고가, 저가, 종가 위치를 표시하고 시가와 종가가 단일가매매로 결정되는 흐름",
+                "몸통은 시가와 종가 사이, 위아래 꼬리는 하루의 고가와 저가를 보여줍니다.",
+                StockConceptCode.DAILY_CANDLE_CHART);
         register(catalog, "earnings-valuation.svg",
                 "회사의 당기순이익을 주식 수로 나누어 EPS를 구하고 주가를 EPS로 나누어 PER을 구하는 흐름",
                 "회사가 번 이익을 한 주 기준으로 바꾸면 EPS, 현재 주가와 비교하면 PER이 됩니다.",
@@ -67,6 +71,43 @@ public class StockConceptVisualCatalog {
                 "외국인과 개인, 기관별 매수수량에서 매도수량을 빼 순매수를 계산하는 그림",
                 "투자자별 수급은 보유 비율이 아니라 일정 기간 매수와 매도가 어느 쪽으로 기울었는지를 보여줍니다.",
                 StockConceptCode.INVESTOR_TRADING_FLOW);
+        register(catalog, "short-selling-loan.svg",
+                "주식을 빌리는 대차거래와 빌린 주식을 시장에 파는 공매도, 이후 되사서 반환하는 흐름",
+                "대차잔고는 빌려 간 주식의 잔량이고 공매도 거래량은 실제로 매도된 수량이므로 같은 값이 아닙니다.",
+                StockConceptCode.SHORT_SELLING_AND_SECURITIES_LENDING);
+
+        register(catalog, "learning-account-trading.svg",
+                "예수금이 주문 증거금으로 묶이고 결제대금이 부족하면 미수금과 반대매매 위험으로 이어지는 흐름",
+                "주문 가능 금액과 실제 결제 가능한 현금은 같지 않을 수 있습니다.",
+                StockConceptCode.CASH_MARGIN_RECEIVABLE_RELATIONSHIP,
+                StockConceptCode.MARGIN_TRADING_AND_FORCED_LIQUIDATION,
+                StockConceptCode.CREDIT_TRADING_VS_MARGIN_TRADING);
+        register(catalog, "learning-risk-portfolio.svg",
+                "서로 다르게 움직이는 자산을 배분하고 목표 비중에서 벗어나면 리밸런싱하는 포트폴리오 흐름",
+                "분산과 자산배분은 위험을 없애는 것이 아니라 한 위험에 집중되지 않게 조절하는 방법입니다.",
+                StockConceptCode.HEDGING_VS_SPECULATION,
+                StockConceptCode.DIVERSIFICATION,
+                StockConceptCode.CORRELATION,
+                StockConceptCode.ASSET_ALLOCATION,
+                StockConceptCode.PORTFOLIO_REBALANCING);
+        register(catalog, "learning-etf-fund.svg",
+                "여러 자산을 담은 펀드와 ETF, ETF의 순자산가치와 시장가격 및 환율 영향을 비교하는 그림",
+                "ETF는 장중 시장가격으로 거래되며 NAV, 괴리율, 환율과 일간 추종 구조를 함께 확인해야 합니다.",
+                StockConceptCode.ETF_VS_FUND,
+                StockConceptCode.ETF_NAV_AND_PREMIUM_DISCOUNT,
+                StockConceptCode.LEVERAGED_AND_INVERSE_ETF,
+                StockConceptCode.CURRENCY_HEDGED_VS_UNHEDGED);
+        register(catalog, "learning-market-safety.svg",
+                "시장 충격이 커질 때 프로그램매매를 잠시 제한하는 사이드카와 시장 전체 거래를 멈추는 서킷브레이커",
+                "사이드카와 서킷브레이커는 적용 대상과 발동 효과가 다른 시장 안전장치입니다.",
+                StockConceptCode.SIDECAR,
+                StockConceptCode.CIRCUIT_BREAKER);
+        register(catalog, "learning-derivatives.svg",
+                "주식을 빌려 파는 공매도와 미래 가격을 계약하는 선물, 매매 권리를 거래하는 옵션의 구조",
+                "공매도·선물·옵션은 하락 대응과 헤지에 쓰일 수 있지만 손실 구조와 의무가 서로 다릅니다.",
+                StockConceptCode.SHORT_SELLING,
+                StockConceptCode.FUTURES,
+                StockConceptCode.OPTIONS);
 
         return Map.copyOf(catalog);
     }

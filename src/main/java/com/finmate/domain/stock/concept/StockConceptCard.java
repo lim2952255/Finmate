@@ -62,6 +62,11 @@ public class StockConceptCard {
     @Column(name = "bakery_example", nullable = false, columnDefinition = "TEXT")
     private String bakeryExample;
 
+    // 개념이 실제 시장의 수급과 가격에 어떤 경로로 연결될 수 있는지 설명
+    @Lob
+    @Column(name = "market_impact", columnDefinition = "TEXT")
+    private String marketImpact;
+
     // 개념을 이해할때의 주의사항
     @Lob
     @Column(nullable = false, columnDefinition = "TEXT")
@@ -84,12 +89,13 @@ public class StockConceptCard {
                                           String summary,
                                           String detailedExplanation,
                                           String bakeryExample,
+                                          String marketImpact,
                                           String caution,
                                           boolean active) {
         validate(conceptCode, title, summary, detailedExplanation, bakeryExample, caution);
         StockConceptCard card = new StockConceptCard();
         card.conceptCode = conceptCode;
-        card.apply(title, summary, detailedExplanation, bakeryExample, caution, active);
+        card.apply(title, summary, detailedExplanation, bakeryExample, marketImpact, caution, active);
         return card;
     }
 
@@ -97,13 +103,14 @@ public class StockConceptCard {
                           String summary,
                           String detailedExplanation,
                           String bakeryExample,
+                          String marketImpact,
                           String caution,
                           boolean active) {
         validate(conceptCode, title, summary, detailedExplanation, bakeryExample, caution);
-        if (hasSameContent(title, summary, detailedExplanation, bakeryExample, caution, active)) {
+        if (hasSameContent(title, summary, detailedExplanation, bakeryExample, marketImpact, caution, active)) {
             return false;
         }
-        apply(title, summary, detailedExplanation, bakeryExample, caution, active);
+        apply(title, summary, detailedExplanation, bakeryExample, marketImpact, caution, active);
         this.updatedAt = LocalDateTime.now();
         return true;
     }
@@ -113,12 +120,14 @@ public class StockConceptCard {
                        String summary,
                        String detailedExplanation,
                        String bakeryExample,
+                       String marketImpact,
                        String caution,
                        boolean active) {
         this.title = title;
         this.summary = summary;
         this.detailedExplanation = detailedExplanation;
         this.bakeryExample = bakeryExample;
+        this.marketImpact = marketImpact;
         this.caution = caution;
         this.active = active;
     }
@@ -128,12 +137,14 @@ public class StockConceptCard {
                                    String summary,
                                    String detailedExplanation,
                                    String bakeryExample,
+                                   String marketImpact,
                                    String caution,
                                    boolean active) {
         return Objects.equals(this.title, title)
                 && Objects.equals(this.summary, summary)
                 && Objects.equals(this.detailedExplanation, detailedExplanation)
                 && Objects.equals(this.bakeryExample, bakeryExample)
+                && Objects.equals(this.marketImpact, marketImpact)
                 && Objects.equals(this.caution, caution)
                 && this.active == active;
     }

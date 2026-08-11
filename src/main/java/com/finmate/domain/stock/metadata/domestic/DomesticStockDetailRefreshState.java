@@ -57,6 +57,12 @@ public class DomesticStockDetailRefreshState {
     @Column(name = "investor_trade_updated_at")
     private LocalDateTime investorTradeUpdatedAt; // 투자자 수급 마지막 갱신시각
 
+    @Column(name = "short_sale_updated_at")
+    private LocalDateTime shortSaleUpdatedAt;
+
+    @Column(name = "loan_transaction_updated_at")
+    private LocalDateTime loanTransactionUpdatedAt;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -88,6 +94,14 @@ public class DomesticStockDetailRefreshState {
 
     public void markInvestorTradeUpdated(LocalDateTime refreshedAt) {
         this.investorTradeUpdatedAt = requireRefreshTime(refreshedAt);
+    }
+
+    public void markShortSaleUpdated(LocalDateTime refreshedAt) {
+        this.shortSaleUpdatedAt = requireRefreshTime(refreshedAt);
+    }
+
+    public void markLoanTransactionUpdated(LocalDateTime refreshedAt) {
+        this.loanTransactionUpdatedAt = requireRefreshTime(refreshedAt);
     }
 
     private LocalDateTime requireRefreshTime(LocalDateTime refreshedAt) {

@@ -1,6 +1,7 @@
 package com.finmate.domain.stock.concept;
 
 public enum StockConceptCode {
+    DAILY_CANDLE_CHART, // 일봉 차트 보는 법
     PER, // PER 개념 카드
     PBR, // PBR 개념 카드
     EPS, // EPS 개념 카드
@@ -17,5 +18,24 @@ public enum StockConceptCode {
     FINANCIAL_RATIOS, // 재무비율 분석 개념 카드
     INCOME_STATEMENT, // 손익계산서 분석 개념 카드
     BALANCE_SHEET, // 대차대조표 분석 개념 카드
-    INVESTOR_TRADING_FLOW // 투자자별 매매동향 분석 개념 카드
+    INVESTOR_TRADING_FLOW, // 투자자별 매매동향 분석 개념 카드
+    SHORT_SELLING_AND_SECURITIES_LENDING, // 공매도 거래와 대차잔고 통합 개념 카드
+
+    CASH_MARGIN_RECEIVABLE_RELATIONSHIP, // 예수금·증거금·미수금 연결
+    MARGIN_TRADING_AND_FORCED_LIQUIDATION, // 미수거래와 반대매매
+    CREDIT_TRADING_VS_MARGIN_TRADING, // 신용거래와 미수거래의 차이
+    HEDGING_VS_SPECULATION, // 헤지와 투기의 차이
+    DIVERSIFICATION, // 분산투자
+    CORRELATION, // 상관관계
+    ASSET_ALLOCATION, // 자산배분
+    PORTFOLIO_REBALANCING, // 포트폴리오 리밸런싱
+    ETF_VS_FUND, // ETF와 펀드의 차이
+    ETF_NAV_AND_PREMIUM_DISCOUNT, // ETF의 NAV와 괴리율
+    LEVERAGED_AND_INVERSE_ETF, // 레버리지·인버스 ETF
+    CURRENCY_HEDGED_VS_UNHEDGED, // 환헤지와 환노출
+    SIDECAR, // 사이드카
+    CIRCUIT_BREAKER, // 서킷브레이커
+    SHORT_SELLING, // 공매도
+    FUTURES, // 선물
+    OPTIONS // 옵션
 }

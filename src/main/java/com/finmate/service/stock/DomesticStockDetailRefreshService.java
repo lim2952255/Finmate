@@ -10,20 +10,17 @@ import com.finmate.domain.stock.metadata.domestic.DomesticStockCurrentQuote;
 import com.finmate.domain.stock.metadata.domestic.DomesticStockDetailRefreshState;
 import com.finmate.domain.stock.metadata.domestic.DomesticStockFinancialRatio;
 import com.finmate.domain.stock.metadata.domestic.DomesticStockIncomeStatement;
-import com.finmate.domain.stock.metadata.domestic.DomesticStockInvestorDailyTrade;
 import com.finmate.infra.kis.parser.KisValueParser;
 import com.finmate.infra.kis.stock.detail.FinancialPeriod;
 import com.finmate.infra.kis.stock.detail.KisBalanceSheetResponse;
 import com.finmate.infra.kis.stock.detail.KisDomesticStockDetailClient;
 import com.finmate.infra.kis.stock.detail.KisFinancialRatioResponse;
 import com.finmate.infra.kis.stock.detail.KisIncomeStatementResponse;
-import com.finmate.infra.kis.stock.detail.KisInvestorTradeResponse;
 import com.finmate.repository.stock.metadata.domestic.DomesticStockBalanceSheetRepository;
 import com.finmate.repository.stock.metadata.domestic.DomesticStockCurrentQuoteRepository;
 import com.finmate.repository.stock.metadata.domestic.DomesticStockDetailRefreshStateRepository;
 import com.finmate.repository.stock.metadata.domestic.DomesticStockFinancialRatioRepository;
 import com.finmate.repository.stock.metadata.domestic.DomesticStockIncomeStatementRepository;
-import com.finmate.repository.stock.metadata.domestic.DomesticStockInvestorDailyTradeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,7 +39,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @RequiredArgsConstructor
 public class DomesticStockDetailRefreshService {
-    private static final String KRX_MARKET_CODE = "J"; //
     private static final DomesticFinancialPeriodType PERIOD_TYPE = DomesticFinancialPeriodType.QUARTERLY; // DB에 저장할때 사용하는 enum
     private static final FinancialPeriod KIS_PERIOD = FinancialPeriod.QUARTERLY; // KIS API 요청용 enum
 
@@ -51,9 +47,9 @@ public class DomesticStockDetailRefreshService {
     private final DomesticStockFinancialRatioRepository financialRatioRepository;
     private final DomesticStockIncomeStatementRepository incomeStatementRepository;
     private final DomesticStockBalanceSheetRepository balanceSheetRepository;
-    private final DomesticStockInvestorDailyTradeRepository investorDailyTradeRepository;
     private final DomesticStockDetailRefreshStateRepository refreshStateRepository;
     private final DomesticStockCurrentQuoteCacheService currentQuoteCacheService;
+    private final DomesticStockDailyFlowRefreshService dailyFlowRefreshService;
 
     // 갱신 lock
     // 이때 종목별로 서로 다른 lock을 관리하기 위해 Lock을 HashMap으로 관리한다.
@@ -66,11 +62,8 @@ public class DomesticStockDetailRefreshService {
     @Value("${finmate.stock-detail.financial-refresh-seconds:86400}")
     private long financialRefreshSeconds; // 재무정보는 거의 바뀌지 않으므로 24시간로 설정한다.
 
-    @Value("${finmate.stock-detail.investor-refresh-seconds:600}")
-    private long investorRefreshSeconds; // 투자자 동향은 현재가만큼은 아니지만, 자주 바뀌기 때문에 10분마다 갱신한다.
-
     // 정보 갱신이 필요한지를 검사한다.
-    public DomesticStockCurrentQuoteSnapshot refreshIfNeeded(Stock stock, LocalDate investorBaseDate) {
+    public DomesticStockCurrentQuoteSnapshot refreshIfNeeded(Stock stock) {
         if (!isDomestic(stock)) {
             return null;
         }
@@ -79,12 +72,12 @@ public class DomesticStockDetailRefreshService {
         Object lock = stockRefreshLocks.computeIfAbsent(stock.getId(), ignored -> new Object());
         synchronized (lock) {
             // 갱신이 필요한지를 검사하고, 실제로 갱신을 수행한다.
-            return refreshUnderLock(stock, investorBaseDate);
+            return refreshUnderLock(stock);
         }
     }
 
     // 상세정보 갱신이 필요한지 검사하고, 갱신이 필요하면 KIS API를 호출해서 실제로 갱신한다.
-    private DomesticStockCurrentQuoteSnapshot refreshUnderLock(Stock stock, LocalDate investorBaseDate) {
+    private DomesticStockCurrentQuoteSnapshot refreshUnderLock(Stock stock) {
         // 특정 종목의 상세정보 갱신시각이 저장되어 있는 RefreshStateRepository에서 엔티티를 조회한다.
         DomesticStockDetailRefreshState state = refreshStateRepository.findByStock_Id(stock.getId())
                 .orElseGet(() -> DomesticStockDetailRefreshState.create(stock));
@@ -123,15 +116,8 @@ public class DomesticStockDetailRefreshService {
                 }
             });
         }
-        // 투자자 수급 데이터가 지정한 기간보다 오래되면, KIS API를 호출해서 정보를 갱신한다.
-        if (isInvestorTradeStale(stock, state.getInvestorTradeUpdatedAt(), now)) {
-            refreshSafely(stock, "투자자 매매동향", () -> {
-                if (saveInvestorTrades(stock, kisClient.fetchDailyInvestorTrades(stock.getSymbol(), investorBaseDate))) {
-                    state.markInvestorTradeUpdated(LocalDateTime.now());
-                    refreshStateRepository.save(state);
-                }
-            });
-        }
+        // 투자자 수급, 공매도, 대차거래 데이터를 갱신한다.
+        dailyFlowRefreshService.refreshIfNeeded(stock, state);
         return currentQuote;
     }
 
@@ -301,61 +287,9 @@ public class DomesticStockDetailRefreshService {
         return saved;
     }
 
-    // 새로 조회한 투자자 수급 데이터를 저장하거나 업데이트한다.
-    private boolean saveInvestorTrades(Stock stock, KisInvestorTradeResponse response) {
-        boolean saved = false;
-        for (KisInvestorTradeResponse.DailyInvestorTrade item : safeList(response == null ? null : response.output2())) {
-            LocalDate tradeDate = date(item.tradeDate());
-            if (tradeDate == null) {
-                continue;
-            }
-            DomesticStockInvestorDailyTrade trade = investorDailyTradeRepository
-                    .findByStock_IdAndMarketCodeAndTradeDate(stock.getId(), KRX_MARKET_CODE, tradeDate)
-                    .orElseGet(() -> DomesticStockInvestorDailyTrade.create(
-                            stock, KRX_MARKET_CODE, tradeDate, decimal(item.closePrice()),
-                            longValue(item.accumulatedVolume()), decimal(item.accumulatedTradeAmount()),
-                            longValue(item.foreignBuyQuantity()), longValue(item.foreignSellQuantity()),
-                            longValue(item.foreignNetBuyQuantity()), decimal(item.foreignBuyAmount()),
-                            decimal(item.foreignSellAmount()), decimal(item.foreignNetBuyAmount()),
-                            longValue(item.personalBuyQuantity()), longValue(item.personalSellQuantity()),
-                            longValue(item.personalNetBuyQuantity()), decimal(item.personalBuyAmount()),
-                            decimal(item.personalSellAmount()), decimal(item.personalNetBuyAmount()),
-                            longValue(item.institutionBuyQuantity()), longValue(item.institutionSellQuantity()),
-                            longValue(item.institutionNetBuyQuantity()), decimal(item.institutionBuyAmount()),
-                            decimal(item.institutionSellAmount()), decimal(item.institutionNetBuyAmount())));
-            if (trade.getId() != null) {
-                trade.update(decimal(item.closePrice()), longValue(item.accumulatedVolume()),
-                        decimal(item.accumulatedTradeAmount()), longValue(item.foreignBuyQuantity()),
-                        longValue(item.foreignSellQuantity()), longValue(item.foreignNetBuyQuantity()),
-                        decimal(item.foreignBuyAmount()), decimal(item.foreignSellAmount()),
-                        decimal(item.foreignNetBuyAmount()), longValue(item.personalBuyQuantity()),
-                        longValue(item.personalSellQuantity()), longValue(item.personalNetBuyQuantity()),
-                        decimal(item.personalBuyAmount()), decimal(item.personalSellAmount()),
-                        decimal(item.personalNetBuyAmount()), longValue(item.institutionBuyQuantity()),
-                        longValue(item.institutionSellQuantity()), longValue(item.institutionNetBuyQuantity()),
-                        decimal(item.institutionBuyAmount()), decimal(item.institutionSellAmount()),
-                        decimal(item.institutionNetBuyAmount()));
-            }
-            investorDailyTradeRepository.save(trade);
-            saved = true;
-        }
-        return saved;
-    }
-
     // 데이터가 최신데이터인지를 검사한다.
     static boolean isStale(LocalDateTime updatedAt, Duration freshness, LocalDateTime now) {
         return updatedAt == null || updatedAt.plus(freshness).isBefore(now);
-    }
-
-    // 투자자 수급 데이터가 캐싱시간을 초과했는지를 검사한다.
-    private boolean isInvestorTradeStale(Stock stock, LocalDateTime updatedAt, LocalDateTime now) {
-        if (StockMarketSchedules.isTradingTimeNow(stock)) {
-            return isStale(updatedAt, Duration.ofSeconds(investorRefreshSeconds), now);
-        }
-        LocalDate expectedTradeDate = StockMarketSchedules.expectedLatestDailyPriceTradeDate(stock.getMarketType());
-        LocalDateTime requiredFinalSnapshotAt = expectedTradeDate.atTime(
-                StockMarketSchedules.getSchedule(stock.getMarketType()).regularCloseTime());
-        return updatedAt == null || updatedAt.isBefore(requiredFinalSnapshotAt);
     }
 
     // 국내 종목 주식인지를 검사한다.
@@ -392,20 +326,8 @@ public class DomesticStockDetailRefreshService {
         }
     }
 
-    private LocalDate date(String value) {
-        try {
-            return KisValueParser.parseNullableDate(value);
-        } catch (RuntimeException ignored) {
-            return null;
-        }
-    }
-
     private BigDecimal decimal(String value) {
         return KisValueParser.parseNullableBigDecimalOrNull(value);
-    }
-
-    private Long longValue(String value) {
-        return KisValueParser.parseNullableLongOrNull(value);
     }
 
     private <T> List<T> safeList(List<T> values) {

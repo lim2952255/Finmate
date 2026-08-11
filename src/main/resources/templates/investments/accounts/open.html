@@ -12,8 +12,10 @@
 
     <main class="main">
         <section class="content">
-            <h1>증권 계좌 개설</h1>
-            <p>증권사를 선택하면 증권 계좌번호가 자동 발급됩니다.</p>
+            <div class="page-heading">
+                <h1>증권 계좌 개설</h1>
+                <p>증권사를 선택하면 증권 계좌번호가 자동 발급됩니다.</p>
+            </div>
 
             <form th:action="@{/investments/open}" th:object="${openInvestment}" method="post">
                 <p th:if="${#fields.hasGlobalErrors()}"
@@ -35,12 +37,12 @@
                     <p th:if="${#fields.hasErrors('securitiesCompanyCode')}" th:errors="*{securitiesCompanyCode}"></p>
                 </div>
 
-                <div>
+                <div class="form-fact">
                     <strong>증권 계좌번호</strong>
                     <span>증권 계좌 개설 시 자동 발급</span>
                 </div>
 
-                <div>
+                <div class="form-fact">
                     <strong>초기 예수금</strong>
                     <span>모든 지원 통화 0</span>
                 </div>

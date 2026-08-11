@@ -9,6 +9,7 @@ public record StockConceptSeedDefinition(
         String summary, // 개념 요약
         String detailedExplanation, // 개념 상세 설명
         String bakeryExample, // 빵집 예시
+        String marketImpact, // 실제 시장의 수급과 가격에 연결되는 방식
         String caution // 해당 개념을 이해할때 주의사항
 ) {
 }

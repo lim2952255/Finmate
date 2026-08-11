@@ -74,6 +74,13 @@ Spring Security의 `SecurityFilterChain`이 폼 로그인·Google/Kakao OIDC·Na
 
 Google·Kakao의 `sub`와 Naver의 프로필 `id`는 각 공급자 내에서 사용자를 식별하는 키다. `OAuthAccount`가 `provider + providerSubject`를 로컬 `User.id`에 연결하며, 공급자 비밀번호와 OAuth 토큰은 영속화하지 않는다. 동일 이메일을 근거로 서로 다른 공급자나 로컬 계정을 자동 병합하지 않는다.
 
+### View
+
+Thymeleaf 화면은 `templates/layout/header.html`의 공통 헤더와 `static/css/common.css`의 데스크톱 UI 토큰을
+공유한다. 업무 화면은 배경 위에 독립된 카드가 놓이는 앱 셸을 사용하며, 페이지 제목·검색 패널·폼·빈 상태와
+업무 메뉴는 공통 클래스로 표현한다. 종목 상세처럼 상호작용이 많은 화면은 서버가 원본 DTO를 전달하고
+브라우저 JavaScript가 차트와 비동기 패널을 렌더링한다.
+
 ### Service
 
 유스케이스, 권한 검증, 트랜잭션 경계와 외부 연동 조율을 담당한다. 핵심 서비스는 다음과 같다.
@@ -95,6 +102,9 @@ Google·Kakao의 `sub`와 Naver의 프로필 `id`는 각 공급자 내에서 사
 - `StockConceptVisualCatalog`: 개념 코드별 공용 SVG 학습 그림의 정적 경로, 대체문구와 캡션을 API 응답에 결합
 - `StockConceptAnalysisService`: 요청 종목의 상세 갱신·조회 결과를 개념 코드별 실제 값, 계산식,
   기준시점과 중립적인 설명으로 변환하며 산정 기준이 다른 값은 임의로 재계산하지 않음
+- `InvestmentLearningCatalog`: 투자 학습 화면에 노출할 17개 개념의 카테고리와 표시 순서를 관리
+- `StockDetailService`: 선택 기간의 일봉을 조회해 화면에 OHLCV 원본 DTO로 전달한다. 캔들 좌표,
+  가격·날짜축, 이동평균선과 확대·이동 같은 표현 계산은 브라우저 차트 렌더러가 담당한다.
 
 ### Repository
 
@@ -152,11 +162,22 @@ Stock는 Order / Reservation / Holding / TradeTransaction의 공통 종목 참�
 
 도메인별 client가 경로·TR ID·파라미터를 정하고 `KisRestClient`가 공통 인증 헤더, 호출 제한과 응답 검증을 처리한다. 액세스 토큰은 `KisTokenService`의 JVM 메모리에 저장된다.
 
-국내 종목 상세 조회는 `DomesticStockDetailRefreshService`가 재무·투자자 API별 마지막 성공 갱신시각을
-검사한 뒤 오래된 데이터만 KIS에서 다시 받아 별도 메타데이터 엔티티에 upsert한다. 장중 현재가 REST
-응답은 `DomesticStockCurrentQuoteCacheService`가 Redis에 10초간 공유하고 WebSocket 값이 화면에서
-우선한다. MySQL 현재가 스냅샷은 장 마감 뒤 종목별 첫 조회에서 하루 한 번 갱신한다. 외부 호출 실패는
-API별로 격리하며 `DomesticStockDetailQueryService`가 캐시 현재가와 저장 이력을 화면 DTO로 조합한다.
+국내 종목 상세 조회의 현재가·재무 갱신은 `DomesticStockDetailRefreshService`가 담당한다. 재무정보처럼
+같은 기준 데이터를 갱신하는 데이터는 마지막 성공 시각을 검사해 MySQL에 upsert한다. 거래일마다 누적되는
+투자자 수급·공매도·대차의 수명주기는 `DomesticStockDailyFlowRefreshService`에 위임한다.
+
+일별 흐름 서비스는 시장 상태만 판단한다. 마감된 거래일의 누락 구간은
+`DomesticStockFinalizedDailyFlowSyncService`가 DB 마지막 거래일 다음 날부터 확정 거래일까지 KIS에서 받아
+MySQL에 저장한다. 투자자매매동향처럼 KIS가 기준일 하나만 받는 API는 확정일 기준 응답에서 DB 최신일
+다음 날 이후의 누락 행만 필터링해 저장한다. 아직 값이 변하는 금일 데이터는
+`DomesticStockIntradayDailyFlowService`가 조회하고
+`DomesticStockDailyFlowCacheService`가 `stock:daily-flow:{symbol}` Redis 스냅샷으로만 보관한다. 통합 일봉
+확정 뒤 DB 동기화가 끝나면 금일 스냅샷을 제거한다. `DomesticStockDetailQueryService`는 확정된 DB 이력과
+Redis 금일 스냅샷을 합쳐 화면 DTO를 만든다.
+
+장중 현재가 REST 응답은 `DomesticStockCurrentQuoteCacheService`가 Redis에 10초간 공유하고 WebSocket
+값이 화면에서 우선한다. MySQL 현재가 스냅샷은 장 마감 뒤 종목별 첫 조회에서 하루 한 번 갱신한다.
+외부 호출 실패는 API별로 격리하여 마지막 정상 DB 이력은 계속 반환한다.
 
 ### Redis
 
@@ -167,6 +188,11 @@ API별로 격리하며 `DomesticStockDetailQueryService`가 캐시 현재가와 
 국내 종목 상세 현재가 REST 캐시는 `DomesticStockCurrentQuoteCacheService`가 관리한다. 키는
 `stock:price:{symbol}`이고 값은 조회 시각을 포함한 현재가 스냅샷 JSON, TTL은 기본 10초다.
 
+국내 종목 상세의 금일 투자자 수급·공매도·대차 캐시는 `DomesticStockDailyFlowCacheService`가 관리한다.
+키는 `stock:daily-flow:{symbol}`이고 값은 동일 거래일의 세 API 결과를 합친 스냅샷 JSON이다. TTL은
+기본 10분이며 주기 스케줄러가 아니라 만료 뒤 상세 조회가 들어올 때만 KIS를 다시 호출한다. 이 캐시는
+확정 이력 저장소가 아니며 KRX+NXT 통합 일봉 확정 뒤 DB 동기화가 끝나면 제거한다.
+
 ### WebSocket
 
 외부 실시간 연결과 브라우저용 WebSocket 경로가 분리되어 있다.
@@ -176,6 +202,25 @@ API별로 격리하며 `DomesticStockDetailQueryService`가 캐시 현재가와 
 3. 브라우저 채팅 ↔ 서버: `/ws/chat`에 `StockChatWebSocketHandler`가 연결되고 `HttpSessionHandshakeInterceptor`가 로그인 HTTP 세션 정보를 전달한다.
 
 KIS payload는 `KisRealtimeStore`에 최신값으로 저장되고 Spring 동기 이벤트로 발행된다. `StockRealtimeClientSessionService`와 `MarketRealtimeClientSessionService`는 구독 브라우저에 JSON을 보내며, `StockTradingRealtimeExecutionListener`는 같은 이벤트로 체결을 시도한다.
+
+종목 상세 일봉 차트는 서버가 `StockChartCandleData`로 날짜·OHLCV·거래대금만 전달하고, 브라우저가
+Canvas에 캔들·거래량·MA5·MA20·MA60과 동적 축을 그린다. 현재 전달받은 조회 범위 안에서 휠 확대·축소,
+마우스 드래그, 트랙패드 두 손가락 좌우 이동과 십자선 툴팁을 처리한다. 최초 화면에는 최근 63거래일
+(약 3개월)을 표시하며, 축소하면 선택한 조회 기간 전체를 한 화면에서 볼 수 있다. 나머지 일봉은 차트 드래그
+또는 하단 기간 바를 움직여 탐색한다. 기간 바의 손잡이 길이와 위치는 전체 조회 기간 중 현재 화면에 보이는
+범위를 나타내며 확대·축소에 따라 함께 변한다. 과거 구간을 추가로 가져오는 별도 페이지 조회 API는 사용하지 않는다.
+
+투자 학습 화면은 `/investment-learning`에서 계좌·거래, 위험관리·포트폴리오, 펀드·ETF,
+시장 안전장치, 파생상품·공매도 카테고리를 제공한다. 목록의 검색·필터는 브라우저에서 처리하고,
+카드를 열 때 `/api/investment-learning/concepts/{conceptCode}`로 DB에 동기화된 정적 설명과 공용 SVG를
+조회한다. 이 API는 투자 학습 카탈로그에 등록된 코드만 허용하며 종목 상세 데이터나 KIS API는 호출하지 않는다.
+투자 학습 카드의 `marketImpact`는 별도의 초록색 `시장과 연결해서 보기` 영역으로 렌더링하며,
+대형기관 리밸런싱·ETF 자금 흐름·파생상품 헤지처럼 개념이 실제 수급과 가격에 연결되는 과정과
+방향성 신호로 단정할 수 없는 이유를 함께 보여준다.
+
+투자자 수급 SVG 차트와 시장지표 차트의 상세 값 확인도 브라우저 상호작용으로 처리한다. 투자자 수급 차트는
+가장 가까운 거래일에 세로 기준선을 맞추고 외국인·개인·기관 순매수를 한 툴팁에서 비교한다. 환율·지수 차트는
+가장 가까운 거래일의 종가 지점을 강조하고 해당 일자의 OHLC와 거래량을 툴팁으로 표시한다.
 
 종목 채팅의 `JOIN_ROOM`, `LEAVE_ROOM`, `SEND_MESSAGE`, `EDIT_MESSAGE`, `DELETE_MESSAGE` 명령은 `StockChatClientSessionService`가 처리한다. 메시지 작성·수정·소프트 삭제와 답글 관계는 MySQL의 `stock_chat_message`에 저장한다. 수정·삭제 권한은 WebSocket payload의 사용자 값이 아니라 handshake에서 전달된 Spring Security `SecurityContext`의 `FinMateAuthenticatedPrincipal`과 메시지 작성자를 비교해 판단한다. 삭제된 메시지 행은 답글 연결을 보존하기 위해 남기고 API 응답에서는 원문을 숨긴다. 종목별 연결 세션과 접속 인원, 실시간 fan-out은 현재 단일 JVM 메모리에 있으므로 다중 인스턴스에서는 Redis Pub/Sub 같은 별도 전파 계층이 필요하다.
 

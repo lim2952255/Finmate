@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" role="img" aria-labelledby="title desc">
+  <title id="title">예수금, 증거금, 미수금의 연결</title><desc id="desc">예수금에서 주문 증거금과 결제대금으로 이어지고 부족하면 미수금과 반대매매 위험이 생기는 흐름</desc>
+  <rect width="900" height="420" rx="28" fill="#eff6ff"/><text x="52" y="62" font-size="28" font-weight="700" fill="#172554">주문부터 결제일까지 돈의 이름이 달라집니다</text>
+  <g font-family="sans-serif" text-anchor="middle"><rect x="55" y="135" width="205" height="135" rx="22" fill="white" stroke="#93c5fd" stroke-width="3"/><text x="157" y="188" font-size="24" font-weight="700" fill="#1e3a8a">예수금</text><text x="157" y="225" font-size="18" fill="#64748b">계좌에 맡긴 현금</text>
+  <path d="M275 202h75" stroke="#3b82f6" stroke-width="7"/><path d="m340 186 25 16-25 16" fill="#3b82f6"/><rect x="365" y="135" width="205" height="135" rx="22" fill="white" stroke="#60a5fa" stroke-width="3"/><text x="467" y="188" font-size="24" font-weight="700" fill="#1d4ed8">증거금</text><text x="467" y="225" font-size="18" fill="#64748b">주문을 위해 묶인 금액</text>
+  <path d="M585 202h75" stroke="#ef4444" stroke-width="7"/><path d="m650 186 25 16-25 16" fill="#ef4444"/><rect x="675" y="135" width="170" height="135" rx="22" fill="#fff7ed" stroke="#fb7185" stroke-width="3"/><text x="760" y="188" font-size="24" font-weight="700" fill="#be123c">미수금</text><text x="760" y="225" font-size="18" fill="#64748b">결제일 부족액</text></g>
+  <rect x="230" y="322" width="440" height="54" rx="27" fill="#dbeafe"/><text x="450" y="357" text-anchor="middle" font-size="20" font-weight="700" fill="#1e40af">부족액을 제때 채우지 못하면 반대매매 위험</text>
+</svg>

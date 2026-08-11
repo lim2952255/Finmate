@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/stocks/{stockId}/concepts")
 @RequiredArgsConstructor
 public class StockConceptController {
+    // DB에 저장되어 있는 개념카드 정보를 리턴한다.
     private final StockConceptQueryService conceptQueryService;
 
     @GetMapping("/{conceptCode}")

@@ -12,8 +12,10 @@
 
     <main class="main">
         <section class="content">
-            <h1>계좌 개설</h1>
-            <p>은행과 통화를 선택하면 계좌번호가 자동 발급되며, 선택한 통화의 기본 잔액이 지급됩니다.</p>
+            <div class="page-heading">
+                <h1>계좌 개설</h1>
+                <p>은행과 통화를 선택하면 계좌번호가 자동 발급되며, 선택한 통화의 기본 잔액이 지급됩니다.</p>
+            </div>
 
             <form th:action="@{/accounts/open}" th:object="${openAccount}" method="post">
                 <p th:if="${#fields.hasGlobalErrors()}"
@@ -48,12 +50,12 @@
                     <p th:if="${#fields.hasErrors('currencyCode')}" th:errors="*{currencyCode}"></p>
                 </div>
 
-                <div>
+                <div class="form-fact">
                     <strong>계좌번호</strong>
                     <span>계좌 개설 시 자동 발급</span>
                 </div>
 
-                <div>
+                <div class="form-fact">
                     <strong>초기 잔액</strong>
                     <span>KRW 3,000,000 / USD 0</span>
                 </div>

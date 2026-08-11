@@ -8,8 +8,10 @@
     <style>
         .portfolio-toolbar {
             display: flex;
+            flex-direction: row;
             flex-wrap: wrap;
             align-items: end;
+            justify-content: flex-start;
             gap: 12px;
             margin: 0;
             padding: 16px;
@@ -22,6 +24,7 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
+            min-width: 300px;
         }
 
         .portfolio-currency-view {
@@ -237,7 +240,18 @@
         }
 
         .portfolio-table {
-            min-width: 1120px;
+            min-width: 1080px;
+        }
+
+        .portfolio-table th,
+        .portfolio-table td {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            vertical-align: middle;
+        }
+
+        .portfolio-table tbody tr {
+            height: auto;
         }
 
         .portfolio-table .portfolio-stock {
@@ -293,12 +307,8 @@
 
         .portfolio-table th:last-child,
         .portfolio-table td:last-child {
-            min-width: 185px;
-        }
-
-        .portfolio-table td:last-child .secondary-line {
-            margin-top: 7px;
-            white-space: normal;
+            min-width: 112px;
+            text-align: center;
         }
 
         @media (max-width: 720px) {
@@ -378,10 +388,11 @@
                 </p>
             </form>
 
-            <p th:if="${#lists.isEmpty(stockPortfolioPageInfo.investments)}">
-                증권 계좌가 없습니다.
+            <div class="empty-state" th:if="${#lists.isEmpty(stockPortfolioPageInfo.investments)}">
+                <strong>아직 포트폴리오가 비어 있습니다</strong>
+                <p>증권 계좌를 만든 뒤 종목을 주문하면 평가금액과 손익을 이곳에서 확인할 수 있습니다.</p>
                 <a th:href="@{/investments/open}">증권 계좌 개설</a>
-            </p>
+            </div>
 
             <p th:if="${!#lists.isEmpty(stockPortfolioPageInfo.investments) and #lists.isEmpty(stockPortfolioPageInfo.holdings)}">
                 보유 종목이 없습니다.
@@ -565,10 +576,6 @@
                                   class="status-chip is-closed"
                                   th:title="|거래 가능 시간: ${tradingTimeDescription}|">
                                 거래 시간 아님
-                            </span>
-                            <span class="secondary-line"
-                                  th:text="${tradingTimeDescription}">
-                                대한민국 시간 기준 09:00~15:30, 15:40~18:00
                             </span>
                         </td>
                     </tr>
