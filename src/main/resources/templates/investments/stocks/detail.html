@@ -919,6 +919,325 @@
             font-weight: 700;
         }
 
+        .stock-news-panel {
+            min-height: 0;
+        }
+
+        .stock-news-toolbar {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            overflow: hidden;
+            gap: 20px;
+            margin-bottom: 14px;
+            padding: 25px 26px;
+            border: 0;
+            border-radius: 20px;
+            background:
+                    radial-gradient(circle at 88% 0%, rgba(45, 212, 191, 0.18), transparent 19rem),
+                    linear-gradient(135deg, #10234f 0%, #1d4ed8 62%, #2563eb 100%);
+            box-shadow: 0 18px 40px rgba(30, 64, 175, 0.17);
+        }
+
+        .stock-news-toolbar::after {
+            position: absolute;
+            right: -54px;
+            bottom: -105px;
+            width: 210px;
+            height: 210px;
+            border: 34px solid rgba(255, 255, 255, 0.06);
+            border-radius: 50%;
+            content: '';
+        }
+
+        .stock-news-heading {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .stock-news-heading-icon {
+            display: grid;
+            flex: 0 0 auto;
+            width: 46px;
+            height: 46px;
+            place-items: center;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            box-shadow: none;
+            backdrop-filter: blur(10px);
+        }
+
+        .stock-news-heading-icon svg {
+            width: 23px;
+            height: 23px;
+        }
+
+        .stock-news-toolbar h2 {
+            margin: 2px 0 0;
+            color: #ffffff;
+            font-size: 21px;
+        }
+
+        .stock-news-toolbar p {
+            margin: 5px 0 0;
+            color: rgba(255, 255, 255, 0.74);
+            font-size: 13px;
+        }
+
+        .stock-news-kicker {
+            color: #a7f3d0;
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 0.14em;
+        }
+
+        .stock-news-cache-info {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .stock-news-cache-info > div {
+            padding: 7px 11px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.10);
+            color: rgba(255, 255, 255, 0.78);
+            white-space: nowrap;
+            backdrop-filter: blur(10px);
+        }
+
+        .stock-news-query {
+            color: rgba(255, 255, 255, 0.78);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .stock-news-cache-info .detail-updated-at {
+            color: rgba(255, 255, 255, 0.78);
+        }
+
+        .stock-news-keyword-area {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: #eff6ff;
+        }
+
+        .stock-news-keyword-area > span {
+            flex: 0 0 auto;
+            padding-top: 4px;
+            color: #2563eb;
+            font-size: 11px;
+            font-weight: 900;
+        }
+
+        .stock-news-keywords {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .stock-news-keywords span {
+            padding: 4px 8px;
+            border: 1px solid #dbeafe;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.82);
+            color: #526078;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .stock-news-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: 16px;
+        }
+
+        .stock-news-item {
+            position: relative;
+            display: flex;
+            min-width: 0;
+            min-height: 235px;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 19px 20px 17px;
+            border: 1px solid #e2e8f0;
+            border-radius: 17px;
+            background: #ffffff;
+            box-shadow: 0 7px 22px rgba(15, 23, 42, 0.045);
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+        }
+
+        .stock-news-item::before {
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #2563eb, transparent 78%);
+            content: '';
+            opacity: 0.72;
+        }
+
+        .stock-news-item:hover {
+            border-color: #bfdbfe;
+            box-shadow: 0 12px 28px rgba(37, 99, 235, 0.09);
+            transform: translateY(-2px);
+        }
+
+        .stock-news-item-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .stock-news-source {
+            overflow: hidden;
+            color: #2563eb;
+            font-size: 12px;
+            font-weight: 800;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .stock-news-rank {
+            display: grid;
+            flex: 0 0 auto;
+            width: 28px;
+            height: 28px;
+            place-items: center;
+            border-radius: 9px;
+            background: #eff6ff;
+            color: #2563eb;
+            font-size: 11px;
+            font-weight: 900;
+        }
+
+        .stock-news-item h3 {
+            margin: 0;
+            overflow: hidden;
+            color: #0f172a;
+            font-size: 17px;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+
+        .stock-news-item h3 a {
+            color: #0f172a;
+            text-decoration: none;
+        }
+
+        .stock-news-item h3 a:hover {
+            color: #1d4ed8;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .stock-news-description {
+            display: -webkit-box;
+            overflow: hidden;
+            flex: 1 1 auto;
+            margin: 10px 0 0;
+            color: #475569;
+            font-size: 14px;
+            line-height: 1.65;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+        }
+
+        .stock-news-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 13px;
+            border-top: 1px solid #f1f5f9;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .stock-news-meta a {
+            color: #2563eb;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .stock-news-meta a::after {
+            content: ' →';
+        }
+
+        .stock-news-state {
+            display: grid;
+            min-height: 280px;
+            margin-top: 16px;
+            place-items: center;
+            align-content: center;
+            padding: 28px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 18px;
+            background: #f9fbfd;
+            color: #64748b;
+            text-align: center;
+        }
+
+        .stock-news-state strong {
+            margin-top: 13px;
+            color: #26344a;
+            font-size: 15px;
+        }
+
+        .stock-news-state p {
+            margin: 5px 0 0;
+            font-size: 12px;
+        }
+
+        .stock-news-loader {
+            width: 34px;
+            height: 34px;
+            border: 3px solid #dbeafe;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: stock-news-spin 0.8s linear infinite;
+        }
+
+        @keyframes stock-news-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .stock-news-state[hidden],
+        .stock-news-list[hidden] {
+            display: none;
+        }
+
+        .stock-news-retry {
+            margin-top: 12px;
+            padding: 9px 15px;
+            border: 0;
+            border-radius: 9px;
+            background: #2563eb;
+            color: #ffffff;
+            cursor: pointer;
+            font-weight: 800;
+        }
+
         .kis-metric-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -2601,6 +2920,29 @@
                 gap: 6px;
             }
 
+            .stock-news-toolbar {
+                align-items: flex-start;
+                flex-direction: column;
+                padding: 17px;
+            }
+
+            .stock-news-cache-info {
+                justify-content: flex-start;
+            }
+
+            .stock-news-keyword-area {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .stock-news-list {
+                grid-template-columns: 1fr;
+            }
+
+            .stock-news-item {
+                min-height: 0;
+            }
+
             .kis-metric-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
@@ -2831,6 +3173,13 @@
                         aria-selected="false"
                         aria-controls="stock-detail-panel-investor"
                         tabindex="-1">투자자</button>
+                <button id="stock-detail-tab-news"
+                        class="stock-detail-tab"
+                        type="button"
+                        role="tab"
+                        aria-selected="false"
+                        aria-controls="stock-detail-panel-news"
+                        tabindex="-1">뉴스</button>
             </div>
 
             <div id="stock-detail-panel-quote"
@@ -3723,6 +4072,45 @@
                 </p>
             </div>
 
+            <div id="stock-detail-panel-news"
+                 class="stock-detail-panel stock-news-panel"
+                 role="tabpanel"
+                 aria-labelledby="stock-detail-tab-news"
+                 tabindex="0"
+                 th:attr="data-stock-id=${stockDetailPageInfo.stock.id}"
+                 hidden>
+                <div class="stock-news-toolbar">
+                    <div class="stock-news-heading">
+                        <span class="stock-news-heading-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 5h16v14H4z"/>
+                                <path d="M8 9h8M8 13h5M8 17h3"/>
+                            </svg>
+                        </span>
+                        <div>
+                            <span class="stock-news-kicker">STOCK BRIEFING</span>
+                            <h2>관련 뉴스</h2>
+                            <p>관련도순 후보를 투자 핵심 키워드와 최신순으로 정리한 뉴스 10개입니다.</p>
+                        </div>
+                    </div>
+                    <div class="stock-news-cache-info">
+                        <div id="stock-news-updated-at" class="detail-updated-at"></div>
+                        <div id="stock-news-query" class="stock-news-query"></div>
+                    </div>
+                </div>
+                <div class="stock-news-keyword-area">
+                    <span>선별 키워드</span>
+                    <div id="stock-news-keywords" class="stock-news-keywords" aria-live="polite"></div>
+                </div>
+                <div id="stock-news-state" class="stock-news-state" role="status" aria-live="polite">
+                    <span class="stock-news-loader" aria-hidden="true"></span>
+                    <strong>종목 뉴스를 정리하고 있습니다.</strong>
+                    <p>관련도순 후보에서 핵심 뉴스를 선별합니다.</p>
+                </div>
+                <div id="stock-news-list" class="stock-news-list" aria-live="polite" hidden></div>
+            </div>
+
             <section id="stock-chat"
                      class="stock-chat"
                      th:attr="data-stock-id=${stockDetailPageInfo.stock.id},data-user-id=${user.id}">
@@ -3896,6 +4284,175 @@
         }
 
         const tabs = Array.from(tabList.querySelectorAll('[role="tab"]'));
+        const newsPanel = document.getElementById('stock-detail-panel-news');
+        const newsState = document.getElementById('stock-news-state');
+        const newsList = document.getElementById('stock-news-list');
+        const newsUpdatedAt = document.getElementById('stock-news-updated-at');
+        const newsQuery = document.getElementById('stock-news-query');
+        const newsKeywords = document.getElementById('stock-news-keywords');
+        let newsLoaded = false;
+        let newsLoading = false;
+
+        const decodeText = (value) => {
+            if (!value) {
+                return '';
+            }
+            return new DOMParser().parseFromString(value, 'text/html').body.textContent || '';
+        };
+
+        const safeArticleUrl = (item) => {
+            const candidate = item.originalLink || item.link;
+            if (!candidate) {
+                return null;
+            }
+            try {
+                const url = new URL(candidate);
+                return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
+            } catch (error) {
+                return null;
+            }
+        };
+
+        const formatDateTime = (value) => {
+            if (!value) {
+                return '-';
+            }
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) {
+                return value;
+            }
+            return new Intl.DateTimeFormat('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(date);
+        };
+
+        const renderNews = (response) => {
+            newsList.replaceChildren();
+            const items = Array.isArray(response.items) ? response.items : [];
+
+            newsKeywords.replaceChildren();
+            const responseKeywords = Array.isArray(response.keywords) ? response.keywords : [];
+            responseKeywords.forEach((keyword) => {
+                const chip = document.createElement('span');
+                chip.textContent = keyword;
+                newsKeywords.appendChild(chip);
+            });
+
+            items.forEach((item, index) => {
+                const article = document.createElement('article');
+                article.className = 'stock-news-item';
+
+                const articleUrl = safeArticleUrl(item);
+                const itemTop = document.createElement('div');
+                itemTop.className = 'stock-news-item-top';
+                const source = document.createElement('span');
+                source.className = 'stock-news-source';
+                if (articleUrl) {
+                    source.textContent = new URL(articleUrl).hostname.replace(/^www\./, '');
+                } else {
+                    source.textContent = 'NAVER 뉴스 검색';
+                }
+                const rank = document.createElement('span');
+                rank.className = 'stock-news-rank';
+                rank.textContent = String(index + 1).padStart(2, '0');
+                itemTop.append(source, rank);
+                article.appendChild(itemTop);
+
+                const heading = document.createElement('h3');
+                if (articleUrl) {
+                    const titleLink = document.createElement('a');
+                    titleLink.href = articleUrl;
+                    titleLink.target = '_blank';
+                    titleLink.rel = 'noopener noreferrer';
+                    titleLink.textContent = decodeText(item.title);
+                    heading.appendChild(titleLink);
+                } else {
+                    heading.textContent = decodeText(item.title);
+                }
+                article.appendChild(heading);
+
+                if (item.description) {
+                    const description = document.createElement('p');
+                    description.className = 'stock-news-description';
+                    description.textContent = decodeText(item.description);
+                    article.appendChild(description);
+                }
+
+                const meta = document.createElement('div');
+                meta.className = 'stock-news-meta';
+                const publishedAt = document.createElement('time');
+                publishedAt.textContent = formatDateTime(item.publishedAt);
+                meta.appendChild(publishedAt);
+
+                if (articleUrl) {
+                    const originalLink = document.createElement('a');
+                    originalLink.href = articleUrl;
+                    originalLink.target = '_blank';
+                    originalLink.rel = 'noopener noreferrer';
+                    originalLink.textContent = '기사 읽기';
+                    meta.appendChild(originalLink);
+                }
+                article.appendChild(meta);
+                newsList.appendChild(article);
+            });
+
+            newsUpdatedAt.textContent = `업데이트 ${formatDateTime(response.updatedAt)}`;
+            newsQuery.textContent = response.query ? `검색 기준 ${response.query}` : '';
+            newsState.hidden = items.length > 0;
+            newsState.textContent = items.length > 0 ? '' : '표시할 관련 뉴스가 없습니다.';
+            newsList.hidden = items.length === 0;
+        };
+
+        const loadNews = async () => {
+            if (newsLoaded || newsLoading || !newsPanel || !newsState || !newsList) {
+                return;
+            }
+            const stockId = newsPanel.dataset.stockId;
+            if (!stockId) {
+                return;
+            }
+
+            newsLoading = true;
+            newsState.hidden = false;
+            newsList.hidden = true;
+            newsState.replaceChildren();
+            const loader = document.createElement('span');
+            loader.className = 'stock-news-loader';
+            loader.setAttribute('aria-hidden', 'true');
+            const loadingTitle = document.createElement('strong');
+            loadingTitle.textContent = '종목 뉴스를 정리하고 있습니다.';
+            const loadingDescription = document.createElement('p');
+            loadingDescription.textContent = '관련도순 후보에서 핵심 뉴스를 선별합니다.';
+            newsState.append(loader, loadingTitle, loadingDescription);
+
+            try {
+                const response = await fetch(`/api/stocks/${encodeURIComponent(stockId)}/news`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (!response.ok) {
+                    throw new Error(`뉴스 요청 실패: ${response.status}`);
+                }
+                renderNews(await response.json());
+                newsLoaded = true;
+            } catch (error) {
+                newsState.replaceChildren();
+                const message = document.createElement('div');
+                message.textContent = '관련 뉴스를 불러오지 못했습니다.';
+                const retryButton = document.createElement('button');
+                retryButton.className = 'stock-news-retry';
+                retryButton.type = 'button';
+                retryButton.textContent = '다시 시도';
+                retryButton.addEventListener('click', loadNews);
+                newsState.append(message, retryButton);
+            } finally {
+                newsLoading = false;
+            }
+        };
+
         const activateTab = (selectedTab, moveFocus) => {
             tabs.forEach((tab) => {
                 const selected = tab === selectedTab;
@@ -3908,6 +4465,9 @@
             });
             if (moveFocus) {
                 selectedTab.focus();
+            }
+            if (selectedTab.id === 'stock-detail-tab-news') {
+                loadNews();
             }
         };
 
