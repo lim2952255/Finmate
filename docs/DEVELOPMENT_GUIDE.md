@@ -48,6 +48,11 @@ KAKAO_CLIENT_SECRET=change-me
 NAVER_OAUTH_ENABLED=true
 NAVER_CLIENT_ID=change-me
 NAVER_CLIENT_SECRET=change-me
+
+# NAVER API HUB 뉴스 검색을 사용할 때 설정
+NAVER_API_HUB_CLIENT_ID=change-me
+NAVER_API_HUB_CLIENT_SECRET=change-me
+NAVER_NEWS_CACHE_TTL_HOURS=6
 ```
 
 현재 `.env`에 추가 KIS 운영·모의 계좌 관련 이름이 존재할 수 있으나 `application.properties`와 `KisProperties`가 직접 읽는 것은 위 공통 키들이다. `KIS_ACCESS_TOKEN`도 현재 코드에서 직접 주입하지 않는다.
@@ -75,6 +80,17 @@ http://localhost:8080/login/oauth2/code/naver
 ```
 
 발급된 Client ID와 Client Secret을 각각 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`에 설정한다. 배포 환경에서는 Kakao와 Naver에도 실제 HTTPS base URL을 사용한 callback을 별도로 등록한다.
+
+종목 뉴스 탭은 NAVER Cloud Platform의 NAVER API HUB에서 발급한 별도 인증정보를 사용한다. Client ID와
+Client Secret을 각각 `NAVER_API_HUB_CLIENT_ID`, `NAVER_API_HUB_CLIENT_SECRET`에 설정한다. 이 값은
+네이버 로그인용 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`과 다른 자격증명이다. 뉴스 검색 결과는 종목별로
+MySQL에 저장되고 `NAVER_NEWS_CACHE_TTL_HOURS`가 지난 뒤 다음 조회에서 갱신되며 기본값은 6시간이다.
+검색어는 `{종목명} 시장정보`이고, 관련도순 후보 40건을 제목의 투자 핵심 키워드 수와 발행일시로 정렬한
+상위 10건만 저장한다.
+
+같은 인증정보는 `/investments/reports`의 시장 리포트에도 사용한다. KOSPI, KOSDAQ, NASDAQ, S&P 500, 금리, 환율
+각 주제는 후보 40건 중 제목 키워드 점수와 발행일시로 정렬한 상위 10건만 주제별 MySQL 캐시에 저장한다.
+이 캐시는 사용자별 데이터가 아니며 모든 사용자가 `NAVER_NEWS_CACHE_TTL_HOURS` 동안 공유한다.
 
 스케줄 조정용 선택 환경변수:
 

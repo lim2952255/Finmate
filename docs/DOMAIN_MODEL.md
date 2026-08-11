@@ -27,6 +27,7 @@ erDiagram
     Stock ||--o{ DomesticStockShortSaleDaily : has
     Stock ||--o{ DomesticStockLoanTransactionDaily : has
     Stock ||--o| OverseasStockMetadata : has
+    Stock ||--o| StockNewsCache : caches
     Stock ||--o{ StockChatMessage : discusses
     User ||--o{ StockChatMessage : writes
     StockChatMessage o|--o{ StockChatMessage : replies
@@ -121,6 +122,14 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 - 종목 검색은 `StockSearchType`으로 종목명/종목코드 검색과 업종명/업종코드 검색을 분리하고, 선택한 `StockMarketType`이 있으면 KOSPI·KOSDAQ·NASDAQ 시장 조건을 함께 적용한다. 업종 검색은 국내 대·중·소 업종코드와 업종명, 해외 거래소별 업종코드와 업종명을 대상으로 한다.
 - 국내 종목 업종 표시는 소업종, 중업종, 대업종 순서로 가장 세부적인 유효 업종 하나를 사용한다. 포트폴리오는 국내 종목을 국내 업종명 기준으로 집계하고, 해외 종목은 거래소별 업종 체계가 다르므로 거래소 그룹과 업종명을 함께 사용해 통화별 매입금액 비중을 계산한다.
 - 포트폴리오 평가손익은 브라우저 WebSocket 실시간 시세가 수신되면 실시간 가격으로 계산한다. 실시간 가격이 아직 없거나 장마감 상태이면 서버가 최신 일봉 종가를 DB에서 찾고, 부족하면 KIS 일봉 API로 최근 구간을 보충한 뒤 fallback 가격으로 내려보낸다.
+
+### 뉴스 캐시
+
+- `StockNewsCache`는 종목별 한 행에 검색어, 최종 뉴스 10건 JSON, 생성·갱신 시각을 저장한다.
+- `MarketReportCache`는 KOSPI, KOSDAQ, NASDAQ, S&P 500, 금리, 환율을 나타내는 `MarketReportTopic`별 한 행에
+  검색어, 최종 뉴스 10건 JSON, 생성·갱신 시각을 저장한다.
+- 두 캐시는 NAVER 뉴스 원문을 대체하는 기사 저장소가 아니라 동일 검색 결과를 기본 6시간 동안 재사용하기
+  위한 응답 캐시이며, 화면에서는 제목·요약·출처 링크를 제공하고 원문은 언론사 페이지로 연결한다.
 
 ### StockConceptCard
 

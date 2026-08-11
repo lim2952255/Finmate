@@ -105,6 +105,12 @@ Thymeleaf 화면은 `templates/layout/header.html`의 공통 헤더와 `static/c
 - `InvestmentLearningCatalog`: 투자 학습 화면에 노출할 17개 개념의 카테고리와 표시 순서를 관리
 - `StockDetailService`: 선택 기간의 일봉을 조회해 화면에 OHLCV 원본 DTO로 전달한다. 캔들 좌표,
   가격·날짜축, 이동평균선과 확대·이동 같은 표현 계산은 브라우저 차트 렌더러가 담당한다.
+- `StockNewsService`: `{종목명} 시장정보`로 조회한 NAVER 뉴스 후보를 제목의 투자 핵심 키워드 수와
+  발행일시로 정렬하고, 상위 10건을 종목별 MySQL 캐시에 저장해 `updatedAt`이 기본 6시간을 넘었을 때만 갱신한다.
+- `MarketReportService`: KOSPI·KOSDAQ·NASDAQ·S&P 500·금리·환율 주제별 NAVER 뉴스 후보를 각 주제의 제목
+  키워드 수와 발행일시로 정렬하고, 상위 10건을 주제별 MySQL 공유 캐시에 저장한다.
+- `NewsRankingService`: 종목 뉴스와 시장 리포트가 함께 사용하는 제목 키워드 동일 가중치 점수화와
+  점수·발행일시·NAVER 원본 순서 정렬을 담당한다.
 
 ### Repository
 
@@ -178,6 +184,28 @@ Redis 금일 스냅샷을 합쳐 화면 DTO를 만든다.
 장중 현재가 REST 응답은 `DomesticStockCurrentQuoteCacheService`가 Redis에 10초간 공유하고 WebSocket
 값이 화면에서 우선한다. MySQL 현재가 스냅샷은 장 마감 뒤 종목별 첫 조회에서 하루 한 번 갱신한다.
 외부 호출 실패는 API별로 격리하여 마지막 정상 DB 이력은 계속 반환한다.
+
+### NAVER 뉴스 검색
+
+`NaverNewsClient`는 JDK `HttpClient`로 NAVER API HUB의 `/search/v1/news`를 호출한다. 검색어는
+`{Stock.nameKo} 시장정보`이며 `display=40`, `start=1`, `sort=sim`, `format=json`으로 고정한다.
+인증에는 NAVER OAuth와 별개인 `X-NCP-APIGW-API-KEY-ID`, `X-NCP-APIGW-API-KEY` 값을 사용한다.
+
+`StockNewsService`는 관련도순 후보 40건의 제목에서 `실적`, `매출`, `영업이익`, `순이익`, `주가`,
+`투자`, `애널리스트`, `컨센서스`, 수급·사업·주주환원·등락 관련 핵심 키워드의 포함 여부를 각각 같은 1점으로 계산한다.
+같은 키워드가 제목에 반복되어도 한 번만 계산하며, 점수 내림차순, 발행일시 내림차순, NAVER 원본 순서로
+정렬한 상위 10건만 종목별 `stock_news_cache` 한 행에 검색어와 뉴스 목록 JSON으로 저장한다. 저장 행의
+`updatedAt + 6시간`이 현재 시각보다 뒤이고 검색어도 동일하면 DB 값을 반환하고, 만료됐거나 검색어가
+바뀌었으면 NAVER API를 다시 호출해 같은 행을 갱신한다. 종목 상세 HTML 렌더링과 외부 뉴스 호출은 분리하며,
+뉴스 탭을 처음 선택할 때 브라우저가 `/api/stocks/{stockId}/news`를 비동기 호출한다.
+
+시장 리포트는 `MarketReportTopic`에 주제 코드, 화면명, 검색어와 제목 키워드를 정의한다. 검색어는 각각
+`코스피 시장정보`, `코스닥 시장정보`, `나스닥 시장정보`, `S&P 500 시장정보`, `금리 시장정보`,
+`환율 시장정보`다. 지수 주제는
+지수·증시·수급·등락·마감·전망 관련 단어를, 금리는 중앙은행·기준금리·채권·물가·통화정책 관련 단어를,
+환율은 주요 통화·강약세·외환시장·무역 관련 단어를 사용한다. `/api/market-reports/{topic}` 응답의 최종
+10건은 `market_report_cache`의 주제별 한 행에 저장하고 모든 사용자가 기본 6시간 동안 공유한다. 같은 JVM에서
+동일 주제 갱신이 겹치면 하나의 외부 호출만 수행하며, `/investments/reports` 화면은 선택한 주제를 지연 조회한다.
 
 ### Redis
 
