@@ -26,6 +26,27 @@ public class StockConceptQueryService {
         return toResponse(stockId, conceptCard);
     }
 
+    // 투자 학습 화면에서는 종목 데이터 없이 DB의 정적 개념과 시각자료만 조회한다.
+    public StockConceptResponse getConcept(StockConceptCode conceptCode) {
+        StockConceptCard conceptCard = conceptCardRepository
+                .findByConceptCodeAndActiveTrue(conceptCode)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "개념정보를 찾을 수 없습니다: " + conceptCode
+                ));
+
+        return new StockConceptResponse(
+                conceptCard.getConceptCode(),
+                conceptCard.getTitle(),
+                conceptCard.getSummary(),
+                conceptVisualCatalog.getVisual(conceptCard.getConceptCode()),
+                null,
+                conceptCard.getDetailedExplanation(),
+                conceptCard.getBakeryExample(),
+                conceptCard.getMarketImpact(),
+                conceptCard.getCaution()
+        );
+    }
+
     private StockConceptResponse toResponse(Long stockId, StockConceptCard conceptCard) {
         return new StockConceptResponse(
                 conceptCard.getConceptCode(),
@@ -35,6 +56,7 @@ public class StockConceptQueryService {
                 conceptAnalysisService.analyze(stockId, conceptCard.getConceptCode()), // 실제 종목의 개념정보를 조회한다.
                 conceptCard.getDetailedExplanation(),
                 conceptCard.getBakeryExample(),
+                conceptCard.getMarketImpact(),
                 conceptCard.getCaution()
         );
     }

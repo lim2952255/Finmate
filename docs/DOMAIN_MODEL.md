@@ -24,6 +24,8 @@ erDiagram
     Stock ||--o{ DomesticStockIncomeStatement : has
     Stock ||--o{ DomesticStockBalanceSheet : has
     Stock ||--o{ DomesticStockInvestorDailyTrade : has
+    Stock ||--o{ DomesticStockShortSaleDaily : has
+    Stock ||--o{ DomesticStockLoanTransactionDaily : has
     Stock ||--o| OverseasStockMetadata : has
     Stock ||--o{ StockChatMessage : discusses
     User ||--o{ StockChatMessage : writes
@@ -113,15 +115,18 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 - 종목 상세페이지와 목록 화면은 저장된 메타데이터를 표시한다. 해외 업종코드명이 DB에 없으면 해당 거래소의 업종코드 목록을 KIS API에서 조회해 저장한 뒤 표시한다.
 - 국내 종목 상세의 현재가 투자지표는 `DomesticStockCurrentQuote`에 종목별 한 행으로 저장한다.
 - 재무비율·손익계산서·대차대조표는 `종목 + 연간/분기 구분 + 결산기간`별 행으로 저장하고, 현재 구현은 연간 응답만 적재한다.
-- 투자자매매동향은 `DomesticStockInvestorDailyTrade`에 `종목 + 시장코드 + 거래일`별로 저장한다. 이 값은 매매 수급이며 보유 지분율이 아니다.
-- `DomesticStockDetailRefreshState`는 현재가·재무비율·손익계산서·대차대조표·투자자 수급의 마지막 성공 갱신시각을 각각 보관한다.
+- 투자자매매동향은 `DomesticStockInvestorDailyTrade`에 `종목 + 시장코드 + 거래일`별로 저장한다. 이 값은 매매 수급이며 보유 지분율이 아니다. 상세 화면은 최근 20거래일을 기본 조회한다.
+- 공매도 일별추이는 `DomesticStockShortSaleDaily`, 대차거래 추이는 `DomesticStockLoanTransactionDaily`에 각각 `종목 + 거래일`별로 저장한다. 상세 분석에는 최근 3개월만 유지하며, 공매도 체결과 주식 대여·상환은 다른 단계이므로 한 지표로 합치지 않는다.
+- `DomesticStockDetailRefreshState`는 현재가·재무비율·손익계산서·대차대조표·투자자 수급·공매도·대차거래의 마지막 성공 갱신시각을 각각 보관한다.
 - 종목 검색은 `StockSearchType`으로 종목명/종목코드 검색과 업종명/업종코드 검색을 분리하고, 선택한 `StockMarketType`이 있으면 KOSPI·KOSDAQ·NASDAQ 시장 조건을 함께 적용한다. 업종 검색은 국내 대·중·소 업종코드와 업종명, 해외 거래소별 업종코드와 업종명을 대상으로 한다.
 - 국내 종목 업종 표시는 소업종, 중업종, 대업종 순서로 가장 세부적인 유효 업종 하나를 사용한다. 포트폴리오는 국내 종목을 국내 업종명 기준으로 집계하고, 해외 종목은 거래소별 업종 체계가 다르므로 거래소 그룹과 업종명을 함께 사용해 통화별 매입금액 비중을 계산한다.
 - 포트폴리오 평가손익은 브라우저 WebSocket 실시간 시세가 수신되면 실시간 가격으로 계산한다. 실시간 가격이 아직 없거나 장마감 상태이면 서버가 최신 일봉 종가를 DB에서 찾고, 부족하면 KIS 일봉 API로 최근 구간을 보충한 뒤 fallback 가격으로 내려보낸다.
 
 ### StockConceptCard
 
-- `StockConceptCode`별 공식 주식 개념의 제목, 요약, 상세 설명, 빵집 예시와 주의사항을 저장한다.
+- `StockConceptCode`별 공식 주식 개념의 제목, 요약, 상세 설명, 빵집 예시, 시장 영향과 주의사항을 저장한다.
+- `marketImpact`는 선택 항목이며 투자 학습 카드에서는 기관·ETF·파생상품 등의 실제 수급이 가격과
+  유동성에 연결되는 방식과 이를 단순한 상승·하락 신호로 오해하지 않기 위한 해석 기준을 제공한다.
 - `conceptCode`는 문자열 enum으로 저장하며 한 코드당 한 행만 허용한다.
 - `src/main/resources/stock-concepts/stock-concepts.yml`의 seed와 DB 내용을 주간 스케줄러가 멱등 동기화한다.
 - 스케줄러는 검토 전 DB 변경을 막기 위해 기본 비활성화되어 있으며, 내용이 동일한 행은 갱신하지 않는다.

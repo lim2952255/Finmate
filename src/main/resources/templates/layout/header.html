@@ -20,9 +20,10 @@
     <!--로그인 여부에 따라서 header에 노출되는 내용이 달라진다.-->
     <div class="header-account" th:if="${user != null}">
         <nav class="header-nav" aria-label="주요 메뉴">
-            <a th:href="@{/accounts}">계좌</a>
-            <a th:href="@{/investments}">투자</a>
-            <a th:href="@{/investments/portfolio}">포트폴리오</a>
+            <a th:href="@{/accounts}" data-nav-root="/accounts">계좌</a>
+            <a th:href="@{/investments}" data-nav-root="/investments">투자</a>
+            <a th:href="@{/investments/portfolio}" data-nav-root="/investments/portfolio">포트폴리오</a>
+            <a th:href="@{/investment-learning}" data-nav-root="/investment-learning">투자 학습</a>
         </nav>
         <p class="header-welcome">
             <span class="user-avatar" aria-hidden="true"
@@ -38,6 +39,25 @@
         <a class="header-link" th:href="@{/signup}">회원가입</a>
         <a class="header-cta" th:href="@{/login}">로그인</a>
     </div>
+    <script>
+    (() => {
+        const currentPath = window.location.pathname;
+        const navigationLinks = document.querySelectorAll('.header-nav [data-nav-root]');
+        let activeLink = null;
+
+        navigationLinks.forEach((link) => {
+            const root = link.dataset.navRoot;
+            const matches = currentPath === root || currentPath.startsWith(`${root}/`);
+            if (matches && (!activeLink || root.length > activeLink.dataset.navRoot.length)) {
+                activeLink = link;
+            }
+        });
+
+        if (activeLink) {
+            activeLink.setAttribute('aria-current', 'page');
+        }
+    })();
+    </script>
 </header>
 
 </body>

@@ -30,6 +30,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class StockDetailService {
     private static final int INITIAL_HISTORY_YEARS = 3; // 기본 조회 기간
+    private static final int HISTORY_START_TOLERANCE_DAYS = 7; // 주말·휴장일을 포함한 최초 거래일 허용 범위
     private static final boolean DEFAULT_ADJUSTED_PRICE = true; // 수정 주가
 
     private final StockRepository stockRepository;
@@ -71,14 +72,13 @@ public class StockDetailService {
                         chartStartDate,
                         expectedLatestTradeDate);
         StockMetadataDisplayInfo metadataDisplayInfo = getMetadataDisplayInfo(stock);
-        DomesticStockDetailInfo domesticDetailInfo = getDomesticDetailInfo(stock, expectedLatestTradeDate);
+        DomesticStockDetailInfo domesticDetailInfo = getDomesticDetailInfo(stock);
 
         // StockDetailPageInfo라는 DTO에 dailyPrices 리스트를 담아서 리턴한다.
         return new StockDetailPageInfo(
                 stock,
                 selectedPeriod,
                 chartStartDate,
-                expectedLatestTradeDate,
                 expectedLatestTradeDate,
                 savedDailyPriceCount,
                 dailyPrices,
@@ -89,7 +89,7 @@ public class StockDetailService {
     }
 
     // 국내 종목의 상세정보. 즉 재무상태표나 대차대조표 등의 정보를 DomesticStockDetailInfo라는 하나의 DTO에 담아서 리턴한다.
-    private DomesticStockDetailInfo getDomesticDetailInfo(Stock stock, LocalDate investorBaseDate) {
+    private DomesticStockDetailInfo getDomesticDetailInfo(Stock stock) {
         if (stock.getMarketType() != StockMarketType.KOSPI
                 && stock.getMarketType() != StockMarketType.KOSDAQ) {
             return DomesticStockDetailInfo.unsupported();
@@ -98,10 +98,10 @@ public class StockDetailService {
         // 종목 현재가는 Redis에 캐싱된 데이터가 있으면 캐싱된 데이터를 리턴받고, 없으면 KIS API를 통해 갱신한 다음, 데이터를 Redis에 캐싱하고 캐싱된 데이터를 받는다.
         // 다른 데이터들은 DB에서 정보를 조회해서 데이터를 최신상태로 만든다.
         DomesticStockCurrentQuoteSnapshot currentQuote =
-                domesticStockDetailRefreshService.refreshIfNeeded(stock, investorBaseDate);
+                domesticStockDetailRefreshService.refreshIfNeeded(stock);
         // 현재가는 Redis에 캐싱하거나 캐싱되어있는 데이터를 전달하고, 없으면 DB에서 가장 최신 데이터를 조회해서 DTO를 만든다.
         // 다른 데이터들은 DB에서 가장 최신 데이터를 조회해서 DTO를 만든다.
-        return domesticStockDetailQueryService.getDetailInfo(stock.getId(), currentQuote);
+        return domesticStockDetailQueryService.getDetailInfo(stock, currentQuote);
     }
     // 종목 상세 페이지를 조회하는 순간
     // 필요한 경우에만 KIS API를 호출하고
@@ -110,6 +110,7 @@ public class StockDetailService {
     private int syncIfNeeded(Stock stock,
                              LocalDate initialFetchStartDate,
                              LocalDate expectedLatestTradeDate) {
+        LocalDate historyStartDate = resolveHistoryStartDate(stock, initialFetchStartDate);
         // DB에 저장된 종목의 일봉데이터중, 가장 최신 거래일의 데이터 조회
         Optional<StockDailyPrice> latestDailyPrice = stockDailyPriceRepository
                 .findTopByStock_IdAndAdjustedPriceOrderByTradeDateDesc(
@@ -121,29 +122,68 @@ public class StockDetailService {
         if (latestDailyPrice.isEmpty()) {
             return stockDailyPriceSyncService.fetchAndSaveDailyPrices(
                     stock.getId(),
-                    initialFetchStartDate,
+                    historyStartDate,
                     expectedLatestTradeDate,
                     DEFAULT_ADJUSTED_PRICE);
         }
+
+        int savedCount = backfillHistoricalDailyPricesIfNeeded(
+                stock,
+                historyStartDate,
+                latestDailyPrice.get());
 
         // DB에 저장되 가상 최신 거래일이 expectedLatestTradeDate보다 더 최근이라면
         // API 호출을 통해 일봉 데이터를 받아올 필요가 없기 때문에, 바로 return한다
         LocalDate latestTradeDate = latestDailyPrice.get().getTradeDate();
         if (!latestTradeDate.isBefore(expectedLatestTradeDate)) {
-            return 0;
+            return savedCount;
         }
 
         // 가장 최신 거래일 다음 날짜부터, expectedLatesttradeDate까지의 데이터를 KIS API를 호출해서 받는다.
         LocalDate fetchStartDate = latestTradeDate.plusDays(1);
         if (fetchStartDate.isAfter(expectedLatestTradeDate)) {
-            return 0;
+            return savedCount;
         }
 
-        return stockDailyPriceSyncService.fetchAndSaveDailyPrices(
+        return savedCount + stockDailyPriceSyncService.fetchAndSaveDailyPrices(
                 stock.getId(),
                 fetchStartDate,
                 expectedLatestTradeDate,
                 DEFAULT_ADJUSTED_PRICE);
+    }
+
+    // 주식 일봉데이터가 3년치 데이터가 저장되어 있는지를 검사한다. 만약 부족하면 부족한 일자만큼의 데이터를 채운다.
+    private int backfillHistoricalDailyPricesIfNeeded(Stock stock,
+                                                       LocalDate historyStartDate, // 과거 3년전 시점
+                                                       StockDailyPrice latestDailyPrice) {
+        // 현재 DB에서 저장된 데이터중 가장 오래된 데이터를 조회한다.
+        StockDailyPrice oldestDailyPrice = stockDailyPriceRepository
+                .findTopByStock_IdAndAdjustedPriceOrderByTradeDateAsc(
+                        stock.getId(), DEFAULT_ADJUSTED_PRICE)
+                .orElse(latestDailyPrice);
+        //  3년점 시점의 데이터의 허용 오차 적용 (+7일)
+        LocalDate coveredHistoryStartDate = historyStartDate.plusDays(HISTORY_START_TOLERANCE_DAYS);
+        // 만약 기준 일자보다 이미 DB에 저장되어 있는 데이터의 일자가 더 오래되어 있다면 바로 리턴한다.
+        if (!oldestDailyPrice.getTradeDate().isAfter(coveredHistoryStartDate)) {
+            return 0;
+        }
+
+        // 가장 오래된 데이터의 일자와 기준 일자를 비교해서 부족한 만큼 API를 호출해서 데이터를 저장한다.
+        LocalDate backfillEndDate = oldestDailyPrice.getTradeDate().minusDays(1);
+        return stockDailyPriceSyncService.fetchAndSaveDailyPrices(
+                stock.getId(),
+                historyStartDate,
+                backfillEndDate,
+                DEFAULT_ADJUSTED_PRICE);
+    }
+
+    // 종목 상장일과 3년점 시점중 더 최근 시점을 리턴한다. (기준일자)
+    private LocalDate resolveHistoryStartDate(Stock stock, LocalDate initialFetchStartDate) {
+        LocalDate listedDate = stock.getListedDate();
+        if (listedDate == null || listedDate.isBefore(initialFetchStartDate)) {
+            return initialFetchStartDate;
+        }
+        return listedDate;
     }
 
     private StockMetadataDisplayInfo getMetadataDisplayInfo(Stock stock) {

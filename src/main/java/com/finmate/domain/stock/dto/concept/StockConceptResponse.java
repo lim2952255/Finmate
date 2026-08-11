@@ -11,6 +11,7 @@ public record StockConceptResponse(
         StockConceptAnalysisResponse stockAnalysis, // 현재 종목의 실제 수치 기반 설명
         String detailedExplanation,
         String bakeryExample,
+        String marketImpact,
         String caution
 ) {
 }

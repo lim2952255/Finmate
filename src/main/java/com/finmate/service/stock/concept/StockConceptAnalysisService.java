@@ -13,6 +13,8 @@ import com.finmate.domain.stock.dto.detail.DomesticStockDetailInfo.FinancialMetr
 import com.finmate.domain.stock.dto.detail.DomesticStockDetailInfo.FinancialRatio;
 import com.finmate.domain.stock.dto.detail.DomesticStockDetailInfo.IncomeStatement;
 import com.finmate.domain.stock.dto.detail.DomesticStockDetailInfo.InvestorTrade;
+import com.finmate.domain.stock.dto.detail.DomesticStockDetailInfo.LoanTransaction;
+import com.finmate.domain.stock.dto.detail.DomesticStockDetailInfo.ShortSale;
 import com.finmate.domain.stock.dto.detail.DomesticStockDetailInfo.Quote;
 import com.finmate.domain.stock.market.StockMarketSchedules;
 import com.finmate.global.format.DisplayFormatUtils;
@@ -44,6 +46,11 @@ public class StockConceptAnalysisService {
 
     // 종목의 실제 데이터를 조회해서 개념카드 DTO를 생성해서 리턴하는 메서드
     public StockConceptAnalysisResponse analyze(Long stockId, StockConceptCode conceptCode) {
+        // 일봉 읽기처럼 종목별 수치가 필요 없는 학습 카드는 KIS·DB 상세 조회를 수행하지 않는다.
+        if (conceptCode == StockConceptCode.DAILY_CANDLE_CHART || isInvestmentLearningConcept(conceptCode)) {
+            return null;
+        }
+
         Stock stock = stockRepository.findById(stockId)
                 .orElseThrow(() -> new IllegalArgumentException("종목을 찾을 수 없습니다: " + stockId));
 
@@ -54,15 +61,13 @@ public class StockConceptAnalysisService {
                     heading, "현재 종목 맞춤 개념 설명은 국내주식 데이터만 지원합니다.");
         }
 
-        // 최신 투자자 데이터 기준일 계산
-        LocalDate investorBaseDate = StockMarketSchedules.expectedLatestDailyPriceTradeDate(stock.getMarketType());
         // 종목 상세정보 갱신이 필요하면 갱신하고, 종목 상세정보를 Redis에서 조회한다.
-        DomesticStockCurrentQuoteSnapshot currentQuote = detailRefreshService.refreshIfNeeded(
-                stock, investorBaseDate);
+        DomesticStockCurrentQuoteSnapshot currentQuote = detailRefreshService.refreshIfNeeded(stock);
         // 조회한 종목 상세정보를 기반으로 화면에 표시할 종목 상세정보를 DTO에 담는다.
-        DomesticStockDetailInfo detail = detailQueryService.getDetailInfo(stockId, currentQuote);
+        DomesticStockDetailInfo detail = detailQueryService.getDetailInfo(stock, currentQuote);
 
         return switch (conceptCode) {
+            case DAILY_CANDLE_CHART -> null; // 위에서 종목 데이터 조회 없이 반환한다.
             case PER -> per(stock, detail); // PER 개념카드 처리
             case PBR -> pbr(stock, detail); // PBR 개념카드 처리
             case EPS -> eps(stock, detail); // EPS 개념카드 처리
@@ -80,6 +85,25 @@ public class StockConceptAnalysisService {
             case INCOME_STATEMENT -> incomeStatement(stock, detail); // 손익계산서 분석 개념카드 처리
             case BALANCE_SHEET -> balanceSheet(stock, detail); // 대차대조표 분석 개념카드 처리
             case INVESTOR_TRADING_FLOW -> investorFlow(stock, detail); // 투자자별 매매동향 분석 개념카드 처리
+            case SHORT_SELLING_AND_SECURITIES_LENDING -> shortSellingAndLending(stock, detail);
+            case CASH_MARGIN_RECEIVABLE_RELATIONSHIP, MARGIN_TRADING_AND_FORCED_LIQUIDATION,
+                 CREDIT_TRADING_VS_MARGIN_TRADING, HEDGING_VS_SPECULATION, DIVERSIFICATION,
+                 CORRELATION, ASSET_ALLOCATION, PORTFOLIO_REBALANCING, ETF_VS_FUND,
+                 ETF_NAV_AND_PREMIUM_DISCOUNT, LEVERAGED_AND_INVERSE_ETF,
+                 CURRENCY_HEDGED_VS_UNHEDGED, SIDECAR, CIRCUIT_BREAKER, SHORT_SELLING,
+                 FUTURES, OPTIONS -> null;
+        };
+    }
+
+    private boolean isInvestmentLearningConcept(StockConceptCode conceptCode) {
+        return switch (conceptCode) {
+            case CASH_MARGIN_RECEIVABLE_RELATIONSHIP, MARGIN_TRADING_AND_FORCED_LIQUIDATION,
+                 CREDIT_TRADING_VS_MARGIN_TRADING, HEDGING_VS_SPECULATION, DIVERSIFICATION,
+                 CORRELATION, ASSET_ALLOCATION, PORTFOLIO_REBALANCING, ETF_VS_FUND,
+                 ETF_NAV_AND_PREMIUM_DISCOUNT, LEVERAGED_AND_INVERSE_ETF,
+                 CURRENCY_HEDGED_VS_UNHEDGED, SIDECAR, CIRCUIT_BREAKER, SHORT_SELLING,
+                 FUTURES, OPTIONS -> true;
+            default -> false;
         };
     }
 
@@ -391,6 +415,34 @@ public class StockConceptAnalysisService {
                 "%s의 %s 투자자별 순매수입니다. 양수는 해당 날짜에 매수가 매도보다 많았다는 뜻이고 음수는 그 반대입니다. 현재 보유 지분율이나 향후 주가 방향을 의미하지는 않습니다."
                         .formatted(stock.getNameKo(), date(latest.tradeDate())),
                 date(latest.tradeDate()), detail.getInvestorUpdatedAt());
+    }
+
+    private StockConceptAnalysisResponse shortSellingAndLending(
+            Stock stock, DomesticStockDetailInfo detail) {
+        ShortSale shortSale = first(detail.getShortSales());
+        LoanTransaction loan = first(detail.getLoanTransactions());
+        if (shortSale == null && loan == null) {
+            return unavailable(stock, "현재 저장된 공매도·대차 데이터가 없습니다.");
+        }
+        String interpretation = "공매도 거래는 실제로 빌린 주식을 시장에 판 흐름이고, 대차잔고는 아직 반환되지 않은 대여 주식의 잔량입니다. ";
+        if (shortSale != null && shortSale.shortSaleVolumeRatio() != null) {
+            interpretation += "%s의 최근 공매도 거래 비중은 %s입니다. ".formatted(
+                    stock.getNameKo(), percent(shortSale.shortSaleVolumeRatio()));
+        }
+        if (loan != null && loan.loanBalanceQuantity() != null) {
+            interpretation += "최근 대차잔고는 %s입니다. ".formatted(shares(loan.loanBalanceQuantity()));
+        }
+        interpretation += "두 값이 늘어도 모두 하락에 베팅했다고 단정할 수 없으며, 가격·거래량과 여러 거래일의 방향을 함께 봐야 합니다.";
+        LocalDate referenceDate = shortSale != null ? shortSale.tradeDate() : loan.tradeDate();
+        return available(stock, metrics(
+                        metric("최근 공매도 수량", shortSale == null ? null : shares(shortSale.shortSaleQuantity())),
+                        metric("공매도 거래 비중", shortSale == null ? null : percent(shortSale.shortSaleVolumeRatio())),
+                        metric("대차 신규", loan == null ? null : shares(loan.newLoanQuantity())),
+                        metric("대차 상환", loan == null ? null : shares(loan.redeemedLoanQuantity())),
+                        metric("대차잔고", loan == null ? null : shares(loan.loanBalanceQuantity()))),
+                "공매도 거래량은 실제 매도 흐름, 대차잔고는 빌린 뒤 아직 반환하지 않은 잔량",
+                interpretation, date(referenceDate) + " 기준",
+                oldest(detail.getShortSaleUpdatedAt(), detail.getLoanTransactionUpdatedAt()));
     }
 
     private StockConceptAnalysisResponse available(Stock stock,

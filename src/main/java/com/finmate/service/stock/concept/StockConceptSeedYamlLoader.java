@@ -58,6 +58,7 @@ public class StockConceptSeedYamlLoader {
                     requiredText(values, "summary"),
                     requiredText(values, "detailedExplanation"),
                     requiredText(values, "bakeryExample"),
+                    optionalText(values, "marketImpact"),
                     requiredText(values, "caution")
             ));
         }
@@ -83,6 +84,17 @@ public class StockConceptSeedYamlLoader {
         Object value = values.get(key);
         if (!(value instanceof String text) || text.isBlank()) {
             throw new IllegalStateException("주식 개념 YAML의 " + key + " 값은 필수입니다.");
+        }
+        return text.strip();
+    }
+
+    private String optionalText(Map<?, ?> values, String key) {
+        Object value = values.get(key);
+        if (value == null) {
+            return null;
+        }
+        if (!(value instanceof String text) || text.isBlank()) {
+            throw new IllegalStateException("주식 개념 YAML의 " + key + " 값은 문자열이어야 합니다.");
         }
         return text.strip();
     }

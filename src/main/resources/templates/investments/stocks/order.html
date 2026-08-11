@@ -21,7 +21,8 @@
 
         .market-summary {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            align-items: start;
             gap: 12px;
             margin-bottom: 18px;
         }
@@ -36,8 +37,22 @@
         .summary-item span {
             display: block;
             margin-top: 4px;
+            overflow-wrap: anywhere;
             font-size: 18px;
             font-weight: 800;
+        }
+
+        .summary-item--schedule {
+            grid-column: span 5;
+        }
+
+        .summary-item--schedule span {
+            font-size: 14px;
+            line-height: 1.55;
+        }
+
+        .summary-item--status {
+            grid-column: span 1;
         }
 
         .form-stack {
@@ -105,10 +120,14 @@
 
     <main class="main">
         <section class="content">
-            <h1>
-                <span th:text="${stockOrderPageInfo.stock.nameKo}">종목명</span>
-                주문
-            </h1>
+            <div class="page-heading">
+                <span class="eyebrow">STOCK ORDER</span>
+                <h1>
+                    <span th:text="${stockOrderPageInfo.stock.nameKo}">종목명</span>
+                    주문
+                </h1>
+                <p>실시간 기준가와 계좌별 주문 가능 금액을 확인한 뒤 주문을 입력하세요.</p>
+            </div>
 
             <p th:if="${errorMessage}" th:text="${errorMessage}" style="color:#dc2626;">오류</p>
 
@@ -143,11 +162,11 @@
                     <span id="order-sell-price"
                           th:text="${stockOrderPageInfo.formatPrice(stockOrderPageInfo.sellExecutablePrice)}">-</span>
                 </div>
-                <div class="summary-item">
+                <div class="summary-item summary-item--schedule">
                     <strong>거래 가능 시간</strong>
                     <span th:text="${stockOrderPageInfo.stockTradingTimeDescription}">대한민국 시간 기준 09:00~15:30, 15:40~18:00</span>
                 </div>
-                <div class="summary-item">
+                <div class="summary-item summary-item--status">
                     <strong>거래 상태</strong>
                     <span th:if="${stockOrderPageInfo.stockTradingAvailable}">거래 가능</span>
                     <span th:unless="${stockOrderPageInfo.stockTradingAvailable}">거래 시간 아님</span>

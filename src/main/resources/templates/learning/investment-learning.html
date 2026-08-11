@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>투자 학습 | FinMate</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/investment-learning.css}">
+    <script defer th:src="@{/js/investment-learning.js}"></script>
+</head>
+<body>
+<div class="page">
+    <div th:replace="~{/layout/header :: header}"></div>
+    <main class="main learning-main">
+        <section class="content learning-content">
+            <div class="learning-hero">
+                <div>
+                    <span class="eyebrow">FINMATE LEARNING</span>
+                    <h1>투자 개념을 연결해서 배우세요</h1>
+                    <p>계좌의 돈 흐름부터 포트폴리오, ETF, 시장 안전장치와 파생상품까지<br>헷갈리기 쉬운 개념을 그림과 예시로 차근차근 정리합니다.</p>
+                </div>
+                <div class="learning-progress" aria-label="학습 개념 수">
+                    <strong th:text="${#lists.size(concepts)}">17</strong>
+                    <span>개의 핵심 개념</span>
+                </div>
+            </div>
+
+            <section class="learning-explorer" aria-labelledby="learning-explorer-title">
+                <div class="learning-toolbar">
+                    <div>
+                        <h2 id="learning-explorer-title">개념 둘러보기</h2>
+                        <p>관심 있는 주제를 선택하거나 검색한 뒤 카드를 열어보세요.</p>
+                    </div>
+                    <label class="learning-search">
+                        <span class="sr-only">투자 개념 검색</span>
+                        <span aria-hidden="true">⌕</span>
+                        <input id="learning-search-input" type="search" placeholder="예: 미수, ETF, 헤지" autocomplete="off">
+                    </label>
+                </div>
+
+                <div class="learning-filters" aria-label="개념 카테고리">
+                    <button type="button" class="learning-filter is-active" data-learning-filter="ALL" aria-pressed="true">전체</button>
+                    <button type="button" class="learning-filter" th:each="category : ${categories}"
+                            th:data-learning-filter="${category.name()}" th:text="${category.displayName}" aria-pressed="false">카테고리</button>
+                </div>
+
+                <div id="learning-card-grid" class="learning-card-grid">
+                    <button type="button" class="learning-card" th:each="concept : ${concepts}"
+                            th:data-category="${concept.category.name()}"
+                            th:data-title="${concept.title}"
+                            th:data-summary="${concept.summary}"
+                            th:data-concept-code="${concept.conceptCode.name()}"
+                            aria-haspopup="dialog" aria-controls="investment-learning-dialog">
+                        <span class="learning-card-category" th:text="${concept.category.displayName}">카테고리</span>
+                        <strong th:text="${concept.title}">개념 제목</strong>
+                        <span class="learning-card-summary" th:text="${concept.summary}">개념 요약</span>
+                        <span class="learning-card-action">개념 익히기 <span aria-hidden="true">→</span></span>
+                    </button>
+                </div>
+                <p id="learning-empty" class="learning-empty" hidden>검색 조건에 맞는 개념이 없습니다.</p>
+            </section>
+        </section>
+    </main>
+</div>
+
+<dialog id="investment-learning-dialog" class="learning-drawer" aria-labelledby="learning-dialog-title">
+    <div id="learning-drawer-resizer" class="learning-drawer-resizer" role="separator" aria-label="학습 패널 너비 조절" tabindex="0"></div>
+    <div class="learning-drawer-shell">
+        <header class="learning-drawer-header">
+            <div><span>투자 학습</span><h2 id="learning-dialog-title">개념</h2></div>
+            <button id="learning-dialog-close" type="button" aria-label="닫기">×</button>
+        </header>
+        <div class="learning-drawer-content">
+            <p id="learning-dialog-status" class="learning-dialog-status" hidden></p>
+            <article id="learning-dialog-body" hidden>
+                <p id="learning-dialog-summary" class="learning-dialog-summary"></p>
+                <figure id="learning-dialog-visual" class="learning-dialog-visual" hidden>
+                    <img id="learning-dialog-visual-image" src="" alt="">
+                    <figcaption id="learning-dialog-visual-caption"></figcaption>
+                </figure>
+                <details class="learning-detail" open>
+                    <summary>자세히 알아보기</summary>
+                    <div id="learning-dialog-explanation" class="learning-detail-text"></div>
+                </details>
+                <details class="learning-detail learning-detail--bakery" open>
+                    <summary>빵집으로 쉽게 이해하기</summary>
+                    <div id="learning-dialog-example" class="learning-detail-text"></div>
+                </details>
+                <details id="learning-dialog-market-impact-section" class="learning-detail learning-detail--impact" open hidden>
+                    <summary>시장과 연결해서 보기</summary>
+                    <div id="learning-dialog-market-impact" class="learning-detail-text"></div>
+                </details>
+                <details class="learning-detail learning-detail--caution">
+                    <summary>주의해서 볼 점</summary>
+                    <div id="learning-dialog-caution" class="learning-detail-text"></div>
+                </details>
+            </article>
+        </div>
+    </div>
+</dialog>
+</body>
+</html>

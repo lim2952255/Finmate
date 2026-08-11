@@ -51,6 +51,7 @@ out/
 *.md
 !AGENTS.md
 !README.md
+!DESIGN.md
 !docs/DESIGN.md
 !docs/
 !docs/**/*.md

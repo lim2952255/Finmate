@@ -28,7 +28,7 @@ public final class StockMarketSchedules {
             LocalTime.of(15, 30),
             LocalTime.of(15, 40),
             LocalTime.of(18, 0),
-            LocalTime.of(16, 0));
+            LocalTime.of(20, 0));
     private static final StockMarketSchedule NASDAQ_SCHEDULE = new StockMarketSchedule(
             NASDAQ_ZONE,
             LocalTime.of(9, 30),
@@ -83,6 +83,20 @@ public final class StockMarketSchedules {
         return isMarketTradingTime(marketType, ZonedDateTime.now());
     }
 
+    // 투자자 수급·공매도·대차처럼 KRX 정규장 기준으로 누적되는 데이터의 장중 여부를 검사한다.
+    // 국내 통합 일봉과 달리 NXT 프리·메인·애프터마켓 시간은 포함하지 않는다.
+    public static boolean isRegularMarketTradingTimeNow(StockMarketType marketType) {
+        StockMarketSchedule schedule = getSchedule(marketType);
+        ZonedDateTime marketDateTime = ZonedDateTime.now(schedule.zoneId());
+        if (!isWeekday(marketDateTime.getDayOfWeek())) {
+            return false;
+        }
+
+        LocalTime time = marketDateTime.toLocalTime();
+        return !time.isBefore(schedule.regularOpenTime())
+                && time.isBefore(schedule.regularCloseTime());
+    }
+
     // 종목별 거래 가능 시간을 검사한다. 국내 종목은 NXT 세션 허용 코드까지 반영한다.
     public static boolean isTradingTime(Stock stock, ZonedDateTime dateTime) {
         if (stock == null) {
@@ -103,7 +117,7 @@ public final class StockMarketSchedules {
         return describeTradingHours(marketType, ZonedDateTime.now());
     }
 
-    // 일봉은 프리·애프터마켓과 무관하게 시장별 정규장 종가 반영 시각을 기준으로 계산한다.
+    // 국내 통합 일봉은 NXT 애프터마켓 종료, 해외 일봉은 현지 정규장 종가 반영 시각을 기준으로 계산한다.
     public static LocalDate expectedLatestDailyPriceTradeDate(StockMarketType marketType) {
         StockMarketSchedule schedule = getSchedule(marketType);
         LocalDate today = LocalDate.now(schedule.zoneId());
@@ -111,6 +125,18 @@ public final class StockMarketSchedules {
 
         // 일본반영시간대는 정규장 종가 기준
         LocalDate candidate = now.isBefore(schedule.dailyPriceAvailableTime()) ? today.minusDays(1) : today;
+        return previousOrSameWeekday(candidate);
+    }
+
+    // 투자자 수급·공매도·대차의 조회 기준일을 계산한다.
+    // 정규장 개장 전에는 직전 거래일, 개장 이후에는 금일을 사용한다.
+    // 금일처럼 아직 통합 일봉이 확정되지 않은 값은 Redis 스냅샷으로만 다룬다.
+    public static LocalDate expectedLatestRegularMarketDataTradeDate(StockMarketType marketType) {
+        StockMarketSchedule schedule = getSchedule(marketType);
+        LocalDate today = LocalDate.now(schedule.zoneId());
+        LocalTime now = LocalTime.now(schedule.zoneId());
+
+        LocalDate candidate = now.isBefore(schedule.regularOpenTime()) ? today.minusDays(1) : today;
         return previousOrSameWeekday(candidate);
     }
 

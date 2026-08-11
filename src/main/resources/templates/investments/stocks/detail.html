@@ -54,7 +54,71 @@
             align-items: flex-start;
             justify-content: space-between;
             gap: 16px;
-            margin-bottom: 14px;
+            margin: 0;
+        }
+
+        .metadata-summary {
+            list-style: none;
+            cursor: pointer;
+        }
+
+        .metadata-summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .metadata-summary:focus-visible {
+            border-radius: 10px;
+            outline: 3px solid rgba(37, 99, 235, 0.2);
+            outline-offset: 4px;
+        }
+
+        .metadata-summary-actions {
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .metadata-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 30px;
+            padding: 5px 9px;
+            border: 1px solid #d8e5f8;
+            border-radius: 9px;
+            background: #f8fbff;
+            color: #315bea;
+            font-size: 12px;
+            font-weight: 850;
+            white-space: nowrap;
+        }
+
+        .metadata-toggle svg {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.18s ease;
+        }
+
+        .metadata-toggle-open {
+            display: none;
+        }
+
+        .metadata-card[open] .metadata-toggle-closed {
+            display: none;
+        }
+
+        .metadata-card[open] .metadata-toggle-open {
+            display: inline;
+        }
+
+        .metadata-card[open] .metadata-toggle svg {
+            transform: rotate(180deg);
+        }
+
+        .metadata-content {
+            padding-top: 16px;
         }
 
         .metadata-eyebrow {
@@ -120,13 +184,15 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 12px;
+            align-items: start;
         }
 
         .metadata-section {
-            padding: 14px;
+            padding: 15px;
             border: 1px solid var(--color-border);
             border-radius: 12px;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.94);
+            box-shadow: 0 6px 16px rgba(30, 52, 90, 0.035);
         }
 
         .metadata-section h3 {
@@ -144,7 +210,7 @@
 
         .metadata-list {
             display: grid;
-            gap: 8px;
+            gap: 4px;
         }
 
         .metadata-row {
@@ -152,8 +218,14 @@
             grid-template-columns: minmax(96px, 0.75fr) minmax(0, 1fr);
             gap: 12px;
             align-items: baseline;
-            padding-bottom: 8px;
-            border-bottom: 1px dashed #e5e7eb;
+            min-height: 36px;
+            padding: 7px 8px;
+            border-bottom: 0;
+            border-radius: 8px;
+        }
+
+        .metadata-row:nth-child(odd) {
+            background: #f7f9fc;
         }
 
         .metadata-row:last-child {
@@ -313,16 +385,83 @@
 
         .chart-scroll {
             position: relative;
-            overflow-x: auto;
+            overflow: hidden;
+            height: 540px;
             border: 1px solid #dbe3ef;
             border-radius: 8px;
             background: #ffffff;
+            cursor: crosshair;
+            touch-action: none;
+            user-select: none;
         }
 
-        .stock-chart-svg {
+        .chart-scroll.dragging {
+            cursor: grabbing;
+        }
+
+        .stock-chart-canvas {
             display: block;
-            min-width: 100%;
+            width: 100%;
+            height: 100%;
             background: #ffffff;
+        }
+
+        .chart-interaction-guide {
+            position: absolute;
+            right: 12px;
+            bottom: 10px;
+            z-index: 3;
+            padding: 5px 9px;
+            border: 1px solid #dbeafe;
+            border-radius: 999px;
+            background: rgba(239, 246, 255, 0.9);
+            color: #475569;
+            font-size: 11px;
+            font-weight: 700;
+            pointer-events: none;
+        }
+
+        .chart-range-scrollbar {
+            position: relative;
+            height: 22px;
+            margin-top: 10px;
+            padding: 5px 0;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .chart-range-track {
+            position: relative;
+            height: 12px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: #e2e8f0;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+            cursor: pointer;
+        }
+
+        .chart-range-thumb {
+            position: absolute;
+            top: 0;
+            left: 0;
+            min-width: 48px;
+            height: 12px;
+            padding: 0;
+            border: 0;
+            border-radius: 999px;
+            background: #60a5fa;
+            box-shadow: 0 1px 4px rgba(37, 99, 235, 0.3);
+            cursor: grab;
+            transition: background-color 0.15s ease;
+        }
+
+        .chart-range-thumb:hover {
+            background: #3b82f6;
+        }
+
+        .chart-range-thumb.dragging {
+            background: #2563eb;
+            cursor: grabbing;
         }
 
         .chart-grid-line {
@@ -481,7 +620,7 @@
             position: absolute;
             z-index: 5;
             display: none;
-            min-width: 220px;
+            min-width: 280px;
             padding: 12px 14px;
             border: 1px solid #2563eb;
             border-radius: 8px;
@@ -1363,6 +1502,7 @@
         }
 
         .financial-chart-card {
+            position: relative;
             min-width: 0;
             padding: 18px;
             border: 1px solid #dbe3ef;
@@ -1501,12 +1641,111 @@
             stroke: #22c55e;
         }
 
+        .financial-svg-chart .financial-svg-series--foreign {
+            fill: #2563eb;
+            stroke: #2563eb;
+        }
+
+        .financial-svg-chart .financial-svg-series--personal {
+            fill: #f59e0b;
+            stroke: #f59e0b;
+        }
+
+        .financial-svg-chart .financial-svg-series--institution {
+            fill: #8b5cf6;
+            stroke: #8b5cf6;
+        }
+
+        .financial-svg-chart .financial-svg-series--short-sale {
+            fill: #ef4444;
+            stroke: #ef4444;
+        }
+
+        .financial-svg-chart .financial-svg-series--loan-balance {
+            fill: #7c3aed;
+            stroke: #7c3aed;
+        }
+
+        .financial-svg-chart .financial-svg-series--loan-new {
+            fill: #2563eb;
+            stroke: #2563eb;
+        }
+
+        .financial-svg-chart .financial-svg-series--loan-redeemed {
+            fill: #f59e0b;
+            stroke: #f59e0b;
+        }
+
         .financial-svg-chart .financial-svg-line {
             fill: none;
             stroke-width: 2.5;
             stroke-linecap: round;
             stroke-linejoin: round;
         }
+
+        .financial-svg-hover-line {
+            stroke: #64748b;
+            stroke-width: 1;
+            stroke-dasharray: 4 4;
+            pointer-events: none;
+        }
+
+        .financial-svg-focus-point {
+            stroke: #ffffff;
+            stroke-width: 2.5;
+            pointer-events: none;
+        }
+
+        .financial-svg-extrema-point {
+            stroke: #ffffff;
+            stroke-width: 2.5;
+            pointer-events: none;
+        }
+
+        .financial-svg-extrema-point.maximum {
+            fill: #dc2626;
+        }
+
+        .financial-svg-extrema-point.minimum {
+            fill: #2563eb;
+        }
+
+        .financial-svg-extrema-label {
+            font-size: 11px;
+            font-weight: 900;
+            paint-order: stroke;
+            stroke: #ffffff;
+            stroke-width: 4px;
+            stroke-linejoin: round;
+            pointer-events: none;
+        }
+
+        .financial-svg-extrema-label.maximum {
+            fill: #dc2626;
+        }
+
+        .financial-svg-extrema-label.minimum {
+            fill: #2563eb;
+        }
+
+        .financial-svg-hover-target {
+            fill: transparent;
+            cursor: crosshair;
+            pointer-events: all;
+        }
+
+        .financial-chart-tooltip {
+            z-index: 8;
+            min-width: 190px;
+        }
+
+        .chart-tooltip-value.foreign { color: #2563eb; }
+        .chart-tooltip-value.personal { color: #d97706; }
+        .chart-tooltip-value.institution { color: #7c3aed; }
+        .chart-tooltip-value.short-sale { color: #dc2626; }
+        .chart-tooltip-value.loan-balance { color: #7c3aed; }
+        .chart-tooltip-value.loan-new { color: #2563eb; }
+        .chart-tooltip-value.loan-redeemed { color: #d97706; }
 
         .financial-chart-legend {
             display: flex;
@@ -1539,6 +1778,11 @@
         .financial-chart-legend .run-rate { background: #34d399; }
         .financial-chart-legend .liabilities { background: #94a3b8; }
         .financial-chart-legend .equity { background: #22c55e; }
+        .financial-chart-legend .foreign { background: #2563eb; }
+        .financial-chart-legend .personal { background: #f59e0b; }
+        .financial-chart-legend .institution { background: #8b5cf6; }
+        .financial-chart-legend .loan-new { background: #2563eb; }
+        .financial-chart-legend .loan-redeemed { background: #f59e0b; }
 
         .financial-chart-empty {
             margin: 0;
@@ -1613,6 +1857,101 @@
             line-height: 1.55;
         }
 
+        .investor-table-card {
+            margin-top: 18px;
+            overflow: hidden;
+        }
+
+        .investor-table-card > summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 15px 18px;
+            cursor: pointer;
+            list-style: none;
+            color: #334155;
+            font-size: 14px;
+            font-weight: 800;
+            user-select: none;
+        }
+
+        .investor-table-card > summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .investor-table-card > summary::after {
+            content: "펼치기 +";
+            color: #2563eb;
+            font-size: 12px;
+        }
+
+        .investor-table-card[open] > summary {
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        .investor-table-card[open] > summary::after {
+            content: "접기 −";
+        }
+
+        .investor-table-summary-meta {
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .short-loan-section {
+            margin-top: 26px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .short-loan-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+
+        .short-loan-periods {
+            display: inline-flex;
+            gap: 4px;
+            padding: 4px;
+            border-radius: 10px;
+            background: #f1f5f9;
+        }
+
+        .short-loan-period-button {
+            min-width: 72px;
+            padding: 7px 12px;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            color: #64748b;
+            font: inherit;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .short-loan-period-button.active {
+            background: #ffffff;
+            color: #2563eb;
+            box-shadow: 0 3px 10px rgba(15, 23, 42, 0.10);
+        }
+
+        .short-loan-chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .short-loan-chart-grid + .short-loan-chart-grid {
+            margin-top: 14px;
+        }
+
         .stock-action-section {
             display: flex;
             align-items: center;
@@ -1664,6 +2003,8 @@
 
         .stock-chat {
             overflow: hidden;
+            width: min(100%, 1040px);
+            margin-inline: auto;
             padding: 0;
             border: 1px solid var(--color-border);
             border-radius: 12px;
@@ -1676,7 +2017,7 @@
             align-items: center;
             justify-content: space-between;
             gap: 16px;
-            padding: 18px 20px;
+            padding: 14px 16px;
             border-bottom: 1px solid #e8eef6;
             background: #ffffff;
         }
@@ -1759,7 +2100,7 @@
         .stock-chat-history-control {
             display: flex;
             justify-content: center;
-            padding: 12px 16px 0;
+            padding: 8px 14px 0;
             background: #f7f9fc;
         }
 
@@ -1786,9 +2127,10 @@
         }
 
         .stock-chat-messages {
-            min-height: 300px;
-            max-height: 420px;
-            padding: 18px 20px 22px;
+            height: clamp(220px, 30vh, 330px);
+            min-height: 220px;
+            max-height: 330px;
+            padding: 14px 16px 18px;
             overflow-y: auto;
             background:
                     radial-gradient(circle at top right, rgba(219, 234, 254, 0.32), transparent 34%),
@@ -1799,7 +2141,7 @@
 
         .stock-chat-empty {
             display: flex;
-            min-height: 260px;
+            min-height: 190px;
             align-items: center;
             justify-content: center;
             color: #94a3b8;
@@ -1814,7 +2156,7 @@
             justify-content: start;
             gap: 8px;
             width: 100%;
-            margin: 0 0 14px;
+            margin: 0 0 10px;
         }
 
         .stock-chat-message.own {
@@ -2028,7 +2370,7 @@
 
         .stock-chat-form {
             display: block;
-            padding: 14px 16px 10px;
+            padding: 10px 14px 8px;
             border-top: 1px solid #e8eef6;
             background: #ffffff;
         }
@@ -2140,8 +2482,8 @@
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            min-height: 28px;
-            padding: 0 18px 7px;
+            min-height: 24px;
+            padding: 0 16px 6px;
             background: #ffffff;
         }
 
@@ -2174,6 +2516,11 @@
 
             .metadata-header {
                 flex-direction: column;
+            }
+
+            .metadata-summary-actions {
+                width: 100%;
+                justify-content: space-between;
             }
 
             .metadata-badges {
@@ -2293,7 +2640,16 @@
             </div>
 
             <section>
-                <h2>일봉 차트</h2>
+                <div class="detail-heading-with-concept">
+                    <h2>일봉 차트</h2>
+                    <button class="concept-help-button concept-help-button--summary" type="button"
+                            data-concept-code="DAILY_CANDLE_CHART"
+                            data-concept-title="일봉 차트 보는 법"
+                            aria-haspopup="dialog" aria-controls="stock-concept-dialog"
+                            aria-label="일봉 차트 보는 법 개념 익히기">
+                        차트 보는 법
+                    </button>
+                </div>
 
                 <form class="chart-control-form" th:action="@{/investments/stocks/detail}" method="get">
                     <input type="hidden" name="stockId" th:value="${stockDetailPageInfo.stock.id}">
@@ -2345,204 +2701,37 @@
                                       class="market-session-badge">세션 확인 대기</span>
                             </div>
 
-                            <div class="chart-legend" th:if="${stockDetailPageInfo.movingAverageLines != null and !#lists.isEmpty(stockDetailPageInfo.movingAverageLines)}">
-                                <span class="legend-item" th:each="line : ${stockDetailPageInfo.movingAverageLines}">
-                                    <span class="legend-color" th:classappend="${line.cssClass}"></span>
-                                    <span th:text="${line.label}">MA5</span>
-                                </span>
+                            <div class="chart-legend">
+                                <span class="legend-item"><span class="legend-color ma5"></span><span>MA5</span></span>
+                                <span class="legend-item"><span class="legend-color ma20"></span><span>MA20</span></span>
+                                <span class="legend-item"><span class="legend-color ma60"></span><span>MA60</span></span>
                             </div>
                         </div>
 
-                        <div class="chart-scroll" aria-label="일봉 캔들 차트">
-                            <svg class="stock-chart-svg"
-                                 role="img"
-                                 th:attr="viewBox=|0 0 ${stockDetailPageInfo.chartWidth} ${stockDetailPageInfo.chartHeight}|,width=${stockDetailPageInfo.chartWidth},height=${stockDetailPageInfo.chartHeight}">
-                                <g>
-                                    <line class="chart-date-grid-line"
-                                          th:each="dateLabel : ${stockDetailPageInfo.dateAxisLabels}"
-                                          th:attr="x1=${dateLabel.x},y1=${stockDetailPageInfo.priceAreaTop},x2=${dateLabel.x},y2=${stockDetailPageInfo.dateAxisLineY}"></line>
-                                    <line class="chart-grid-line"
-                                          th:each="axisLabel : ${stockDetailPageInfo.priceAxisLabels}"
-                                          th:attr="x1=0,y1=${axisLabel.y},x2=${stockDetailPageInfo.priceAxisX},y2=${axisLabel.y}"></line>
-                                    <text class="chart-axis-label"
-                                          th:each="axisLabel : ${stockDetailPageInfo.priceAxisLabels}"
-                                          th:attr="x=${stockDetailPageInfo.priceAxisX + 8},y=${axisLabel.y}"
-                                          dominant-baseline="middle"
-                                          th:text="${axisLabel.displayValue}">70,000</text>
-                                    <line class="chart-axis-line"
-                                          th:attr="x1=0,y1=${stockDetailPageInfo.volumeAreaTop - 16},x2=${stockDetailPageInfo.priceAxisX},y2=${stockDetailPageInfo.volumeAreaTop - 16}"></line>
-                                    <line class="chart-axis-line"
-                                          th:attr="x1=${stockDetailPageInfo.priceAxisX},y1=${stockDetailPageInfo.priceAreaTop},x2=${stockDetailPageInfo.priceAxisX},y2=${stockDetailPageInfo.volumeAreaBottom}"></line>
-                                    <line class="chart-axis-line"
-                                          th:attr="x1=0,y1=${stockDetailPageInfo.dateAxisLineY},x2=${stockDetailPageInfo.priceAxisX},y2=${stockDetailPageInfo.dateAxisLineY}"></line>
-                                    <text class="chart-date-axis-label"
-                                          th:each="dateLabel : ${stockDetailPageInfo.dateAxisLabels}"
-                                          th:attr="x=${dateLabel.x},y=${stockDetailPageInfo.dateAxisLabelY},text-anchor=${dateLabel.textAnchor}"
-                                          th:text="${dateLabel.displayValue}">2026.07.02</text>
-                                </g>
-
-                                <g th:if="${stockDetailPageInfo.hasLatestPriceLine}">
-                                    <line id="realtime-current-line"
-                                          class="chart-current-line"
-                                          th:classappend="${stockDetailPageInfo.latestPriceChangeClass}"
-                                          th:attr="x1=0,y1=${stockDetailPageInfo.latestPriceLineY},x2=${stockDetailPageInfo.priceAxisX},y2=${stockDetailPageInfo.latestPriceLineY}"></line>
-                                    <text id="realtime-current-label"
-                                          class="chart-current-label"
-                                          th:attr="x=${stockDetailPageInfo.priceAxisX + 8},y=${stockDetailPageInfo.latestPriceLineY}"
-                                          dominant-baseline="middle"
-                                          th:text="${stockDetailPageInfo.formatPrice(stockDetailPageInfo.latestClosePrice)}">70,500</text>
-                                    <rect id="realtime-current-badge"
-                                          class="chart-current-badge"
-                                          th:classappend="${stockDetailPageInfo.latestPriceChangeClass}"
-                                          th:attr="x=${stockDetailPageInfo.priceAxisX + 2},y=${stockDetailPageInfo.latestPriceBadgeY},width=74,height=34"></rect>
-                                    <text id="realtime-current-badge-price"
-                                          class="chart-current-badge-text"
-                                          text-anchor="middle"
-                                          th:attr="x=${stockDetailPageInfo.priceAxisX + 39},y=${stockDetailPageInfo.latestPriceBadgePriceY}"
-                                          th:text="${stockDetailPageInfo.formatPrice(stockDetailPageInfo.latestClosePrice)}">70,500</text>
-                                    <text id="realtime-current-badge-rate"
-                                          class="chart-current-badge-text"
-                                          text-anchor="middle"
-                                          th:attr="x=${stockDetailPageInfo.priceAxisX + 39},y=${stockDetailPageInfo.latestPriceBadgeRateY}"
-                                          th:text="${stockDetailPageInfo.formatLatestChangeRate()}">-</text>
-                                </g>
-
-                                <g>
-                                    <rect class="svg-volume-bar"
-                                          th:each="candle : ${stockDetailPageInfo.candles}"
-                                          th:classappend="${candle.candleType}"
-                                          th:attr="x=${candle.volumeX},
-                                                   y=${candle.volumeY},
-                                                   width=${candle.volumeWidth},
-                                                   height=${candle.volumeHeight},
-                                                   fill=${candle.color},
-                                                   opacity=0.45">
-                                        <title th:text="${candle.title}">일봉 데이터</title>
-                                    </rect>
-                                </g>
-
-                                <g>
-                                    <polyline class="ma-line"
-                                              th:each="line : ${stockDetailPageInfo.movingAverageLines}"
-                                              th:classappend="${line.cssClass}"
-                                              th:attr="points=${line.points},stroke=${line.color}"></polyline>
-                                </g>
-
-                                <g>
-                                    <line class="svg-candle-wick"
-                                          th:each="candle : ${stockDetailPageInfo.candles}"
-                                          th:classappend="${candle.candleType}"
-                                          th:attr="x1=${candle.x},
-                                                   y1=${candle.wickY1},
-                                                   x2=${candle.x},
-                                                   y2=${candle.wickY2},
-                                                   stroke=${candle.color},
-                                                   stroke-width=1.2">
-                                        <title th:text="${candle.title}">일봉 데이터</title>
-                                    </line>
-                                    <rect class="svg-candle-body"
-                                          th:each="candle : ${stockDetailPageInfo.candles}"
-                                          th:classappend="${candle.candleType}"
-                                          th:attr="x=${candle.bodyX},
-                                                   y=${candle.bodyY},
-                                                   width=${candle.bodyWidth},
-                                                   height=${candle.bodyHeight},
-                                                   fill=${candle.color},
-                                                   stroke=${candle.color}">
-                                        <title th:text="${candle.title}">일봉 데이터</title>
-                                    </rect>
-                                </g>
-
-                                <g id="realtime-candle-layer"
-                                   class="realtime-candle-layer"
-                                   th:attr="data-stock-id=${stockDetailPageInfo.stock.id},
-                                            data-chart-max-price=${stockDetailPageInfo.maxChartPrice},
-                                            data-chart-min-price=${stockDetailPageInfo.minChartPrice},
-                                            data-price-area-top=${stockDetailPageInfo.priceAreaTop},
-                                            data-price-area-bottom=${stockDetailPageInfo.priceAreaBottom},
-                                            data-volume-area-bottom=${stockDetailPageInfo.volumeAreaBottom},
-                                            data-date-axis-line-y=${stockDetailPageInfo.dateAxisLineY},
-                                            data-price-axis-x=${stockDetailPageInfo.priceAxisX},
-                                            data-realtime-candle-x=${stockDetailPageInfo.realtimeCandleX},
-                                            data-realtime-candle-width=${stockDetailPageInfo.realtimeCandleWidth},
-                                            data-currency-symbol=${stockDetailPageInfo.currencySymbol},
-                                            data-price-decimal-digits=${stockDetailPageInfo.priceDecimalDigits}">
-                                </g>
-
-                                <g class="chart-hover-layer">
-                                    <rect class="chart-hover-target"
-                                          th:each="candle : ${stockDetailPageInfo.candles}"
-                                          th:attr="x=${candle.hoverX},
-                                                   y=${stockDetailPageInfo.priceAreaTop},
-                                                   width=${candle.hoverWidth},
-                                                   height=${stockDetailPageInfo.volumeAreaBottom - stockDetailPageInfo.priceAreaTop},
-                                                   data-date=${#temporals.format(candle.dailyPrice.tradeDate, 'yyyy-MM-dd')},
-                                                   data-open=${stockDetailPageInfo.formatPrice(candle.dailyPrice.openPrice)},
-                                                   data-high=${stockDetailPageInfo.formatPrice(candle.dailyPrice.highPrice)},
-                                                   data-low=${stockDetailPageInfo.formatPrice(candle.dailyPrice.lowPrice)},
-                                                   data-close=${stockDetailPageInfo.formatPrice(candle.dailyPrice.closePrice)},
-                                                   data-volume=${stockDetailPageInfo.formatVolume(candle.dailyPrice.accumulatedVolume)},
-                                                   data-amount=${candle.dailyPrice.accumulatedTradeAmount != null ? stockDetailPageInfo.formatTradeAmount(candle.dailyPrice.accumulatedTradeAmount) : '-'},
-                                                   data-candle-type=${candle.candleType}">
-                                    </rect>
-                                </g>
-
-                                <g class="price-marker"
-                                   th:if="${stockDetailPageInfo.highestPriceMarker != null}"
-                                   th:classappend="${stockDetailPageInfo.highestPriceMarker.cssClass}">
-                                    <line class="price-marker-line"
-                                          th:attr="x1=${stockDetailPageInfo.highestPriceMarker.labelX},y1=${stockDetailPageInfo.highestPriceMarker.labelY},x2=${stockDetailPageInfo.highestPriceMarker.pointX},y2=${stockDetailPageInfo.highestPriceMarker.pointY}"></line>
-                                    <circle class="price-marker-dot"
-                                            r="3"
-                                            th:attr="cx=${stockDetailPageInfo.highestPriceMarker.pointX},cy=${stockDetailPageInfo.highestPriceMarker.pointY}"></circle>
-                                    <text class="price-marker-text"
-                                          dominant-baseline="middle"
-                                          th:attr="x=${stockDetailPageInfo.highestPriceMarker.labelX},y=${stockDetailPageInfo.highestPriceMarker.labelY},text-anchor=${stockDetailPageInfo.highestPriceMarker.textAnchor}"
-                                          th:text="${stockDetailPageInfo.highestPriceMarker.label}">최고 70,000 - 2026.07.02</text>
-                                </g>
-
-                                <g class="price-marker"
-                                   th:if="${stockDetailPageInfo.lowestPriceMarker != null}"
-                                   th:classappend="${stockDetailPageInfo.lowestPriceMarker.cssClass}">
-                                    <line class="price-marker-line"
-                                          th:attr="x1=${stockDetailPageInfo.lowestPriceMarker.labelX},y1=${stockDetailPageInfo.lowestPriceMarker.labelY},x2=${stockDetailPageInfo.lowestPriceMarker.pointX},y2=${stockDetailPageInfo.lowestPriceMarker.pointY}"></line>
-                                    <circle class="price-marker-dot"
-                                            r="3"
-                                            th:attr="cx=${stockDetailPageInfo.lowestPriceMarker.pointX},cy=${stockDetailPageInfo.lowestPriceMarker.pointY}"></circle>
-                                    <text class="price-marker-text"
-                                          dominant-baseline="middle"
-                                          th:attr="x=${stockDetailPageInfo.lowestPriceMarker.labelX},y=${stockDetailPageInfo.lowestPriceMarker.labelY},text-anchor=${stockDetailPageInfo.lowestPriceMarker.textAnchor}"
-                                          th:text="${stockDetailPageInfo.lowestPriceMarker.label}">최저 60,000 - 2026.07.02</text>
-                                </g>
-
-                                <g id="chart-crosshair" class="chart-crosshair" aria-hidden="true">
-                                    <line id="chart-crosshair-vertical"
-                                          class="chart-crosshair-line"
-                                          th:attr="y1=${stockDetailPageInfo.priceAreaTop},y2=${stockDetailPageInfo.volumeAreaBottom}"></line>
-                                    <line id="chart-crosshair-horizontal"
-                                          class="chart-crosshair-line"
-                                          th:attr="x1=0,x2=${stockDetailPageInfo.priceAxisX}"></line>
-                                    <rect id="chart-crosshair-price-badge"
-                                          class="chart-crosshair-badge"
-                                          rx="4"
-                                          th:attr="x=${stockDetailPageInfo.priceAxisX + 2},width=74,height=22"></rect>
-                                    <text id="chart-crosshair-price-text"
-                                          class="chart-crosshair-text"
-                                          text-anchor="middle"
-                                          dominant-baseline="middle"
-                                          th:attr="x=${stockDetailPageInfo.priceAxisX + 39}">0</text>
-                                    <rect id="chart-crosshair-date-badge"
-                                          class="chart-crosshair-badge"
-                                          width="82"
-                                          height="22"
-                                          rx="4"></rect>
-                                    <text id="chart-crosshair-date-text"
-                                          class="chart-crosshair-text"
-                                          text-anchor="middle"
-                                          dominant-baseline="middle">0000-00-00</text>
-                                </g>
-                            </svg>
+                        <div id="stock-chart-root"
+                             class="chart-scroll"
+                             aria-label="마우스 휠로 확대·축소하고 드래그로 이동할 수 있는 일봉 캔들 차트"
+                             th:attr="data-stock-id=${stockDetailPageInfo.stock.id},
+                                      data-currency-symbol=${stockDetailPageInfo.currencySymbol},
+                                      data-price-decimal-digits=${stockDetailPageInfo.priceDecimalDigits},
+                                      data-latest-change-rate=${stockDetailPageInfo.latestChangeRate}">
+                            <canvas id="stock-chart-canvas"
+                                    class="stock-chart-canvas"
+                                    role="img"
+                                    aria-label="일봉 가격, 거래량 및 이동평균선 차트"></canvas>
                             <div id="chart-candle-tooltip" class="chart-tooltip" aria-hidden="true"></div>
+                            <div class="chart-interaction-guide">기본 약 3개월 · 전체 기간까지 축소 · 두 손가락 좌우 이동</div>
+                        </div>
+                        <div id="stock-chart-scrollbar"
+                             class="chart-range-scrollbar"
+                             aria-label="전체 조회 기간에서 차트 표시 구간 이동">
+                            <div id="stock-chart-range-track" class="chart-range-track">
+                                <button id="stock-chart-range-thumb"
+                                        class="chart-range-thumb"
+                                        type="button"
+                                        role="scrollbar"
+                                        aria-label="차트 표시 기간 이동"></button>
+                            </div>
                         </div>
                         <p class="chart-caption">
                             <span th:text="${#temporals.format(stockDetailPageInfo.chartStartDate, 'yyyy-MM-dd')}">2023-07-02</span>
@@ -2574,18 +2763,18 @@
                             <strong th:unless="${stockDetailPageInfo.latestTradeDate != null}">-</strong>
                         </div>
                         <div class="chart-side-item">
-                            <span>표시 일수</span>
-                            <strong th:text="${#lists.size(stockDetailPageInfo.dailyPrices)}">250</strong>
+                            <span>조회 일수</span>
+                            <strong th:text="${#lists.size(stockDetailPageInfo.chartCandles)}">250</strong>
                         </div>
-                        <div class="chart-side-item" th:if="${stockDetailPageInfo.highestPriceMarker != null}">
+                        <div class="chart-side-item" th:if="${stockDetailPageInfo.chartPriceSummary != null}">
                             <span>기간 최고</span>
-                            <strong th:text="${stockDetailPageInfo.highestPriceMarker.price}">70,000</strong>
-                            <small th:text="${stockDetailPageInfo.highestPriceMarker.tradeDate}">2026.07.02</small>
+                            <strong th:text="${stockDetailPageInfo.formatPrice(stockDetailPageInfo.chartPriceSummary.highestPrice)}">70,000</strong>
+                            <small th:text="${#temporals.format(stockDetailPageInfo.chartPriceSummary.highestTradeDate, 'yyyy.MM.dd')}">2026.07.02</small>
                         </div>
-                        <div class="chart-side-item" th:if="${stockDetailPageInfo.lowestPriceMarker != null}">
+                        <div class="chart-side-item" th:if="${stockDetailPageInfo.chartPriceSummary != null}">
                             <span>기간 최저</span>
-                            <strong th:text="${stockDetailPageInfo.lowestPriceMarker.price}">60,000</strong>
-                            <small th:text="${stockDetailPageInfo.lowestPriceMarker.tradeDate}">2026.07.02</small>
+                            <strong th:text="${stockDetailPageInfo.formatPrice(stockDetailPageInfo.chartPriceSummary.lowestPrice)}">60,000</strong>
+                            <small th:text="${#temporals.format(stockDetailPageInfo.chartPriceSummary.lowestTradeDate, 'yyyy.MM.dd')}">2026.07.02</small>
                         </div>
                         <div class="orderbook-section" id="realtime-orderbook">
                             <div class="orderbook-header">
@@ -2837,8 +3026,8 @@
                     </div>
                 </div>
 
-                <div class="metadata-card">
-                    <div class="metadata-header">
+                <details class="metadata-card">
+                    <summary class="metadata-header metadata-summary">
                         <div>
                             <span class="metadata-eyebrow"
                                   th:text="${stockDetailPageInfo.metadataDisplayInfo.sourceLabel}">국내 마스터파일</span>
@@ -2849,36 +3038,47 @@
                                 KIS 종목 마스터파일에서 저장한 부가정보입니다.
                             </p>
                         </div>
-                        <div class="metadata-badges"
-                             th:if="${stockDetailPageInfo.metadataDisplayInfo.hasBadges()}">
-                            <span class="metadata-badge"
-                                  th:each="badge : ${stockDetailPageInfo.metadataDisplayInfo.badges}"
-                                  th:classappend="${badge.type}"
-                                  th:text="${badge.label}">KOSPI200</span>
-                        </div>
-                    </div>
-
-                    <div class="metadata-section-grid"
-                         th:if="${stockDetailPageInfo.metadataDisplayInfo.hasContent()}">
-                        <article class="metadata-section"
-                                 th:each="section : ${stockDetailPageInfo.metadataDisplayInfo.sections}">
-                            <h3 th:text="${section.title}">기업 분류</h3>
-                            <p th:text="${section.description}">마스터파일 기준 분류입니다.</p>
-                            <div class="metadata-list">
-                                <div class="metadata-row" th:each="item : ${section.items}">
-                                    <span class="metadata-label" th:text="${item.label}">업종</span>
-                                    <strong class="metadata-value"
-                                            th:classappend="${#strings.contains(item.label, '업종')} ? ' industry-chip' : ''"
-                                            th:text="${item.value}">반도체</strong>
-                                </div>
+                        <div class="metadata-summary-actions">
+                            <div class="metadata-badges"
+                                 th:if="${stockDetailPageInfo.metadataDisplayInfo.hasBadges()}">
+                                <span class="metadata-badge"
+                                      th:each="badge : ${stockDetailPageInfo.metadataDisplayInfo.badges}"
+                                      th:classappend="${badge.type}"
+                                      th:text="${badge.label}">KOSPI200</span>
                             </div>
-                        </article>
+                            <span class="metadata-toggle">
+                                <span class="metadata-toggle-closed">펼쳐보기</span>
+                                <span class="metadata-toggle-open">접기</span>
+                                <svg viewBox="0 0 20 20" aria-hidden="true">
+                                    <path d="m5 7.5 5 5 5-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                                </svg>
+                            </span>
+                        </div>
+                    </summary>
+
+                    <div class="metadata-content">
+                        <div class="metadata-section-grid"
+                             th:if="${stockDetailPageInfo.metadataDisplayInfo.hasContent()}">
+                            <article class="metadata-section"
+                                     th:each="section : ${stockDetailPageInfo.metadataDisplayInfo.sections}">
+                                <h3 th:text="${section.title}">기업 분류</h3>
+                                <p th:text="${section.description}">마스터파일 기준 분류입니다.</p>
+                                <div class="metadata-list">
+                                    <div class="metadata-row" th:each="item : ${section.items}">
+                                        <span class="metadata-label" th:text="${item.label}">업종</span>
+                                        <strong class="metadata-value"
+                                                th:classappend="${#strings.contains(item.label, '업종')} ? ' industry-chip' : ''"
+                                                th:text="${item.value}">반도체</strong>
+                                    </div>
+                                </div>
+                            </article>
+                        </div>
+                        <p class="metadata-empty"
+                           th:unless="${stockDetailPageInfo.metadataDisplayInfo.hasContent()}">
+                            아직 이 종목에 저장된 마스터파일 부가정보가 없습니다.
+                        </p>
                     </div>
-                    <p class="metadata-empty"
-                       th:unless="${stockDetailPageInfo.metadataDisplayInfo.hasContent()}">
-                        아직 이 종목에 저장된 마스터파일 부가정보가 없습니다.
-                    </p>
-                </div>
+                </details>
             </section>
             </div>
 
@@ -3349,8 +3549,44 @@
                     아래 값은 투자자별 <strong>매매 수급</strong>이며 보유 지분율이나 소유 비율을 의미하지 않습니다.
                     순매수는 매수 수량에서 매도 수량을 뺀 값입니다.
                 </p>
-                <div class="financial-card"
-                     th:if="${stockDetailPageInfo.domesticDetailInfo.supported and stockDetailPageInfo.domesticDetailInfo.hasInvestorTrades()}">
+                <article class="financial-chart-card"
+                         th:if="${stockDetailPageInfo.domesticDetailInfo.supported and stockDetailPageInfo.domesticDetailInfo.hasInvestorTrades()}">
+                    <div class="financial-chart-heading">
+                        <div>
+                            <h3>투자자별 순매수 추이</h3>
+                            <p>0보다 위는 순매수, 아래는 순매도입니다. 세 투자자 유형의 일별 방향과 변화를 비교합니다.</p>
+                        </div>
+                        <span class="financial-chart-unit">주</span>
+                    </div>
+                    <div id="investor-flow-chart-data" hidden>
+                        <i th:each="trade : ${stockDetailPageInfo.domesticDetailInfo.investorTrades}"
+                           th:attr="data-trade-date=${trade.tradeDate},
+                                    data-foreign-net=${trade.foreignNetQuantity},
+                                    data-personal-net=${trade.personalNetQuantity},
+                                    data-institution-net=${trade.institutionNetQuantity}"></i>
+                    </div>
+                    <svg id="investor-flow-chart" class="financial-svg-chart"
+                         viewBox="0 0 960 360" role="img"
+                         aria-labelledby="investor-flow-chart-title investor-flow-chart-desc">
+                        <title id="investor-flow-chart-title">외국인, 개인, 기관의 일별 순매수 추이</title>
+                        <desc id="investor-flow-chart-desc">거래일별 외국인, 개인, 기관의 순매수 수량을 0 기준 꺾은선그래프로 비교합니다.</desc>
+                    </svg>
+                    <div id="investor-flow-chart-tooltip"
+                         class="chart-tooltip financial-chart-tooltip"
+                         aria-hidden="true"></div>
+                    <div class="financial-chart-legend" aria-hidden="true">
+                        <span><i class="foreign"></i>외국인 순매수</span>
+                        <span><i class="personal"></i>개인 순매수</span>
+                        <span><i class="institution"></i>기관 순매수</span>
+                    </div>
+                </article>
+                <details class="financial-card investor-table-card"
+                         th:if="${stockDetailPageInfo.domesticDetailInfo.supported and stockDetailPageInfo.domesticDetailInfo.hasInvestorTrades()}">
+                    <summary>
+                        <span>투자자별 일별 매매 상세</span>
+                        <span class="investor-table-summary-meta"
+                              th:text="|최근 ${#lists.size(stockDetailPageInfo.domesticDetailInfo.investorTrades)}거래일|">최근 20거래일</span>
+                    </summary>
                     <div class="table-scroll">
                         <table class="detail-data-table">
                             <thead>
@@ -3388,7 +3624,95 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
+                </details>
+                <section class="short-loan-section"
+                         th:if="${stockDetailPageInfo.domesticDetailInfo.supported and stockDetailPageInfo.domesticDetailInfo.hasShortLoanData()}">
+                    <div class="short-loan-toolbar">
+                        <div>
+                            <h2 class="concept-label">
+                                <span>공매도·대차 현황</span>
+                                <button class="concept-help-button concept-help-button--compact" type="button"
+                                        data-concept-code="SHORT_SELLING_AND_SECURITIES_LENDING"
+                                        data-concept-title="공매도·대차 현황"
+                                        aria-haspopup="dialog" aria-controls="stock-concept-dialog"
+                                        aria-label="공매도와 대차 개념 보기">개념 익히기</button>
+                            </h2>
+                            <p>최근 3개월을 저장하고 기본 1개월 추이를 표시합니다. 거래량과 잔고는 서로 다른 지표입니다.</p>
+                        </div>
+                        <div class="short-loan-periods" role="group" aria-label="공매도 대차 조회 기간">
+                            <button class="short-loan-period-button active" type="button" data-short-loan-period="31">1개월</button>
+                            <button class="short-loan-period-button" type="button" data-short-loan-period="93">3개월</button>
+                        </div>
+                    </div>
+                    <p class="investor-notice">
+                        공매도 거래비중은 해당 거래일의 실제 공매도 체결 흐름이고,
+                        대차잔고는 빌린 뒤 아직 반환되지 않은 누적 수량입니다. 두 값을 동일하게 해석하면 안 됩니다.
+                    </p>
+                    <div id="short-sale-chart-data" hidden>
+                        <i th:each="row : ${stockDetailPageInfo.domesticDetailInfo.shortSales}"
+                           th:attr="data-trade-date=${row.tradeDate},data-value=${row.shortSaleVolumeRatio}"></i>
+                    </div>
+                    <div id="loan-balance-chart-data" hidden>
+                        <i th:each="row : ${stockDetailPageInfo.domesticDetailInfo.loanTransactions}"
+                           th:attr="data-trade-date=${row.tradeDate},data-value=${row.loanBalanceQuantity}"></i>
+                    </div>
+                    <div id="short-sale-quantity-chart-data" hidden>
+                        <i th:each="row : ${stockDetailPageInfo.domesticDetailInfo.shortSales}"
+                           th:attr="data-trade-date=${row.tradeDate},data-value=${row.shortSaleQuantity}"></i>
+                    </div>
+                    <div id="loan-activity-chart-data" hidden>
+                        <i th:each="row : ${stockDetailPageInfo.domesticDetailInfo.loanTransactions}"
+                           th:attr="data-trade-date=${row.tradeDate},data-new-quantity=${row.newLoanQuantity},data-redeemed-quantity=${row.redeemedLoanQuantity}"></i>
+                    </div>
+                    <div class="short-loan-chart-grid">
+                        <article class="financial-chart-card">
+                            <div class="financial-chart-heading">
+                                <div><h3>공매도 거래비중</h3><p>전체 거래량 중 공매도 수량이 차지한 일별 비율입니다.</p></div>
+                                <span class="financial-chart-unit">%</span>
+                            </div>
+                            <svg id="short-sale-chart" class="financial-svg-chart" viewBox="0 0 460 280"
+                                 role="img" aria-label="일별 공매도 거래비중 추이"></svg>
+                            <div id="short-sale-chart-tooltip" class="chart-tooltip financial-chart-tooltip"
+                                 role="status" aria-live="polite" aria-hidden="true"></div>
+                        </article>
+                        <article class="financial-chart-card">
+                            <div class="financial-chart-heading">
+                                <div><h3>대차잔고</h3><p>빌린 뒤 아직 반환되지 않은 주식 수량의 일별 추이입니다.</p></div>
+                                <span class="financial-chart-unit">주</span>
+                            </div>
+                            <svg id="loan-balance-chart" class="financial-svg-chart" viewBox="0 0 460 280"
+                                 role="img" aria-label="일별 대차잔고 추이"></svg>
+                            <div id="loan-balance-chart-tooltip" class="chart-tooltip financial-chart-tooltip"
+                                 role="status" aria-live="polite" aria-hidden="true"></div>
+                        </article>
+                    </div>
+                    <div class="short-loan-chart-grid">
+                        <article class="financial-chart-card">
+                            <div class="financial-chart-heading">
+                                <div><h3>공매도 거래수량</h3><p>해당 거래일에 실제로 체결된 공매도 주식 수량입니다.</p></div>
+                                <span class="financial-chart-unit">주</span>
+                            </div>
+                            <svg id="short-sale-quantity-chart" class="financial-svg-chart" viewBox="0 0 460 280"
+                                 role="img" aria-label="일별 공매도 거래수량 추이"></svg>
+                            <div id="short-sale-quantity-chart-tooltip" class="chart-tooltip financial-chart-tooltip"
+                                 role="status" aria-live="polite" aria-hidden="true"></div>
+                        </article>
+                        <article class="financial-chart-card">
+                            <div class="financial-chart-heading">
+                                <div><h3>대차 체결·상환 수량</h3><p>새로 빌린 수량과 반환한 수량을 같은 날짜 기준으로 비교합니다.</p></div>
+                                <span class="financial-chart-unit">주</span>
+                            </div>
+                            <svg id="loan-activity-chart" class="financial-svg-chart" viewBox="0 0 460 280"
+                                 role="img" aria-label="일별 대차 체결 및 상환 수량 추이"></svg>
+                            <div class="financial-chart-legend" aria-hidden="true">
+                                <span><i class="loan-new"></i>신규 대차</span>
+                                <span><i class="loan-redeemed"></i>상환</span>
+                            </div>
+                            <div id="loan-activity-chart-tooltip" class="chart-tooltip financial-chart-tooltip"
+                                 role="status" aria-live="polite" aria-hidden="true"></div>
+                        </article>
+                    </div>
+                </section>
                 <p class="detail-empty-state"
                    th:if="${stockDetailPageInfo.domesticDetailInfo.supported and !stockDetailPageInfo.domesticDetailInfo.hasInvestorTrades()}">
                     저장된 투자자별 매매 수급 데이터가 없습니다.
@@ -4035,11 +4359,655 @@
             });
         };
 
+        const renderInvestorFlowChart = () => {
+            const svg = document.getElementById('investor-flow-chart');
+            const tooltip = document.getElementById('investor-flow-chart-tooltip');
+            if (!resetSvg(svg, '외국인, 개인, 기관의 일별 순매수 추이',
+                '거래일별 외국인, 개인, 기관의 순매수 수량을 0 기준 꺾은선그래프로 비교합니다.')) {
+                return;
+            }
+            const points = chronological(readPoints('investor-flow-chart-data', (data) => ({
+                period: data.tradeDate,
+                foreign: parseNumber(data.foreignNet),
+                personal: parseNumber(data.personalNet),
+                institution: parseNumber(data.institutionNet)
+            })));
+            const valueDomain = domain(points.flatMap((point) => [
+                point.foreign,
+                point.personal,
+                point.institution
+            ]));
+            if (!valueDomain || points.length === 0) {
+                renderEmpty(svg, '표시할 투자자별 순매수 데이터가 없습니다.', 960, 360);
+                return;
+            }
+
+            const plotLeft = 76;
+            const plotRight = 940;
+            const plotTop = 28;
+            const plotBottom = 294;
+            const x = (index) => points.length === 1
+                ? (plotLeft + plotRight) / 2
+                : plotLeft + ((plotRight - plotLeft) * index / (points.length - 1));
+            const y = (value) => scale(value, valueDomain.maximum, valueDomain.minimum, plotTop, plotBottom);
+            const zeroY = y(0);
+
+            for (let gridIndex = 0; gridIndex <= 4; gridIndex += 1) {
+                const gridValue = valueDomain.maximum
+                    - ((valueDomain.maximum - valueDomain.minimum) * gridIndex / 4);
+                const gridY = y(gridValue);
+                addLine(svg, plotLeft, gridY, plotRight, gridY,
+                    Math.abs(gridValue) < (valueDomain.maximum - valueDomain.minimum) / 100
+                        ? 'financial-svg-zero'
+                        : 'financial-svg-grid');
+                addText(svg, compactNumber(gridValue), plotLeft - 10, gridY + 4, '', 'end');
+            }
+            addLine(svg, plotLeft, zeroY, plotRight, zeroY, 'financial-svg-zero');
+            addText(svg, '0', plotLeft - 10, zeroY + 4, 'financial-svg-title', 'end');
+
+            const labelInterval = Math.max(1, Math.ceil(points.length / 8));
+            points.forEach((point, index) => {
+                if (index % labelInterval !== 0 && index !== points.length - 1) {
+                    return;
+                }
+                const dateParts = point.period.split('-');
+                const dateLabel = dateParts.length >= 3
+                    ? `${dateParts[1]}.${dateParts[2]}`
+                    : point.period;
+                addText(svg, dateLabel, x(index), 326, '', 'middle');
+            });
+
+            const series = [
+                {key: 'foreign', label: '외국인', className: 'financial-svg-series--foreign'},
+                {key: 'personal', label: '개인', className: 'financial-svg-series--personal'},
+                {key: 'institution', label: '기관', className: 'financial-svg-series--institution'}
+            ];
+            series.forEach((item) => {
+                const pathParts = [];
+                points.forEach((point, index) => {
+                    const value = point[item.key];
+                    if (value === null) {
+                        return;
+                    }
+                    pathParts.push(`${pathParts.length === 0 ? 'M' : 'L'} ${x(index)} ${y(value)}`);
+                });
+                if (pathParts.length > 1) {
+                    svg.appendChild(svgElement('path', {
+                        d: pathParts.join(' '),
+                        class: `${item.className} financial-svg-line`
+                    }));
+                }
+                points.forEach((point, index) => {
+                    const value = point[item.key];
+                    if (value === null) {
+                        return;
+                    }
+                    const circle = svgElement('circle', {
+                        cx: x(index),
+                        cy: y(value),
+                        r: 3.4,
+                        class: item.className
+                    });
+                    const title = svgElement('title');
+                    title.textContent = `${point.period} ${item.label} 순매수 ${value > 0 ? '+' : ''}${exactNumber(value)}주`;
+                    circle.appendChild(title);
+                    svg.appendChild(circle);
+                });
+            });
+
+            const extremaCandidates = points.flatMap((point, pointIndex) => series
+                .filter((item) => point[item.key] !== null)
+                .map((item) => ({
+                    point,
+                    pointIndex,
+                    series: item,
+                    value: point[item.key]
+                })));
+            if (extremaCandidates.length > 0) {
+                const maximum = extremaCandidates.reduce((current, candidate) =>
+                    candidate.value > current.value ? candidate : current);
+                const minimum = extremaCandidates.reduce((current, candidate) =>
+                    candidate.value < current.value ? candidate : current);
+                addInvestorExtrema(maximum, 'maximum', '최고');
+                if (minimum !== maximum) {
+                    addInvestorExtrema(minimum, 'minimum', '최저');
+                }
+            }
+
+            function addInvestorExtrema(extrema, className, label) {
+                const pointX = x(extrema.pointIndex);
+                const pointY = y(extrema.value);
+                const textAnchor = pointX > (plotLeft + plotRight) / 2 ? 'end' : 'start';
+                const textX = pointX + (textAnchor === 'end' ? -9 : 9);
+                const textY = className === 'maximum'
+                    ? Math.max(plotTop + 12, pointY - 10)
+                    : Math.min(plotBottom - 4, pointY + 17);
+                svg.appendChild(svgElement('circle', {
+                    cx: pointX,
+                    cy: pointY,
+                    r: 5.5,
+                    class: `financial-svg-extrema-point ${className}`
+                }));
+                const dateParts = extrema.point.period.split('-');
+                const dateLabel = dateParts.length >= 3
+                    ? `${dateParts[1]}.${dateParts[2]}`
+                    : extrema.point.period;
+                addText(svg,
+                    `${label} ${extrema.series.label} ${extrema.value > 0 ? '+' : ''}${compactNumber(extrema.value)}주 · ${dateLabel}`,
+                    textX,
+                    textY,
+                    `financial-svg-extrema-label ${className}`,
+                    textAnchor);
+            }
+
+            if (!tooltip) {
+                return;
+            }
+
+            const hoverLine = svgElement('line', {
+                y1: plotTop,
+                y2: plotBottom,
+                class: 'financial-svg-hover-line'
+            });
+            const focusPoints = series.map((item) => svgElement('circle', {
+                r: 6,
+                class: `${item.className} financial-svg-focus-point`
+            }));
+            const hoverLayer = svgElement('g', {
+                'aria-hidden': 'true',
+                visibility: 'hidden'
+            });
+            hoverLayer.append(hoverLine, ...focusPoints);
+            svg.appendChild(hoverLayer);
+            svg.appendChild(svgElement('rect', {
+                x: plotLeft,
+                y: plotTop,
+                width: plotRight - plotLeft,
+                height: plotBottom - plotTop,
+                class: 'financial-svg-hover-target'
+            }));
+
+            svg.onmousemove = (event) => {
+                const point = toLocalSvgPoint(svg, event);
+                if (!point || point.x < plotLeft || point.x > plotRight
+                    || point.y < plotTop || point.y > plotBottom) {
+                    hideInvestorFlowTooltip();
+                    return;
+                }
+
+                const ratio = points.length === 1
+                    ? 0
+                    : (point.x - plotLeft) / (plotRight - plotLeft);
+                const pointIndex = clampNumber(
+                    Math.round(ratio * (points.length - 1)),
+                    0,
+                    points.length - 1
+                );
+                const selected = points[pointIndex];
+                const selectedX = x(pointIndex);
+                hoverLine.setAttribute('x1', String(selectedX));
+                hoverLine.setAttribute('x2', String(selectedX));
+                focusPoints.forEach((focusPoint, index) => {
+                    const value = selected[series[index].key];
+                    focusPoint.setAttribute('cx', String(selectedX));
+                    if (value === null) {
+                        focusPoint.setAttribute('visibility', 'hidden');
+                        return;
+                    }
+                    focusPoint.removeAttribute('visibility');
+                    focusPoint.setAttribute('cy', String(y(value)));
+                });
+                hoverLayer.removeAttribute('visibility');
+                showInvestorFlowTooltip(selected, event);
+            };
+            svg.onmouseleave = hideInvestorFlowTooltip;
+
+            function showInvestorFlowTooltip(point, event) {
+                tooltip.innerHTML = `
+                    <div class="chart-tooltip-title">${escapeTooltipText(point.period)}</div>
+                    ${investorTooltipRow('외국인 순매수', point.foreign, 'foreign')}
+                    ${investorTooltipRow('개인 순매수', point.personal, 'personal')}
+                    ${investorTooltipRow('기관 순매수', point.institution, 'institution')}
+                `;
+                tooltip.classList.add('visible');
+                tooltip.setAttribute('aria-hidden', 'false');
+                const card = svg.closest('.financial-chart-card');
+                if (!card) {
+                    return;
+                }
+                const cardRect = card.getBoundingClientRect();
+                const cursorX = event.clientX - cardRect.left;
+                const cursorY = event.clientY - cardRect.top;
+                let left = cursorX + 16;
+                let top = cursorY + 16;
+                if (left + tooltip.offsetWidth > card.clientWidth - 10) {
+                    left = cursorX - tooltip.offsetWidth - 16;
+                }
+                if (top + tooltip.offsetHeight > card.clientHeight - 10) {
+                    top = cursorY - tooltip.offsetHeight - 16;
+                }
+                tooltip.style.left = `${Math.max(10, left)}px`;
+                tooltip.style.top = `${Math.max(10, top)}px`;
+            }
+
+            function hideInvestorFlowTooltip() {
+                hoverLayer.setAttribute('visibility', 'hidden');
+                tooltip.classList.remove('visible');
+                tooltip.setAttribute('aria-hidden', 'true');
+            }
+        };
+
+        const investorTooltipRow = (label, value, className) => {
+            const formattedValue = value === null
+                ? '-'
+                : `${value > 0 ? '+' : ''}${exactNumber(value)}주`;
+            return `
+                <div class="chart-tooltip-row">
+                    <span class="chart-tooltip-label">${escapeTooltipText(label)}</span>
+                    <span class="chart-tooltip-value ${className}">${escapeTooltipText(formattedValue)}</span>
+                </div>
+            `;
+        };
+
+        const toLocalSvgPoint = (svg, event) => {
+            const matrix = svg.getScreenCTM();
+            if (!matrix) {
+                return null;
+            }
+            const point = svg.createSVGPoint();
+            point.x = event.clientX;
+            point.y = event.clientY;
+            return point.matrixTransform(matrix.inverse());
+        };
+
+        const clampNumber = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value));
+
+        const escapeTooltipText = (value) => String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+
+        const shortLoanSourcePoints = (dataId) => chronological(readPoints(dataId, (data) => ({
+            period: data.tradeDate,
+            value: parseNumber(data.value)
+        }))).filter((point) => point.period && point.value !== null);
+
+        const loanActivitySourcePoints = () => chronological(readPoints('loan-activity-chart-data', (data) => ({
+            period: data.tradeDate,
+            newQuantity: parseNumber(data.newQuantity),
+            redeemedQuantity: parseNumber(data.redeemedQuantity)
+        }))).filter((point) => point.period
+            && (point.newQuantity !== null || point.redeemedQuantity !== null));
+
+        const filterRecentDays = (points, days) => {
+            if (points.length === 0) {
+                return points;
+            }
+            const latest = new Date(`${points[points.length - 1].period}T00:00:00`);
+            const cutoff = new Date(latest);
+            cutoff.setDate(cutoff.getDate() - days + 1);
+            return points.filter((point) => new Date(`${point.period}T00:00:00`) >= cutoff);
+        };
+
+        const renderShortLoanTrend = (svgId, dataId, days, options) => {
+            const svg = document.getElementById(svgId);
+            if (!resetSvg(svg, options.title, options.description)) {
+                return;
+            }
+            const tooltip = document.getElementById(options.tooltipId);
+            hideFinancialTooltip(tooltip);
+            svg.onmousemove = null;
+            svg.onmouseleave = null;
+            const points = filterRecentDays(shortLoanSourcePoints(dataId), days);
+            const valueDomain = domain(points.map((point) => point.value), false);
+            if (!valueDomain || points.length === 0) {
+                renderEmpty(svg, '표시할 데이터가 없습니다.', 460, 280);
+                return;
+            }
+            const plotLeft = 58;
+            const plotRight = 442;
+            const plotTop = 25;
+            const plotBottom = 218;
+            const x = (index) => points.length === 1
+                ? (plotLeft + plotRight) / 2
+                : plotLeft + ((plotRight - plotLeft) * index / (points.length - 1));
+            const y = (value) => scale(value, valueDomain.maximum, valueDomain.minimum, plotTop, plotBottom);
+            [0, 0.5, 1].forEach((ratio) => {
+                const value = valueDomain.maximum - (valueDomain.maximum - valueDomain.minimum) * ratio;
+                const gridY = y(value);
+                addLine(svg, plotLeft, gridY, plotRight, gridY, 'financial-svg-grid');
+                addText(svg, options.formatAxis(value), plotLeft - 8, gridY + 4, '', 'end');
+            });
+            const path = points.map((point, index) =>
+                `${index === 0 ? 'M' : 'L'} ${x(index)} ${y(point.value)}`).join(' ');
+            svg.appendChild(svgElement('path', {
+                d: path,
+                class: `${options.className} financial-svg-line`
+            }));
+            const labelInterval = Math.max(1, Math.ceil(points.length / 5));
+            points.forEach((point, index) => {
+                const circle = svgElement('circle', {
+                    cx: x(index), cy: y(point.value), r: 3.5, class: options.className
+                });
+                const title = svgElement('title');
+                title.textContent = `${point.period} ${options.tooltipLabel} ${options.formatValue(point.value)}`;
+                circle.appendChild(title);
+                svg.appendChild(circle);
+                if (index % labelInterval === 0 || index === points.length - 1) {
+                    const parts = point.period.split('-');
+                    addText(svg, `${parts[1]}.${parts[2]}`, x(index), 249, '', 'middle');
+                }
+            });
+            const maximum = points.reduce((current, point) => point.value > current.value ? point : current);
+            const minimum = points.reduce((current, point) => point.value < current.value ? point : current);
+            [
+                {point: maximum, label: '최고', css: 'maximum', offset: -10},
+                {point: minimum, label: '최저', css: 'minimum', offset: 17}
+            ].forEach((item) => {
+                const index = points.indexOf(item.point);
+                const pointX = x(index);
+                const pointY = y(item.point.value);
+                svg.appendChild(svgElement('circle', {
+                    cx: pointX, cy: pointY, r: 5.5,
+                    class: `financial-svg-extrema-point ${item.css}`
+                }));
+                const anchor = pointX > (plotLeft + plotRight) / 2 ? 'end' : 'start';
+                addText(svg, `${item.label} ${options.formatValue(item.point.value)}`,
+                    pointX + (anchor === 'end' ? -8 : 8),
+                    Math.max(plotTop + 11, Math.min(plotBottom - 2, pointY + item.offset)),
+                    `financial-svg-extrema-label ${item.css}`, anchor);
+            });
+            attachSingleSeriesTooltip(svg, tooltip, points, x, y, plotLeft, plotRight, plotTop,
+                plotBottom, options);
+        };
+
+        const renderLoanActivityTrend = (days) => {
+            const svg = document.getElementById('loan-activity-chart');
+            if (!resetSvg(svg, '일별 대차 체결·상환 수량',
+                '선택 기간에 새로 빌린 수량과 반환한 수량을 비교합니다.')) {
+                return;
+            }
+            const tooltip = document.getElementById('loan-activity-chart-tooltip');
+            hideFinancialTooltip(tooltip);
+            svg.onmousemove = null;
+            svg.onmouseleave = null;
+            const points = filterRecentDays(loanActivitySourcePoints(), days);
+            const series = [
+                {key: 'newQuantity', label: '신규 대차', className: 'financial-svg-series--loan-new',
+                    tooltipClass: 'loan-new'},
+                {key: 'redeemedQuantity', label: '상환', className: 'financial-svg-series--loan-redeemed',
+                    tooltipClass: 'loan-redeemed'}
+            ];
+            const values = points.flatMap((point) => series.map((item) => point[item.key]));
+            const valueDomain = domain(values, true);
+            if (!valueDomain || points.length === 0) {
+                renderEmpty(svg, '표시할 데이터가 없습니다.', 460, 280);
+                return;
+            }
+            const plotLeft = 58;
+            const plotRight = 442;
+            const plotTop = 25;
+            const plotBottom = 218;
+            const x = (index) => points.length === 1
+                ? (plotLeft + plotRight) / 2
+                : plotLeft + ((plotRight - plotLeft) * index / (points.length - 1));
+            const y = (value) => scale(value, valueDomain.maximum, valueDomain.minimum, plotTop, plotBottom);
+            [0, 0.5, 1].forEach((ratio) => {
+                const value = valueDomain.maximum - (valueDomain.maximum - valueDomain.minimum) * ratio;
+                const gridY = y(value);
+                addLine(svg, plotLeft, gridY, plotRight, gridY, 'financial-svg-grid');
+                addText(svg, compactNumber(value), plotLeft - 8, gridY + 4, '', 'end');
+            });
+            const labelInterval = Math.max(1, Math.ceil(points.length / 5));
+            points.forEach((point, index) => {
+                if (index % labelInterval === 0 || index === points.length - 1) {
+                    const parts = point.period.split('-');
+                    addText(svg, `${parts[1]}.${parts[2]}`, x(index), 249, '', 'middle');
+                }
+            });
+            series.forEach((item) => {
+                const pathParts = [];
+                points.forEach((point, index) => {
+                    const value = point[item.key];
+                    if (value === null) {
+                        return;
+                    }
+                    pathParts.push(`${pathParts.length === 0 ? 'M' : 'L'} ${x(index)} ${y(value)}`);
+                });
+                if (pathParts.length > 1) {
+                    svg.appendChild(svgElement('path', {
+                        d: pathParts.join(' '),
+                        class: `${item.className} financial-svg-line`
+                    }));
+                }
+                points.forEach((point, index) => {
+                    const value = point[item.key];
+                    if (value === null) {
+                        return;
+                    }
+                    svg.appendChild(svgElement('circle', {
+                        cx: x(index), cy: y(value), r: 3.5, class: item.className
+                    }));
+                });
+            });
+
+            const extremaCandidates = points.flatMap((point, pointIndex) => series
+                .filter((item) => point[item.key] !== null)
+                .map((item) => ({point, pointIndex, series: item, value: point[item.key]})));
+            if (extremaCandidates.length > 0) {
+                const maximum = extremaCandidates.reduce((current, candidate) =>
+                    candidate.value > current.value ? candidate : current);
+                const minimum = extremaCandidates.reduce((current, candidate) =>
+                    candidate.value < current.value ? candidate : current);
+                addLoanActivityExtrema(maximum, 'maximum', '최고');
+                if (minimum !== maximum) {
+                    addLoanActivityExtrema(minimum, 'minimum', '최저');
+                }
+            }
+
+            if (!tooltip) {
+                return;
+            }
+            const hoverLine = svgElement('line', {
+                y1: plotTop, y2: plotBottom, class: 'financial-svg-hover-line'
+            });
+            const focusPoints = series.map((item) => svgElement('circle', {
+                r: 6, class: `${item.className} financial-svg-focus-point`
+            }));
+            const hoverLayer = svgElement('g', {'aria-hidden': 'true', visibility: 'hidden'});
+            hoverLayer.append(hoverLine, ...focusPoints);
+            svg.appendChild(hoverLayer);
+            svg.appendChild(svgElement('rect', {
+                x: plotLeft, y: plotTop, width: plotRight - plotLeft,
+                height: plotBottom - plotTop, class: 'financial-svg-hover-target'
+            }));
+            svg.onmousemove = (event) => {
+                const localPoint = toLocalSvgPoint(svg, event);
+                if (!localPoint || localPoint.x < plotLeft || localPoint.x > plotRight
+                    || localPoint.y < plotTop || localPoint.y > plotBottom) {
+                    hideFinancialTooltip(tooltip, hoverLayer);
+                    return;
+                }
+                const ratio = points.length === 1 ? 0 : (localPoint.x - plotLeft) / (plotRight - plotLeft);
+                const pointIndex = clampNumber(Math.round(ratio * (points.length - 1)), 0, points.length - 1);
+                const selected = points[pointIndex];
+                const selectedX = x(pointIndex);
+                hoverLine.setAttribute('x1', String(selectedX));
+                hoverLine.setAttribute('x2', String(selectedX));
+                focusPoints.forEach((focusPoint, index) => {
+                    const value = selected[series[index].key];
+                    focusPoint.setAttribute('cx', String(selectedX));
+                    if (value === null) {
+                        focusPoint.setAttribute('visibility', 'hidden');
+                    } else {
+                        focusPoint.removeAttribute('visibility');
+                        focusPoint.setAttribute('cy', String(y(value)));
+                    }
+                });
+                hoverLayer.removeAttribute('visibility');
+                tooltip.innerHTML = `
+                    <div class="chart-tooltip-title">${escapeTooltipText(shortLoanDateLabel(selected.period))}</div>
+                    ${shortLoanTooltipRow('신규 대차', selected.newQuantity, 'loan-new', (value) => `${exactNumber(value)}주`)}
+                    ${shortLoanTooltipRow('상환', selected.redeemedQuantity, 'loan-redeemed', (value) => `${exactNumber(value)}주`)}
+                `;
+                showFinancialTooltip(svg, tooltip, event);
+            };
+            svg.onmouseleave = () => hideFinancialTooltip(tooltip, hoverLayer);
+
+            function addLoanActivityExtrema(extrema, className, label) {
+                const pointX = x(extrema.pointIndex);
+                const pointY = y(extrema.value);
+                const anchor = pointX > (plotLeft + plotRight) / 2 ? 'end' : 'start';
+                svg.appendChild(svgElement('circle', {
+                    cx: pointX, cy: pointY, r: 5.5,
+                    class: `financial-svg-extrema-point ${className}`
+                }));
+                addText(svg, `${label} ${extrema.series.label} ${compactNumber(extrema.value)}주`,
+                    pointX + (anchor === 'end' ? -8 : 8),
+                    className === 'maximum' ? Math.max(plotTop + 11, pointY - 10) : Math.min(plotBottom - 2, pointY + 17),
+                    `financial-svg-extrema-label ${className}`, anchor);
+            }
+        };
+
+        const attachSingleSeriesTooltip = (svg, tooltip, points, x, y, plotLeft, plotRight,
+                                            plotTop, plotBottom, options) => {
+            if (!tooltip) {
+                return;
+            }
+            const hoverLine = svgElement('line', {
+                y1: plotTop, y2: plotBottom, class: 'financial-svg-hover-line'
+            });
+            const focusPoint = svgElement('circle', {
+                r: 6, class: `${options.className} financial-svg-focus-point`
+            });
+            const hoverLayer = svgElement('g', {'aria-hidden': 'true', visibility: 'hidden'});
+            hoverLayer.append(hoverLine, focusPoint);
+            svg.appendChild(hoverLayer);
+            svg.appendChild(svgElement('rect', {
+                x: plotLeft, y: plotTop, width: plotRight - plotLeft,
+                height: plotBottom - plotTop, class: 'financial-svg-hover-target'
+            }));
+            svg.onmousemove = (event) => {
+                const localPoint = toLocalSvgPoint(svg, event);
+                if (!localPoint || localPoint.x < plotLeft || localPoint.x > plotRight
+                    || localPoint.y < plotTop || localPoint.y > plotBottom) {
+                    hideFinancialTooltip(tooltip, hoverLayer);
+                    return;
+                }
+                const ratio = points.length === 1 ? 0 : (localPoint.x - plotLeft) / (plotRight - plotLeft);
+                const pointIndex = clampNumber(Math.round(ratio * (points.length - 1)), 0, points.length - 1);
+                const selected = points[pointIndex];
+                const selectedX = x(pointIndex);
+                hoverLine.setAttribute('x1', String(selectedX));
+                hoverLine.setAttribute('x2', String(selectedX));
+                focusPoint.setAttribute('cx', String(selectedX));
+                focusPoint.setAttribute('cy', String(y(selected.value)));
+                hoverLayer.removeAttribute('visibility');
+                tooltip.innerHTML = `
+                    <div class="chart-tooltip-title">${escapeTooltipText(shortLoanDateLabel(selected.period))}</div>
+                    ${shortLoanTooltipRow(options.tooltipLabel, selected.value, options.tooltipClass, options.formatValue)}
+                `;
+                showFinancialTooltip(svg, tooltip, event);
+            };
+            svg.onmouseleave = () => hideFinancialTooltip(tooltip, hoverLayer);
+        };
+
+        const shortLoanTooltipRow = (label, value, className, formatter) => `
+            <div class="chart-tooltip-row">
+                <span class="chart-tooltip-label">${escapeTooltipText(label)}</span>
+                <span class="chart-tooltip-value ${className}">${escapeTooltipText(value === null ? '-' : formatter(value))}</span>
+            </div>
+        `;
+
+        const shortLoanDateLabel = (period) => {
+            const date = new Date(`${period}T00:00:00`);
+            const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+            return Number.isNaN(date.getTime()) ? period : `${period}(${weekdays[date.getDay()]})`;
+        };
+
+        const showFinancialTooltip = (svg, tooltip, event) => {
+            tooltip.classList.add('visible');
+            tooltip.setAttribute('aria-hidden', 'false');
+            const card = svg.closest('.financial-chart-card');
+            if (!card) {
+                return;
+            }
+            const cardRect = card.getBoundingClientRect();
+            const cursorX = event.clientX - cardRect.left;
+            const cursorY = event.clientY - cardRect.top;
+            let left = cursorX + 16;
+            let top = cursorY + 16;
+            if (left + tooltip.offsetWidth > card.clientWidth - 10) {
+                left = cursorX - tooltip.offsetWidth - 16;
+            }
+            if (top + tooltip.offsetHeight > card.clientHeight - 10) {
+                top = cursorY - tooltip.offsetHeight - 16;
+            }
+            tooltip.style.left = `${Math.max(10, left)}px`;
+            tooltip.style.top = `${Math.max(10, top)}px`;
+        };
+
+        const hideFinancialTooltip = (tooltip, hoverLayer) => {
+            if (hoverLayer) {
+                hoverLayer.setAttribute('visibility', 'hidden');
+            }
+            if (tooltip) {
+                tooltip.classList.remove('visible');
+                tooltip.setAttribute('aria-hidden', 'true');
+            }
+        };
+
+        const renderShortLoanCharts = (days = 31) => {
+            renderShortLoanTrend('short-sale-chart', 'short-sale-chart-data', days, {
+                title: '일별 공매도 거래비중',
+                description: '선택 기간의 전체 거래량 대비 공매도 거래량 비율입니다.',
+                tooltipLabel: '공매도 거래비중',
+                tooltipId: 'short-sale-chart-tooltip',
+                tooltipClass: 'short-sale',
+                className: 'financial-svg-series--short-sale',
+                formatAxis: (value) => `${value.toFixed(1)}%`,
+                formatValue: (value) => `${value.toFixed(2)}%`
+            });
+            renderShortLoanTrend('loan-balance-chart', 'loan-balance-chart-data', days, {
+                title: '일별 대차잔고',
+                description: '선택 기간의 아직 반환되지 않은 대차 주식 수량입니다.',
+                tooltipLabel: '대차잔고',
+                tooltipId: 'loan-balance-chart-tooltip',
+                tooltipClass: 'loan-balance',
+                className: 'financial-svg-series--loan-balance',
+                formatAxis: compactNumber,
+                formatValue: (value) => `${exactNumber(value)}주`
+            });
+            renderShortLoanTrend('short-sale-quantity-chart', 'short-sale-quantity-chart-data', days, {
+                title: '일별 공매도 거래수량',
+                description: '선택 기간에 실제로 체결된 공매도 주식 수량입니다.',
+                tooltipLabel: '공매도 거래수량',
+                tooltipId: 'short-sale-quantity-chart-tooltip',
+                tooltipClass: 'short-sale',
+                className: 'financial-svg-series--short-sale',
+                formatAxis: compactNumber,
+                formatValue: (value) => `${exactNumber(value)}주`
+            });
+            renderLoanActivityTrend(days);
+        };
+
+        document.querySelectorAll('[data-short-loan-period]').forEach((button) => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('[data-short-loan-period]').forEach((item) =>
+                    item.classList.toggle('active', item === button));
+                renderShortLoanCharts(Number(button.dataset.shortLoanPeriod) || 31);
+            });
+        });
+
         renderIncomeChart();
         renderGrowthChart();
         renderAnnualizedChart();
         renderRatioChart();
         renderBalanceChart();
+        renderInvestorFlowChart();
+        renderShortLoanCharts();
     })();
 </script>
 <script>
@@ -4298,6 +5266,8 @@
                     renderParagraphs(caution, concept.caution);
                     detailsSection.open = true;
                     bakerySection.open = false;
+                    bakerySection.hidden = !concept.bakeryExample
+                        || concept.conceptCode === 'DAILY_CANDLE_CHART';
                     cautionSection.open = false;
                     status.hidden = true;
                     content.hidden = false;
@@ -4334,6 +5304,1082 @@
                 lastTrigger.focus();
             }
         });
+    })();
+</script>
+<script th:inline="javascript">
+    (() => {
+        const root = document.getElementById('stock-chart-root');
+        const canvas = document.getElementById('stock-chart-canvas');
+        const tooltip = document.getElementById('chart-candle-tooltip');
+        const rangeScrollbar = document.getElementById('stock-chart-scrollbar');
+        const rangeTrack = document.getElementById('stock-chart-range-track');
+        const rangeThumb = document.getElementById('stock-chart-range-thumb');
+        if (!root || !canvas || !tooltip) {
+            return;
+        }
+
+        const initialCandles = /*[[${stockDetailPageInfo.chartCandles}]]*/ [];
+        const candles = initialCandles.map(normalizeCandle).filter(Boolean);
+        if (candles.length === 0) {
+            return;
+        }
+
+        const DEFAULT_VISIBLE_CANDLES = 63;
+        const initialVisibleCount = defaultVisibleCount();
+        const context = canvas.getContext('2d');
+        const stockId = Number(root.dataset.stockId);
+        const currencySymbol = root.dataset.currencySymbol || '';
+        const priceDecimalDigits = Number(root.dataset.priceDecimalDigits || 0);
+        const state = {
+            visibleCount: initialVisibleCount,
+            rightIndex: candles.length - 1,
+            dragging: false,
+            dragStartX: 0,
+            dragStartRightIndex: candles.length - 1,
+            dragOffsetX: 0,
+            wheelPanRemainder: 0,
+            rangeDragging: false,
+            hover: null,
+            layout: null,
+            latestChangeRate: toNumber(root.dataset.latestChangeRate)
+        };
+        const movingAverages = new Map([
+            [5, calculateMovingAverage(5)],
+            [20, calculateMovingAverage(20)],
+            [60, calculateMovingAverage(60)]
+        ]);
+
+        resizeCanvas();
+        new ResizeObserver(resizeCanvas).observe(root);
+        attachChartInteractions();
+        attachRangeScrollbar();
+        connectRealtime();
+
+        function resizeCanvas() {
+            const width = Math.max(720, Math.floor(root.clientWidth));
+            const height = Math.max(420, Math.floor(root.clientHeight));
+            const pixelRatio = Math.max(1, window.devicePixelRatio || 1);
+            canvas.width = Math.floor(width * pixelRatio);
+            canvas.height = Math.floor(height * pixelRatio);
+            canvas.style.width = `${width}px`;
+            canvas.style.height = `${height}px`;
+            context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+            state.layout = createLayout(width, height);
+            renderChart();
+        }
+
+        function createLayout(width, height) {
+            return {
+                width,
+                height,
+                plotLeft: 22,
+                plotRight: width - 88,
+                priceTop: 24,
+                priceBottom: Math.round(height * 0.66),
+                volumeTop: Math.round(height * 0.72),
+                volumeBottom: height - 48,
+                dateAxisY: height - 22
+            };
+        }
+
+        function renderChart() {
+            const layout = state.layout;
+            if (!layout) {
+                return;
+            }
+
+            context.clearRect(0, 0, layout.width, layout.height);
+            const range = visibleRange();
+            const visibleCandles = candles.slice(range.start, range.end + 1);
+            if (visibleCandles.length === 0) {
+                return;
+            }
+
+            const scale = createScale(visibleCandles, layout);
+            drawGrid(layout, scale, range);
+            drawVolume(layout, scale, range);
+            drawMovingAverages(layout, scale, range);
+            drawCandles(layout, scale, range);
+            drawExtremes(layout, scale, range);
+            drawLatestPrice(layout, scale, range);
+            if (state.hover && !state.dragging) {
+                drawCrosshair(layout, scale, state.hover);
+            }
+            updateRangeScrollbar();
+        }
+
+        function visibleRange() {
+            const visibleCount = Math.max(1, Math.min(state.visibleCount, candles.length));
+            const minimumRightIndex = visibleCount - 1;
+            state.rightIndex = clamp(state.rightIndex, minimumRightIndex, candles.length - 1);
+            return {
+                start: state.rightIndex - visibleCount + 1,
+                end: state.rightIndex,
+                count: visibleCount
+            };
+        }
+
+        function createScale(visibleCandles, layout) {
+            const rawMaximum = Math.max(...visibleCandles.map(candle => candle.highPrice));
+            const rawMinimum = Math.min(...visibleCandles.map(candle => candle.lowPrice));
+            const rawRange = Math.max(1, rawMaximum - rawMinimum);
+            const padding = rawRange * 0.06;
+            const maxPrice = rawMaximum + padding;
+            const minPrice = Math.max(0, rawMinimum - padding);
+            const maxVolume = Math.max(1, ...visibleCandles.map(candle => candle.accumulatedVolume || 0));
+            return {
+                maxPrice,
+                minPrice,
+                maxVolume,
+                priceY(price) {
+                    return layout.priceTop
+                        + ((maxPrice - price) / Math.max(1, maxPrice - minPrice))
+                        * (layout.priceBottom - layout.priceTop);
+                },
+                volumeY(volume) {
+                    return layout.volumeBottom
+                        - ((volume || 0) / maxVolume) * (layout.volumeBottom - layout.volumeTop);
+                }
+            };
+        }
+
+        function candleX(localIndex, range, layout) {
+            if (range.count <= 1) {
+                return layout.plotLeft + state.dragOffsetX;
+            }
+            return layout.plotLeft
+                + localIndex * (layout.plotRight - layout.plotLeft) / (range.count - 1)
+                + state.dragOffsetX;
+        }
+
+        function candleStep(range, layout) {
+            return range.count <= 1
+                ? layout.plotRight - layout.plotLeft
+                : (layout.plotRight - layout.plotLeft) / (range.count - 1);
+        }
+
+        function drawGrid(layout, scale, range) {
+            context.save();
+            context.lineWidth = 1;
+            context.font = '12px sans-serif';
+            context.textBaseline = 'middle';
+
+            for (let index = 0; index < 5; index += 1) {
+                const ratio = index / 4;
+                const y = layout.priceTop + ratio * (layout.priceBottom - layout.priceTop);
+                const value = scale.maxPrice - ratio * (scale.maxPrice - scale.minPrice);
+                context.strokeStyle = '#e5e7eb';
+                drawLine(layout.plotLeft, y, layout.plotRight, y);
+                context.fillStyle = '#64748b';
+                context.fillText(formatPrice(value), layout.plotRight + 9, y);
+            }
+
+            context.strokeStyle = '#cbd5e1';
+            drawLine(layout.plotLeft, layout.volumeTop - 14, layout.plotRight, layout.volumeTop - 14);
+            drawLine(layout.plotRight, layout.priceTop, layout.plotRight, layout.volumeBottom);
+            drawLine(layout.plotLeft, layout.volumeBottom + 12, layout.plotRight, layout.volumeBottom + 12);
+
+            const labelCount = Math.min(5, range.count);
+            context.textBaseline = 'alphabetic';
+            for (let labelIndex = 0; labelIndex < labelCount; labelIndex += 1) {
+                const localIndex = labelCount === 1
+                    ? 0
+                    : Math.round((range.count - 1) * labelIndex / (labelCount - 1));
+                const candle = candles[range.start + localIndex];
+                const x = candleX(localIndex, range, layout);
+                context.strokeStyle = '#eef2f7';
+                drawLine(x, layout.priceTop, x, layout.volumeBottom + 12);
+                context.fillStyle = '#64748b';
+                context.textAlign = labelIndex === 0 ? 'left' : labelIndex === labelCount - 1 ? 'right' : 'center';
+                context.fillText(candle.tradeDate.replaceAll('-', '.'), x, layout.dateAxisY);
+            }
+            context.restore();
+        }
+
+        function drawVolume(layout, scale, range) {
+            const width = Math.max(1, Math.min(11, candleStep(range, layout) * 0.68));
+            context.save();
+            context.globalAlpha = 0.4;
+            for (let index = 0; index < range.count; index += 1) {
+                const candle = candles[range.start + index];
+                const x = candleX(index, range, layout);
+                const y = scale.volumeY(candle.accumulatedVolume);
+                context.fillStyle = candleColor(candle);
+                context.fillRect(x - width / 2, y, width, Math.max(1, layout.volumeBottom - y));
+            }
+            context.restore();
+        }
+
+        function drawMovingAverages(layout, scale, range) {
+            const definitions = [
+                { period: 5, color: '#f59e0b' },
+                { period: 20, color: '#10b981' },
+                { period: 60, color: '#7c3aed' }
+            ];
+            context.save();
+            context.lineWidth = 1.6;
+            context.lineJoin = 'round';
+            context.lineCap = 'round';
+            definitions.forEach(definition => {
+                const values = movingAverages.get(definition.period);
+                context.beginPath();
+                let started = false;
+                for (let index = 0; index < range.count; index += 1) {
+                    const average = values[range.start + index];
+                    if (!isFinite(average)) {
+                        continue;
+                    }
+                    const x = candleX(index, range, layout);
+                    const y = scale.priceY(average);
+                    if (!started) {
+                        context.moveTo(x, y);
+                        started = true;
+                    } else {
+                        context.lineTo(x, y);
+                    }
+                }
+                if (started) {
+                    context.strokeStyle = definition.color;
+                    context.stroke();
+                }
+            });
+            context.restore();
+        }
+
+        function drawCandles(layout, scale, range) {
+            const width = Math.max(1.5, Math.min(10, candleStep(range, layout) * 0.64));
+            context.save();
+            for (let index = 0; index < range.count; index += 1) {
+                const candle = candles[range.start + index];
+                const x = candleX(index, range, layout);
+                const openY = scale.priceY(candle.openPrice);
+                const closeY = scale.priceY(candle.closePrice);
+                const color = candleColor(candle);
+                context.strokeStyle = color;
+                context.fillStyle = color;
+                context.lineWidth = Math.max(1, Math.min(1.6, width * 0.2));
+                drawLine(x, scale.priceY(candle.highPrice), x, scale.priceY(candle.lowPrice));
+                context.fillRect(
+                    x - width / 2,
+                    Math.min(openY, closeY),
+                    width,
+                    Math.max(1.5, Math.abs(openY - closeY))
+                );
+            }
+            context.restore();
+        }
+
+        function drawExtremes(layout, scale, range) {
+            let highestIndex = range.start;
+            let lowestIndex = range.start;
+            for (let index = range.start + 1; index <= range.end; index += 1) {
+                if (candles[index].highPrice > candles[highestIndex].highPrice) {
+                    highestIndex = index;
+                }
+                if (candles[index].lowPrice < candles[lowestIndex].lowPrice) {
+                    lowestIndex = index;
+                }
+            }
+            drawExtremeMarker(highestIndex, true, layout, scale, range);
+            drawExtremeMarker(lowestIndex, false, layout, scale, range);
+        }
+
+        function drawExtremeMarker(dataIndex, highest, layout, scale, range) {
+            const candle = candles[dataIndex];
+            const latestClosePrice = candles[candles.length - 1]?.closePrice;
+            const localIndex = dataIndex - range.start;
+            const x = candleX(localIndex, range, layout);
+            const price = highest ? candle.highPrice : candle.lowPrice;
+            const changeRate = calculateChangeRate(latestClosePrice, price);
+            const y = scale.priceY(price);
+            const placeLeft = x > (layout.plotLeft + layout.plotRight) / 2;
+            const labelX = x + (placeLeft ? -10 : 10);
+            const labelY = clamp(y + (highest ? -14 : 20), layout.priceTop + 14, layout.priceBottom - 8);
+            context.save();
+            context.fillStyle = highest ? '#dc2626' : '#2563eb';
+            context.font = '700 10px sans-serif';
+            context.textAlign = placeLeft ? 'right' : 'left';
+            context.fillText(
+                `${highest ? '최고' : '최저'} ${formatPrice(price)}`
+                + `${isFinite(changeRate) ? ` (${formatSignedRate(changeRate, rateDirection(changeRate))})` : ''}`
+                + ` · ${formatChartTradeDate(candle.tradeDate)}`,
+                labelX,
+                labelY
+            );
+            context.beginPath();
+            context.arc(x, y, 2.7, 0, Math.PI * 2);
+            context.fill();
+            context.restore();
+        }
+
+        function drawLatestPrice(layout, scale, range) {
+            const latest = candles[candles.length - 1];
+            if (!latest
+                || range.end !== candles.length - 1
+                || latest.closePrice < scale.minPrice
+                || latest.closePrice > scale.maxPrice) {
+                return;
+            }
+            const y = scale.priceY(latest.closePrice);
+            const direction = candleDirection(latest);
+            const color = direction === 'bullish' ? '#dc2626' : direction === 'bearish' ? '#2563eb' : '#64748b';
+            context.save();
+            context.strokeStyle = color;
+            context.setLineDash([5, 5]);
+            drawLine(layout.plotLeft, y, layout.plotRight, y);
+            context.setLineDash([]);
+            context.fillStyle = color;
+            roundRect(layout.plotRight + 3, y - 18, 82, 36, 5);
+            context.fill();
+            context.fillStyle = '#ffffff';
+            context.font = '700 11px sans-serif';
+            context.textAlign = 'center';
+            context.fillText(formatPrice(latest.closePrice), layout.plotRight + 44, y - 4);
+            context.fillText(formatSignedRate(state.latestChangeRate, direction), layout.plotRight + 44, y + 11);
+            context.restore();
+        }
+
+        function drawCrosshair(layout, scale, hover) {
+            const range = visibleRange();
+            const localIndex = hover.dataIndex - range.start;
+            if (localIndex < 0 || localIndex >= range.count) {
+                return;
+            }
+            const x = candleX(localIndex, range, layout);
+            const y = clamp(hover.y, layout.priceTop, layout.priceBottom);
+            const cursorPrice = scale.maxPrice
+                - ((y - layout.priceTop) / (layout.priceBottom - layout.priceTop))
+                * (scale.maxPrice - scale.minPrice);
+            context.save();
+            context.strokeStyle = 'rgba(51, 65, 85, 0.75)';
+            context.lineWidth = 1;
+            context.setLineDash([4, 4]);
+            drawLine(x, layout.priceTop, x, layout.volumeBottom);
+            drawLine(layout.plotLeft, y, layout.plotRight, y);
+            context.setLineDash([]);
+            context.fillStyle = '#0f172a';
+            roundRect(layout.plotRight + 3, y - 11, 82, 22, 4);
+            context.fill();
+            context.fillStyle = '#ffffff';
+            context.font = '700 11px sans-serif';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(formatPrice(cursorPrice), layout.plotRight + 44, y);
+            const date = candles[hover.dataIndex].tradeDate;
+            const badgeWidth = 86;
+            const badgeX = clamp(x - badgeWidth / 2, layout.plotLeft, layout.plotRight - badgeWidth);
+            roundRect(badgeX, layout.volumeBottom + 15, badgeWidth, 22, 4);
+            context.fill();
+            context.fillStyle = '#ffffff';
+            context.fillText(date, badgeX + badgeWidth / 2, layout.volumeBottom + 26);
+            context.restore();
+        }
+
+        function attachChartInteractions() {
+            root.addEventListener('wheel', event => {
+                const layout = state.layout;
+                if (!layout || event.offsetX < layout.plotLeft || event.offsetX > layout.plotRight) {
+                    return;
+                }
+                event.preventDefault();
+
+                if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+                    panWithTrackpad(event.deltaX);
+                    return;
+                }
+
+                state.wheelPanRemainder = 0;
+                const oldRange = visibleRange();
+                const minimumCount = Math.min(20, candles.length);
+                const factor = event.deltaY < 0 ? 0.82 : 1.22;
+                const newCount = clamp(
+                    Math.round(oldRange.count * factor),
+                    minimumCount,
+                    candles.length
+                );
+                if (newCount === oldRange.count) {
+                    return;
+                }
+                const ratio = clamp(
+                    (event.offsetX - layout.plotLeft) / (layout.plotRight - layout.plotLeft),
+                    0,
+                    1
+                );
+                const anchorIndex = oldRange.start + ratio * (oldRange.count - 1);
+                const newStart = anchorIndex - ratio * (newCount - 1);
+                state.visibleCount = newCount;
+                state.rightIndex = Math.round(newStart + newCount - 1);
+                state.hover = null;
+                hideTooltip();
+                renderChart();
+            }, { passive: false });
+
+            root.addEventListener('pointerdown', event => {
+                if (event.button !== 0 || !isInsidePlot(event.offsetX, event.offsetY)) {
+                    return;
+                }
+                state.dragging = true;
+                state.dragStartX = event.clientX;
+                state.dragStartRightIndex = state.rightIndex;
+                state.dragOffsetX = 0;
+                state.hover = null;
+                root.classList.add('dragging');
+                root.setPointerCapture(event.pointerId);
+                hideTooltip();
+                event.preventDefault();
+            });
+
+            root.addEventListener('pointermove', event => {
+                if (state.dragging) {
+                    const layout = state.layout;
+                    const range = visibleRange();
+                    const step = Math.max(1, candleStep(range, layout));
+                    const dragDistance = event.clientX - state.dragStartX;
+                    const candleShift = Math.trunc(dragDistance / step);
+                    const desiredRightIndex = state.dragStartRightIndex - candleShift;
+                    const minimumRightIndex = range.count - 1;
+                    const nextRightIndex = clamp(
+                        desiredRightIndex,
+                        minimumRightIndex,
+                        candles.length - 1
+                    );
+                    const appliedShift = state.dragStartRightIndex - nextRightIndex;
+                    const remainingPixels = dragDistance - appliedShift * step;
+                    const reachedBoundary = nextRightIndex !== desiredRightIndex;
+                    state.rightIndex = nextRightIndex;
+                    state.dragOffsetX = reachedBoundary ? remainingPixels * 0.2 : remainingPixels;
+                    event.preventDefault();
+                    renderChart();
+                    return;
+                }
+                updateHover(event);
+            });
+
+            root.addEventListener('pointerup', finishDrag);
+            root.addEventListener('pointercancel', finishDrag);
+            root.addEventListener('pointerleave', event => {
+                if (!state.dragging) {
+                    state.hover = null;
+                    hideTooltip();
+                    renderChart();
+                }
+            });
+            root.addEventListener('dblclick', () => {
+                state.visibleCount = defaultVisibleCount();
+                state.rightIndex = candles.length - 1;
+                state.hover = null;
+                hideTooltip();
+                renderChart();
+            });
+        }
+
+        function panWithTrackpad(deltaX) {
+            const layout = state.layout;
+            const range = visibleRange();
+            const step = Math.max(1, candleStep(range, layout));
+            const accumulatedDelta = state.wheelPanRemainder + deltaX;
+            const candleShift = Math.trunc(accumulatedDelta / step);
+            state.wheelPanRemainder = accumulatedDelta - candleShift * step;
+            if (candleShift === 0) {
+                return;
+            }
+
+            const nextRightIndex = clamp(
+                state.rightIndex + candleShift,
+                range.count - 1,
+                candles.length - 1
+            );
+            if (nextRightIndex === state.rightIndex) {
+                state.wheelPanRemainder = 0;
+                return;
+            }
+
+            state.rightIndex = nextRightIndex;
+            state.dragOffsetX = 0;
+            state.hover = null;
+            hideTooltip();
+            renderChart();
+        }
+
+        function attachRangeScrollbar() {
+            if (!rangeScrollbar || !rangeTrack || !rangeThumb) {
+                return;
+            }
+
+            let dragStartX = 0;
+            let dragStartIndex = 0;
+
+            rangeThumb.addEventListener('pointerdown', event => {
+                if (event.button !== 0) {
+                    return;
+                }
+                state.rangeDragging = true;
+                dragStartX = event.clientX;
+                dragStartIndex = visibleRange().start;
+                rangeThumb.classList.add('dragging');
+                rangeThumb.setPointerCapture(event.pointerId);
+                event.preventDefault();
+            });
+
+            rangeThumb.addEventListener('pointermove', event => {
+                if (!state.rangeDragging) {
+                    return;
+                }
+                moveRangeThumb(dragStartIndex, event.clientX - dragStartX);
+                event.preventDefault();
+            });
+
+            rangeThumb.addEventListener('pointerup', finishRangeDrag);
+            rangeThumb.addEventListener('pointercancel', finishRangeDrag);
+
+            rangeTrack.addEventListener('pointerdown', event => {
+                if (event.target === rangeThumb || event.button !== 0) {
+                    return;
+                }
+                const range = visibleRange();
+                const maximumStartIndex = candles.length - range.count;
+                const trackRect = rangeTrack.getBoundingClientRect();
+                const thumbWidth = rangeThumb.getBoundingClientRect().width;
+                const movableWidth = Math.max(1, trackRect.width - thumbWidth);
+                const targetLeft = clamp(
+                    event.clientX - trackRect.left - thumbWidth / 2,
+                    0,
+                    movableWidth
+                );
+                const nextStartIndex = Math.round((targetLeft / movableWidth) * maximumStartIndex);
+                showRangeFrom(nextStartIndex, range.count);
+                event.preventDefault();
+            });
+
+            rangeThumb.addEventListener('keydown', event => {
+                if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+                    return;
+                }
+                const range = visibleRange();
+                const direction = event.key === 'ArrowLeft' ? -1 : 1;
+                showRangeFrom(range.start + direction, range.count);
+                event.preventDefault();
+            });
+        }
+
+        function moveRangeThumb(startIndex, dragDistance) {
+            const range = visibleRange();
+            const maximumStartIndex = candles.length - range.count;
+            if (maximumStartIndex <= 0) {
+                return;
+            }
+            const trackWidth = rangeTrack.clientWidth;
+            const thumbWidth = rangeThumb.getBoundingClientRect().width;
+            const movableWidth = Math.max(1, trackWidth - thumbWidth);
+            const candleShift = Math.round((dragDistance / movableWidth) * maximumStartIndex);
+            showRangeFrom(startIndex + candleShift, range.count);
+        }
+
+        function showRangeFrom(startIndex, visibleCount) {
+            const maximumStartIndex = Math.max(0, candles.length - visibleCount);
+            const nextStartIndex = clamp(startIndex, 0, maximumStartIndex);
+            state.rightIndex = nextStartIndex + visibleCount - 1;
+            state.dragOffsetX = 0;
+            state.hover = null;
+            hideTooltip();
+            renderChart();
+        }
+
+        function finishRangeDrag(event) {
+            if (!state.rangeDragging) {
+                return;
+            }
+            state.rangeDragging = false;
+            rangeThumb.classList.remove('dragging');
+            if (rangeThumb.hasPointerCapture(event.pointerId)) {
+                rangeThumb.releasePointerCapture(event.pointerId);
+            }
+        }
+
+        function updateRangeScrollbar() {
+            if (!rangeScrollbar || !rangeTrack || !rangeThumb) {
+                return;
+            }
+            const range = visibleRange();
+            rangeScrollbar.hidden = false;
+            const trackWidth = rangeTrack.clientWidth;
+            if (trackWidth <= 0) {
+                return;
+            }
+            const thumbWidth = Math.min(
+                trackWidth,
+                Math.max(48, trackWidth * (range.count / candles.length))
+            );
+            const movableWidth = Math.max(0, trackWidth - thumbWidth);
+            const maximumStartIndex = candles.length - range.count;
+            const left = maximumStartIndex === 0
+                ? 0
+                : movableWidth * (range.start / maximumStartIndex);
+
+            rangeThumb.style.width = `${thumbWidth}px`;
+            rangeThumb.style.transform = `translateX(${left}px)`;
+            rangeThumb.setAttribute('aria-valuemin', '0');
+            rangeThumb.setAttribute('aria-valuemax', String(maximumStartIndex));
+            rangeThumb.setAttribute('aria-valuenow', String(range.start));
+            rangeThumb.setAttribute(
+                'aria-valuetext',
+                `${candles[range.start].tradeDate}부터 ${candles[range.end].tradeDate}까지`
+            );
+        }
+
+        function finishDrag(event) {
+            if (!state.dragging) {
+                return;
+            }
+            state.dragging = false;
+            state.dragOffsetX = 0;
+            root.classList.remove('dragging');
+            if (root.hasPointerCapture(event.pointerId)) {
+                root.releasePointerCapture(event.pointerId);
+            }
+            renderChart();
+        }
+
+        function updateHover(event) {
+            if (!isInsidePlot(event.offsetX, event.offsetY)) {
+                state.hover = null;
+                hideTooltip();
+                renderChart();
+                return;
+            }
+            const range = visibleRange();
+            const ratio = clamp(
+                (event.offsetX - state.layout.plotLeft) / (state.layout.plotRight - state.layout.plotLeft),
+                0,
+                1
+            );
+            const localIndex = Math.round(ratio * (range.count - 1));
+            const dataIndex = range.start + localIndex;
+            state.hover = { dataIndex, y: event.offsetY };
+            showTooltip(candles[dataIndex], dataIndex, event);
+            renderChart();
+        }
+
+        function isInsidePlot(x, y) {
+            const layout = state.layout;
+            return layout
+                && x >= layout.plotLeft
+                && x <= layout.plotRight
+                && y >= layout.priceTop
+                && y <= layout.volumeBottom;
+        }
+
+        function showTooltip(candle, dataIndex, event) {
+            const previous = dataIndex > 0 ? candles[dataIndex - 1] : null;
+            const previousClose = previous?.closePrice;
+            const openRate = calculateChangeRate(candle.openPrice, previousClose);
+            const highRate = calculateChangeRate(candle.highPrice, previousClose);
+            const lowRate = calculateChangeRate(candle.lowPrice, previousClose);
+            const closeRate = calculateChangeRate(candle.closePrice, previousClose);
+            const volumeRate = calculateChangeRate(candle.accumulatedVolume, previous?.accumulatedVolume);
+            const amountRate = calculateChangeRate(candle.accumulatedTradeAmount, previous?.accumulatedTradeAmount);
+            tooltip.innerHTML = `
+                <div class="chart-tooltip-title">${escapeHtml(formatTradeDateWithWeekday(candle.tradeDate))}</div>
+                ${tooltipRow('시가', formatMetricWithRate(formatPrice(candle.openPrice), openRate), rateDirection(openRate))}
+                ${tooltipRow('고가', formatMetricWithRate(formatPrice(candle.highPrice), highRate), rateDirection(highRate))}
+                ${tooltipRow('저가', formatMetricWithRate(formatPrice(candle.lowPrice), lowRate), rateDirection(lowRate))}
+                ${tooltipRow('종가', formatMetricWithRate(formatPrice(candle.closePrice), closeRate), rateDirection(closeRate))}
+                ${tooltipRow('거래량', formatMetricWithRate(formatVolume(candle.accumulatedVolume), volumeRate), rateDirection(volumeRate))}
+                ${tooltipRow('거래대금', formatMetricWithRate(formatAmount(candle.accumulatedTradeAmount), amountRate), rateDirection(amountRate))}
+            `;
+            tooltip.classList.add('visible');
+            tooltip.setAttribute('aria-hidden', 'false');
+            const margin = 14;
+            let left = event.offsetX + 16;
+            let top = event.offsetY + 16;
+            if (left + tooltip.offsetWidth > root.clientWidth - margin) {
+                left = event.offsetX - tooltip.offsetWidth - 16;
+            }
+            if (top + tooltip.offsetHeight > root.clientHeight - margin) {
+                top = event.offsetY - tooltip.offsetHeight - 16;
+            }
+            tooltip.style.left = `${Math.max(margin, left)}px`;
+            tooltip.style.top = `${Math.max(margin, top)}px`;
+        }
+
+        function hideTooltip() {
+            tooltip.classList.remove('visible');
+            tooltip.setAttribute('aria-hidden', 'true');
+        }
+
+        function connectRealtime() {
+            if (!window.WebSocket || !stockId) {
+                return;
+            }
+            const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+            const socket = new WebSocket(`${protocol}://${window.location.host}/ws/stocks`);
+            socket.addEventListener('open', () => socket.send(JSON.stringify({
+                type: 'SUBSCRIBE_STOCK',
+                stockId
+            })));
+            socket.addEventListener('message', event => {
+                const message = parseMessage(event.data);
+                if (!message || Number(message.stockId) !== stockId) {
+                    return;
+                }
+                if (message.type === 'STOCK_TRADE') {
+                    updateRealtimePrice(message);
+                    updateRealtimeCandle(message);
+                } else if (message.type === 'STOCK_ORDERBOOK') {
+                    updateRealtimeOrderbook(message);
+                }
+            });
+            window.addEventListener('pagehide', () => {
+                if (socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ type: 'UNSUBSCRIBE_STOCK', stockId }));
+                    socket.close();
+                }
+            });
+        }
+
+        function updateRealtimePrice(message) {
+            const currentPrice = toNumber(message.currentPrice);
+            if (!isFinite(currentPrice)) {
+                return;
+            }
+            const changeAmount = toNumber(message.change);
+            const changeRate = toNumber(message.changeRate);
+            const direction = resolvePriceDirection(changeAmount, changeRate, message.changeSign);
+            state.latestChangeRate = changeRate;
+            setText('realtime-chart-price', formatPrice(currentPrice));
+            setText('realtime-change-amount', formatSignedPrice(changeAmount, direction));
+            setText('realtime-change-rate', formatSignedRate(changeRate, direction));
+            setText('kis-current-price', formatPrice(currentPrice));
+            const changeElement = document.getElementById('realtime-price-change');
+            if (changeElement) {
+                changeElement.setAttribute('class', `chart-price-change ${direction}`);
+            }
+            const kisChangeRate = document.getElementById('kis-current-change-rate');
+            if (kisChangeRate) {
+                kisChangeRate.textContent = `전일 대비 ${formatSignedRate(changeRate, direction)}`;
+                kisChangeRate.setAttribute('class', direction === 'bullish'
+                    ? 'positive'
+                    : direction === 'bearish' ? 'negative' : 'neutral');
+            }
+            setText('realtime-trade-time', formatTradeTimeDisplay(message.tradeTime, message.koreaTradeTime));
+            const marketSession = document.getElementById('realtime-market-session');
+            if (marketSession && message.marketSession) {
+                marketSession.textContent = message.marketSession;
+                marketSession.title = message.marketSessionCode
+                    ? `KIS 장 구분 코드: ${message.marketSessionCode}`
+                    : '';
+            }
+        }
+
+        function updateRealtimeCandle(message) {
+            const currentPrice = toNumber(message.currentPrice);
+            const openPrice = fallbackNumber(message.openPrice, currentPrice);
+            const highPrice = Math.max(fallbackNumber(message.highPrice, currentPrice), openPrice, currentPrice);
+            const lowPrice = Math.min(fallbackNumber(message.lowPrice, currentPrice), openPrice, currentPrice);
+            if (![currentPrice, openPrice, highPrice, lowPrice].every(isFinite)) {
+                return;
+            }
+            const tradeDate = formatTradeDate(message.tradeDate) || candles[candles.length - 1].tradeDate;
+            const oldLastIndex = candles.length - 1;
+            const wasFollowingLatest = state.rightIndex === oldLastIndex;
+            const realtime = {
+                tradeDate,
+                openPrice,
+                highPrice,
+                lowPrice,
+                closePrice: currentPrice,
+                accumulatedVolume: fallbackNumber(message.accumulatedVolume, 0),
+                accumulatedTradeAmount: toNumber(message.accumulatedTradeAmount)
+            };
+            if (candles[oldLastIndex].tradeDate === tradeDate) {
+                candles[oldLastIndex] = realtime;
+            } else {
+                candles.push(realtime);
+                movingAverages.forEach((values, period) => values.push(calculateLatestAverage(period)));
+                if (state.visibleCount === oldLastIndex + 1) {
+                    state.visibleCount = candles.length;
+                }
+                if (wasFollowingLatest) {
+                    state.rightIndex = candles.length - 1;
+                }
+            }
+            recalculateLatestMovingAverages();
+            renderChart();
+        }
+
+        function updateRealtimeOrderbook(message) {
+            const body = document.getElementById('realtime-orderbook-body');
+            if (!body) {
+                return;
+            }
+            const askLevels = Array.isArray(message.askLevels) ? message.askLevels : [];
+            const bidLevels = Array.isArray(message.bidLevels) ? message.bidLevels : [];
+            const maxLevel = Math.max(askLevels.length, bidLevels.length);
+            if (maxLevel === 0) {
+                body.innerHTML = '<tr><td class="orderbook-empty" colspan="4">호가 없음</td></tr>';
+                return;
+            }
+            const rows = [];
+            for (let index = 0; index < maxLevel; index += 1) {
+                const ask = askLevels[index] || {};
+                const bid = bidLevels[index] || {};
+                rows.push(`
+                    <tr>
+                        <td class="orderbook-price ask">${escapeHtml(formatOptionalPrice(ask.price))}</td>
+                        <td>${escapeHtml(formatOptionalQuantity(ask.quantity))}</td>
+                        <td class="orderbook-price bid">${escapeHtml(formatOptionalPrice(bid.price))}</td>
+                        <td>${escapeHtml(formatOptionalQuantity(bid.quantity))}</td>
+                    </tr>
+                `);
+            }
+            body.innerHTML = rows.join('');
+            setText('realtime-orderbook-time', formatTradeTime(message.quoteTime));
+            setText('realtime-total-ask-quantity', formatOptionalQuantity(message.totalAskQuantity));
+            setText('realtime-total-bid-quantity', formatOptionalQuantity(message.totalBidQuantity));
+        }
+
+        function defaultVisibleCount() {
+            return Math.min(DEFAULT_VISIBLE_CANDLES, candles.length);
+        }
+
+        function calculateMovingAverage(period) {
+            const result = Array(candles.length).fill(NaN);
+            let sum = 0;
+            for (let index = 0; index < candles.length; index += 1) {
+                sum += candles[index].closePrice;
+                if (index >= period) {
+                    sum -= candles[index - period].closePrice;
+                }
+                if (index >= period - 1) {
+                    result[index] = sum / period;
+                }
+            }
+            return result;
+        }
+
+        function calculateLatestAverage(period) {
+            if (candles.length < period) {
+                return NaN;
+            }
+            let sum = 0;
+            for (let index = candles.length - period; index < candles.length; index += 1) {
+                sum += candles[index].closePrice;
+            }
+            return sum / period;
+        }
+
+        function recalculateLatestMovingAverages() {
+            movingAverages.forEach((values, period) => {
+                values[candles.length - 1] = calculateLatestAverage(period);
+            });
+        }
+
+        function normalizeCandle(raw) {
+            const candle = {
+                tradeDate: String(raw.tradeDate || ''),
+                openPrice: toNumber(raw.openPrice),
+                highPrice: toNumber(raw.highPrice),
+                lowPrice: toNumber(raw.lowPrice),
+                closePrice: toNumber(raw.closePrice),
+                accumulatedVolume: fallbackNumber(raw.accumulatedVolume, 0),
+                accumulatedTradeAmount: toNumber(raw.accumulatedTradeAmount)
+            };
+            return candle.tradeDate
+                && [candle.openPrice, candle.highPrice, candle.lowPrice, candle.closePrice].every(isFinite)
+                ? candle
+                : null;
+        }
+
+        function candleDirection(candle) {
+            if (candle.closePrice > candle.openPrice) {
+                return 'bullish';
+            }
+            if (candle.closePrice < candle.openPrice) {
+                return 'bearish';
+            }
+            return 'flat';
+        }
+
+        function candleColor(candle) {
+            const direction = candleDirection(candle);
+            return direction === 'bullish' ? '#dc2626' : direction === 'bearish' ? '#2563eb' : '#64748b';
+        }
+
+        function drawLine(x1, y1, x2, y2) {
+            context.beginPath();
+            context.moveTo(x1, y1);
+            context.lineTo(x2, y2);
+            context.stroke();
+        }
+
+        function roundRect(x, y, width, height, radius) {
+            context.beginPath();
+            context.roundRect(x, y, width, height, radius);
+        }
+
+        function tooltipRow(label, value, valueClass) {
+            return `
+                <div class="chart-tooltip-row">
+                    <span class="chart-tooltip-label">${label}</span>
+                    <span class="chart-tooltip-value ${valueClass || ''}">${escapeHtml(value || '-')}</span>
+                </div>
+            `;
+        }
+
+        function resolvePriceDirection(changeAmount, changeRate, changeSign) {
+            const sign = String(changeSign || '').trim();
+            if (sign === '1' || sign === '2') {
+                return 'bullish';
+            }
+            if (sign === '4' || sign === '5') {
+                return 'bearish';
+            }
+            const basis = isFinite(changeAmount) ? changeAmount : changeRate;
+            return basis > 0 ? 'bullish' : basis < 0 ? 'bearish' : 'flat';
+        }
+
+        function formatPrice(value) {
+            if (!isFinite(value)) {
+                return '-';
+            }
+            return `${currencySymbol}${new Intl.NumberFormat('ko-KR', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: priceDecimalDigits
+            }).format(value)}`;
+        }
+
+        function formatSignedPrice(value, direction) {
+            if (!isFinite(value)) {
+                return '-';
+            }
+            return `${directionSign(direction)}${formatPrice(Math.abs(value))}`;
+        }
+
+        function formatSignedRate(value, direction) {
+            if (!isFinite(value)) {
+                return '-';
+            }
+            return `${directionSign(direction)}${Math.abs(value).toFixed(2)}%`;
+        }
+
+        function calculateChangeRate(value, comparisonValue) {
+            if (!isFinite(value) || !isFinite(comparisonValue) || comparisonValue === 0) {
+                return Number.NaN;
+            }
+            return ((value - comparisonValue) / Math.abs(comparisonValue)) * 100;
+        }
+
+        function rateDirection(value) {
+            return value > 0 ? 'bullish' : value < 0 ? 'bearish' : 'flat';
+        }
+
+        function formatMetricWithRate(value, rate) {
+            if (!isFinite(rate)) {
+                return value;
+            }
+            return `${value} (${formatSignedRate(rate, rateDirection(rate))})`;
+        }
+
+        function formatChartTradeDate(value) {
+            return String(value || '').replaceAll('-', '.');
+        }
+
+        function formatTradeDateWithWeekday(value) {
+            const parts = String(value || '').split('-').map(Number);
+            if (parts.length !== 3 || parts.some(part => !Number.isInteger(part))) {
+                return value || '-';
+            }
+            const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+            const date = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+            return `${value} (${weekdays[date.getUTCDay()]})`;
+        }
+
+        function directionSign(direction) {
+            return direction === 'bullish' ? '+' : direction === 'bearish' ? '-' : '';
+        }
+
+        function formatVolume(value) {
+            return isFinite(value)
+                ? new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 }).format(value)
+                : '-';
+        }
+
+        function formatAmount(value) {
+            return isFinite(value) ? formatPrice(value) : '-';
+        }
+
+        function formatOptionalPrice(value) {
+            const parsed = toNumber(value);
+            return isFinite(parsed) ? formatPrice(parsed) : '-';
+        }
+
+        function formatOptionalQuantity(value) {
+            const parsed = toNumber(value);
+            return isFinite(parsed) ? formatVolume(parsed) : '-';
+        }
+
+        function formatTradeTime(value) {
+            if (!value || value.length < 6) {
+                return '실시간';
+            }
+            return `${value.substring(0, 2)}:${value.substring(2, 4)}:${value.substring(4, 6)}`;
+        }
+
+        function formatTradeTimeDisplay(localTime, koreaTime) {
+            if (!koreaTime || koreaTime.length < 6) {
+                return formatTradeTime(localTime);
+            }
+            return `현지 시각(America/New_York) 기준 ${formatTradeTime(localTime)} · 대한민국 시간 기준 ${formatTradeTime(koreaTime)}`;
+        }
+
+        function formatTradeDate(value) {
+            if (!value) {
+                return '';
+            }
+            return value.length === 8
+                ? `${value.substring(0, 4)}-${value.substring(4, 6)}-${value.substring(6, 8)}`
+                : value;
+        }
+
+        function setText(id, value) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            }
+        }
+
+        function parseMessage(payload) {
+            try {
+                return JSON.parse(payload);
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function fallbackNumber(value, fallback) {
+            const parsed = toNumber(value);
+            return isFinite(parsed) ? parsed : fallback;
+        }
+
+        function toNumber(value) {
+            if (value === null || value === undefined || value === '') {
+                return NaN;
+            }
+            return Number(String(value).replaceAll(',', ''));
+        }
+
+        function clamp(value, min, max) {
+            return Math.max(min, Math.min(max, value));
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
     })();
 </script>
 <script>

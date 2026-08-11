@@ -21,9 +21,12 @@
                 계좌 목록 오류
             </p>
 
-            <p th:if="${#lists.isEmpty(accounts)}">
-                아직 개설된 계좌가 없습니다.
-            </p>
+            <div class="empty-state" th:if="${#lists.isEmpty(accounts)}">
+                <span class="empty-state-icon" aria-hidden="true">＋</span>
+                <strong>첫 계좌를 만들어 보세요</strong>
+                <p>입출금과 이체 내역을 관리할 일반 계좌가 아직 없습니다.</p>
+                <a th:href="@{/accounts/open}">계좌 개설하기</a>
+            </div>
 
             <div class="table-scroll" th:unless="${#lists.isEmpty(accounts)}">
                 <table class="records-table">

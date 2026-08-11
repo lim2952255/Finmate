@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 520" role="img" aria-labelledby="title desc">
+  <title id="title">일봉 차트의 양봉과 음봉 읽는 법</title>
+  <desc id="desc">빨간 양봉과 파란 음봉의 시가 고가 저가 종가 위치와 개장 및 마감 단일가매매 흐름을 설명합니다.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fbff"/>
+      <stop offset="1" stop-color="#eef5ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#1e3a8a" flood-opacity="0.09"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#60a5fa"/>
+    </marker>
+  </defs>
+
+  <rect width="760" height="520" rx="28" fill="url(#background)"/>
+  <text x="38" y="48" fill="#172554" font-family="Pretendard, sans-serif" font-size="23" font-weight="800">봉 하나에 하루의 네 가지 가격이 담깁니다</text>
+  <text x="38" y="76" fill="#64748b" font-family="Pretendard, sans-serif" font-size="14">몸통은 시가와 종가, 꼬리는 장중 고가와 저가까지의 범위입니다.</text>
+
+  <g filter="url(#shadow)" font-family="Pretendard, sans-serif">
+    <rect x="38" y="104" width="324" height="242" rx="22" fill="#ffffff" stroke="#fecaca"/>
+    <text x="200" y="138" text-anchor="middle" fill="#dc2626" font-size="20" font-weight="900">양봉</text>
+    <text x="200" y="161" text-anchor="middle" fill="#64748b" font-size="12" font-weight="700">종가가 시가보다 높은 날</text>
+    <line x1="200" y1="181" x2="200" y2="303" stroke="#ef4444" stroke-width="5" stroke-linecap="round"/>
+    <rect x="165" y="215" width="70" height="58" rx="5" fill="#ef4444"/>
+    <circle cx="200" cy="181" r="4" fill="#dc2626"/>
+    <circle cx="200" cy="303" r="4" fill="#dc2626"/>
+    <line x1="208" y1="181" x2="278" y2="181" stroke="#fca5a5" stroke-width="2"/>
+    <line x1="235" y1="215" x2="278" y2="215" stroke="#fca5a5" stroke-width="2"/>
+    <line x1="235" y1="273" x2="278" y2="273" stroke="#fca5a5" stroke-width="2"/>
+    <line x1="208" y1="303" x2="278" y2="303" stroke="#fca5a5" stroke-width="2"/>
+    <text x="286" y="186" fill="#475569" font-size="13" font-weight="800">고가</text>
+    <text x="286" y="220" fill="#dc2626" font-size="13" font-weight="800">종가</text>
+    <text x="286" y="278" fill="#dc2626" font-size="13" font-weight="800">시가</text>
+    <text x="286" y="308" fill="#475569" font-size="13" font-weight="800">저가</text>
+    <rect x="72" y="286" width="93" height="30" rx="15" fill="#fee2e2"/>
+    <text x="118" y="306" text-anchor="middle" fill="#b91c1c" font-size="12" font-weight="900">상승 마감</text>
+
+    <rect x="398" y="104" width="324" height="242" rx="22" fill="#ffffff" stroke="#bfdbfe"/>
+    <text x="560" y="138" text-anchor="middle" fill="#2563eb" font-size="20" font-weight="900">음봉</text>
+    <text x="560" y="161" text-anchor="middle" fill="#64748b" font-size="12" font-weight="700">종가가 시가보다 낮은 날</text>
+    <line x1="560" y1="181" x2="560" y2="303" stroke="#3b82f6" stroke-width="5" stroke-linecap="round"/>
+    <rect x="525" y="215" width="70" height="58" rx="5" fill="#3b82f6"/>
+    <circle cx="560" cy="181" r="4" fill="#2563eb"/>
+    <circle cx="560" cy="303" r="4" fill="#2563eb"/>
+    <line x1="568" y1="181" x2="638" y2="181" stroke="#93c5fd" stroke-width="2"/>
+    <line x1="595" y1="215" x2="638" y2="215" stroke="#93c5fd" stroke-width="2"/>
+    <line x1="595" y1="273" x2="638" y2="273" stroke="#93c5fd" stroke-width="2"/>
+    <line x1="568" y1="303" x2="638" y2="303" stroke="#93c5fd" stroke-width="2"/>
+    <text x="646" y="186" fill="#475569" font-size="13" font-weight="800">고가</text>
+    <text x="646" y="220" fill="#2563eb" font-size="13" font-weight="800">시가</text>
+    <text x="646" y="278" fill="#2563eb" font-size="13" font-weight="800">종가</text>
+    <text x="646" y="308" fill="#475569" font-size="13" font-weight="800">저가</text>
+    <rect x="432" y="286" width="93" height="30" rx="15" fill="#dbeafe"/>
+    <text x="478" y="306" text-anchor="middle" fill="#1d4ed8" font-size="12" font-weight="900">하락 마감</text>
+  </g>
+
+  <g font-family="Pretendard, sans-serif">
+    <text x="38" y="388" fill="#172554" font-size="18" font-weight="900">시가와 종가는 어떻게 정해질까요?</text>
+    <text x="38" y="413" fill="#64748b" font-size="13">주문을 일정 시간 모은 뒤 가장 많이 체결되는 하나의 가격을 찾습니다.</text>
+
+    <rect x="38" y="436" width="184" height="54" rx="16" fill="#ffffff" stroke="#bfdbfe"/>
+    <text x="130" y="458" text-anchor="middle" fill="#334155" font-size="12" font-weight="800">08:30~09:00</text>
+    <text x="130" y="477" text-anchor="middle" fill="#64748b" font-size="11">개장 주문 모으기</text>
+    <line x1="228" y1="463" x2="278" y2="463" stroke="#60a5fa" stroke-width="3" marker-end="url(#arrow)"/>
+    <rect x="286" y="436" width="188" height="54" rx="16" fill="#dbeafe" stroke="#93c5fd"/>
+    <text x="380" y="458" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="900">09:00 시가 결정</text>
+    <text x="380" y="477" text-anchor="middle" fill="#475569" font-size="11">이후 연속매매</text>
+    <line x1="480" y1="463" x2="530" y2="463" stroke="#60a5fa" stroke-width="3" marker-end="url(#arrow)"/>
+    <rect x="538" y="436" width="184" height="54" rx="16" fill="#ffffff" stroke="#bfdbfe"/>
+    <text x="630" y="458" text-anchor="middle" fill="#334155" font-size="12" font-weight="800">15:20~15:30</text>
+    <text x="630" y="477" text-anchor="middle" fill="#64748b" font-size="11">15:30 종가 결정</text>
+  </g>
+</svg>

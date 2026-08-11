@@ -12,10 +12,16 @@
 
     <main class="main">
         <section class="content">
-            <h1>종목 검색</h1>
+            <div class="page-heading">
+                <h1>종목 검색</h1>
+                <p>종목명, 종목코드 또는 업종으로 국내외 투자 대상을 빠르게 찾아보세요.</p>
+            </div>
 
-            <section>
-                <h2>검색</h2>
+            <section class="search-panel">
+                <div class="search-panel-intro">
+                    <h2>검색</h2>
+                    <p>조건을 조합해 원하는 종목을 빠르게 찾아보세요.</p>
+                </div>
 
                 <form class="filter-form" th:action="@{/investments/stocks/search}" method="get">
                     <label for="searchType">

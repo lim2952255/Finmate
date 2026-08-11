@@ -5,6 +5,79 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinMate</title>
     <link rel="stylesheet" th:href="@{/css/common.css}">
+    <style>
+        .exchange-transaction-table {
+            min-width: 1060px;
+        }
+
+        .exchange-transaction-table th,
+        .exchange-transaction-table td {
+            vertical-align: middle;
+        }
+
+        .exchange-transaction-table td {
+            height: auto;
+            padding-top: 13px;
+            padding-bottom: 13px;
+        }
+
+        .exchange-flow {
+            display: grid;
+            grid-template-columns: minmax(100px, 1fr) 20px minmax(100px, 1fr);
+            align-items: center;
+            gap: 6px;
+            min-width: 250px;
+        }
+
+        .exchange-flow-value {
+            display: grid;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .exchange-flow-value:last-child {
+            text-align: right;
+        }
+
+        .exchange-flow-value small {
+            color: var(--color-muted);
+            font-size: 11px;
+            font-weight: 750;
+        }
+
+        .exchange-flow-value strong {
+            color: var(--color-heading);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .exchange-flow-arrow {
+            color: #93a4bb;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .balance-flow {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 5px;
+            min-width: 210px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .balance-flow span:last-child {
+            color: var(--color-heading);
+            text-align: right;
+        }
+
+        .balance-flow small {
+            grid-column: 1 / -1;
+            color: var(--color-muted);
+            font-size: 11px;
+            text-align: right;
+        }
+    </style>
 </head>
 <body>
 <div class="page">
@@ -107,7 +180,7 @@
                 </p>
 
                 <div class="table-scroll" th:unless="${#lists.isEmpty(investmentCurrencyExchangeTransactionPageInfo.transactions)}">
-                    <table class="records-table transaction-table">
+                    <table class="records-table transaction-table exchange-transaction-table">
                         <thead>
                         <tr>
                             <th>번호</th>
@@ -115,7 +188,6 @@
                             <th>증권계좌</th>
                             <th>환전 방향</th>
                             <th>환전 금액</th>
-                            <th>환전 후 금액</th>
                             <th>적용 환율</th>
                             <th>출금 통화 잔고</th>
                             <th>입금 통화 잔고</th>
@@ -142,29 +214,44 @@
                                     KRW → USD
                                 </span>
                             </td>
-                            <td class="money-cell">
-                                <span th:text="${#numbers.formatDecimal(transaction.fromAmount, 1, 'COMMA', transaction.fromCurrencyCode.fractionDigits, 'POINT')}">0</span>
-                                <span th:text="${transaction.fromCurrencyCode.name()}">KRW</span>
-                            </td>
-                            <td class="money-cell">
-                                <span th:text="${#numbers.formatDecimal(transaction.toAmount, 1, 'COMMA', transaction.toCurrencyCode.fractionDigits, 'POINT')}">0</span>
-                                <span th:text="${transaction.toCurrencyCode.name()}">USD</span>
+                            <td>
+                                <div class="exchange-flow">
+                                    <span class="exchange-flow-value">
+                                        <small>보낸 금액</small>
+                                        <strong>
+                                            <span th:text="${#numbers.formatDecimal(transaction.fromAmount, 1, 'COMMA', transaction.fromCurrencyCode.fractionDigits, 'POINT')}">0</span>
+                                            <span th:text="${transaction.fromCurrencyCode.name()}">KRW</span>
+                                        </strong>
+                                    </span>
+                                    <span class="exchange-flow-arrow" aria-hidden="true">→</span>
+                                    <span class="exchange-flow-value">
+                                        <small>받은 금액</small>
+                                        <strong>
+                                            <span th:text="${#numbers.formatDecimal(transaction.toAmount, 1, 'COMMA', transaction.toCurrencyCode.fractionDigits, 'POINT')}">0</span>
+                                            <span th:text="${transaction.toCurrencyCode.name()}">USD</span>
+                                        </strong>
+                                    </span>
+                                </div>
                             </td>
                             <td class="money-cell">
                                 <span th:text="${#numbers.formatDecimal(transaction.exchangeRate, 1, 'COMMA', 2, 'POINT')}">1,300.00</span>
                                 KRW/USD
                             </td>
-                            <td class="balance-cell">
-                                <span th:text="${#numbers.formatDecimal(transaction.fromBalanceBeforeExchange, 1, 'COMMA', transaction.fromCurrencyCode.fractionDigits, 'POINT')}">0</span>
-                                →
-                                <span th:text="${#numbers.formatDecimal(transaction.fromBalanceAfterExchange, 1, 'COMMA', transaction.fromCurrencyCode.fractionDigits, 'POINT')}">0</span>
-                                <span th:text="${transaction.fromCurrencyCode.name()}">KRW</span>
+                            <td>
+                                <div class="balance-flow">
+                                    <span th:text="${#numbers.formatDecimal(transaction.fromBalanceBeforeExchange, 1, 'COMMA', transaction.fromCurrencyCode.fractionDigits, 'POINT')}">0</span>
+                                    <span aria-hidden="true">→</span>
+                                    <span th:text="${#numbers.formatDecimal(transaction.fromBalanceAfterExchange, 1, 'COMMA', transaction.fromCurrencyCode.fractionDigits, 'POINT')}">0</span>
+                                    <small th:text="${transaction.fromCurrencyCode.name()}">KRW</small>
+                                </div>
                             </td>
-                            <td class="balance-cell">
-                                <span th:text="${#numbers.formatDecimal(transaction.toBalanceBeforeExchange, 1, 'COMMA', transaction.toCurrencyCode.fractionDigits, 'POINT')}">0</span>
-                                →
-                                <span th:text="${#numbers.formatDecimal(transaction.toBalanceAfterExchange, 1, 'COMMA', transaction.toCurrencyCode.fractionDigits, 'POINT')}">0</span>
-                                <span th:text="${transaction.toCurrencyCode.name()}">USD</span>
+                            <td>
+                                <div class="balance-flow">
+                                    <span th:text="${#numbers.formatDecimal(transaction.toBalanceBeforeExchange, 1, 'COMMA', transaction.toCurrencyCode.fractionDigits, 'POINT')}">0</span>
+                                    <span aria-hidden="true">→</span>
+                                    <span th:text="${#numbers.formatDecimal(transaction.toBalanceAfterExchange, 1, 'COMMA', transaction.toCurrencyCode.fractionDigits, 'POINT')}">0</span>
+                                    <small th:text="${transaction.toCurrencyCode.name()}">USD</small>
+                                </div>
                             </td>
                         </tr>
                         </tbody>

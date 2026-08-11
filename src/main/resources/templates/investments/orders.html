@@ -8,8 +8,10 @@
     <style>
         .orders-toolbar {
             display: flex;
+            flex-direction: row;
             flex-wrap: wrap;
             align-items: end;
+            justify-content: flex-start;
             gap: 12px;
             margin: 0;
             padding: 18px;
@@ -23,6 +25,7 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
+            min-width: 300px;
         }
 
         .orders-toolbar a {
@@ -240,10 +243,12 @@
                    th:href="@{/investments/portfolio}">포트폴리오</a>
             </form>
 
-            <p th:if="${#lists.isEmpty(stockTradingHistoryPageInfo.investments)}">
-                증권 계좌가 없습니다.
-                <a th:href="@{/investments/open}">증권 계좌 개설</a>
-            </p>
+            <div class="empty-state" th:if="${#lists.isEmpty(stockTradingHistoryPageInfo.investments)}">
+                <span class="empty-state-icon" aria-hidden="true">✓</span>
+                <strong>주문을 확인할 증권 계좌가 없습니다</strong>
+                <p>증권 계좌를 만들면 주문, 예약 주문과 체결 내역이 이곳에 정리됩니다.</p>
+                <a th:href="@{/investments/open}">증권 계좌 개설하기</a>
+            </div>
 
             <section class="history-section"
                      th:if="${!#lists.isEmpty(stockTradingHistoryPageInfo.investments)}">

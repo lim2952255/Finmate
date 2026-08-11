@@ -28,6 +28,10 @@ public class KisDomesticStockDetailClient {
             "/uapi/domestic-stock/v1/finance/balance-sheet";
     private static final String INVESTOR_TRADE_PATH =
             "/uapi/domestic-stock/v1/quotations/investor-trade-by-stock-daily";
+    private static final String DAILY_SHORT_SALE_PATH =
+            "/uapi/domestic-stock/v1/quotations/daily-short-sale";
+    private static final String DAILY_LOAN_TRANSACTION_PATH =
+            "/uapi/domestic-stock/v1/quotations/daily-loan-trans";
 
     // 식별 코드
     private static final String CURRENT_PRICE_TR_ID = "FHKST01010100";
@@ -35,6 +39,8 @@ public class KisDomesticStockDetailClient {
     private static final String INCOME_STATEMENT_TR_ID = "FHKST66430200";
     private static final String BALANCE_SHEET_TR_ID = "FHKST66430100";
     private static final String INVESTOR_TRADE_TR_ID = "FHPTJ04160001";
+    private static final String DAILY_SHORT_SALE_TR_ID = "FHPST04830000";
+    private static final String DAILY_LOAN_TRANSACTION_TR_ID = "HHPST074500C0";
 
     // 실제 API 요청을 전송하고 응답을 받는 클라이언트
     private final KisRestClient kisRestClient;
@@ -106,6 +112,32 @@ public class KisDomesticStockDetailClient {
                 KisInvestorTradeResponse.class);
     }
 
+    // 국내 종목 공매도 현황 조회
+    public KisDailyShortSaleResponse fetchDailyShortSales(String symbol, LocalDate startDate, LocalDate endDate) {
+        validateDateRange(symbol, startDate, endDate);
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("FID_COND_MRKT_DIV_CODE", MARKET_CODE);
+        params.put("FID_INPUT_ISCD", symbol);
+        params.put("FID_INPUT_DATE_1", startDate.format(REQUEST_DATE_FORMATTER));
+        params.put("FID_INPUT_DATE_2", endDate.format(REQUEST_DATE_FORMATTER));
+        return kisRestClient.get(DAILY_SHORT_SALE_PATH, DAILY_SHORT_SALE_TR_ID, params,
+                KisDailyShortSaleResponse.class);
+    }
+
+    // 국내 종목 대차거래 현황 조회
+    public KisDailyLoanTransactionResponse fetchDailyLoanTransactions(
+            String symbol, LocalDate startDate, LocalDate endDate) {
+        validateDateRange(symbol, startDate, endDate);
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("MRKT_DIV_CLS_CODE", "3");
+        params.put("MKSC_SHRN_ISCD", symbol);
+        params.put("START_DATE", startDate.format(REQUEST_DATE_FORMATTER));
+        params.put("END_DATE", endDate.format(REQUEST_DATE_FORMATTER));
+        params.put("CTS", "");
+        return kisRestClient.get(DAILY_LOAN_TRANSACTION_PATH, DAILY_LOAN_TRANSACTION_TR_ID, params,
+                KisDailyLoanTransactionResponse.class);
+    }
+
     private Map<String, String> financialParams(String symbol, FinancialPeriod period) {
         Map<String, String> params = new LinkedHashMap<>();
         params.put("FID_DIV_CLS_CODE", period.kisCode());
@@ -121,5 +153,14 @@ public class KisDomesticStockDetailClient {
 
     private void validateSymbol(String symbol) {
         validateRequired(symbol, "국내 종목코드는 필수입니다.");
+    }
+
+    private void validateDateRange(String symbol, LocalDate startDate, LocalDate endDate) {
+        validateSymbol(symbol);
+        validateRequired(startDate, "조회 시작일은 필수입니다.");
+        validateRequired(endDate, "조회 종료일은 필수입니다.");
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("조회 시작일은 종료일보다 늦을 수 없습니다.");
+        }
     }
 }

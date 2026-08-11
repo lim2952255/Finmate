@@ -40,7 +40,8 @@ public class KisStockDailyPriceClient {
 
         // api호출에 필요한 쿼리 파라미터 채우기
         Map<String, String> params = new LinkedHashMap<>();
-        params.put("FID_COND_MRKT_DIV_CODE", "J"); // 종목시장 J:KRX
+        // 국내 상세 차트는 MTS의 '전체' 차트와 같은 KRX+NXT 통합 일봉을 사용한다.
+        params.put("FID_COND_MRKT_DIV_CODE", "UN");
         params.put("FID_INPUT_ISCD", symbol); // 조회하고자 하는 종목
         params.put("FID_INPUT_DATE_1", formatDate(startDate)); // 조회 시작일자
         params.put("FID_INPUT_DATE_2", formatDate(endDate)); // 조회 종료일자

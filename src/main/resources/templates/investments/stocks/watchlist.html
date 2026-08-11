@@ -12,14 +12,21 @@
 
     <main class="main">
         <section class="content">
-            <h1>관심 종목</h1>
+            <div class="page-heading">
+                <h1>관심 종목</h1>
+                <p>관심 있게 지켜보는 종목을 모아 시세와 기업 정보를 빠르게 확인합니다.</p>
+            </div>
 
             <section>
                 <h2>관심 종목 목록</h2>
 
-                <p th:if="${favoriteStockPageInfo.favoriteStocks != null and #lists.isEmpty(favoriteStockPageInfo.favoriteStocks)}">
-                    등록된 관심 종목이 없습니다.
-                </p>
+                <div class="empty-state"
+                     th:if="${favoriteStockPageInfo.favoriteStocks != null and #lists.isEmpty(favoriteStockPageInfo.favoriteStocks)}">
+                    <span class="empty-state-icon" aria-hidden="true">☆</span>
+                    <strong>아직 관심 종목이 없습니다</strong>
+                    <p>종목을 검색하고 별표를 눌러 나만의 관심 목록을 만들어 보세요.</p>
+                    <a th:href="@{/investments/stocks/search}">종목 검색하기</a>
+                </div>
 
                 <div class="table-scroll"
                      th:if="${favoriteStockPageInfo.favoriteStocks != null and !#lists.isEmpty(favoriteStockPageInfo.favoriteStocks)}">

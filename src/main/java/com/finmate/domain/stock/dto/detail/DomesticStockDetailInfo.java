@@ -6,6 +6,8 @@ import com.finmate.domain.stock.metadata.domestic.DomesticStockDetailRefreshStat
 import com.finmate.domain.stock.metadata.domestic.DomesticStockFinancialRatio;
 import com.finmate.domain.stock.metadata.domestic.DomesticStockIncomeStatement;
 import com.finmate.domain.stock.metadata.domestic.DomesticStockInvestorDailyTrade;
+import com.finmate.domain.stock.metadata.domestic.DomesticStockLoanTransactionDaily;
+import com.finmate.domain.stock.metadata.domestic.DomesticStockShortSaleDaily;
 import com.finmate.global.format.DisplayFormatUtils;
 import lombok.Getter;
 
@@ -19,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 // 종목 상세페이지의 시세/재무/투자 탭에 필요한 모든 상세정보를 담는 DTO
 // 서로 다른 API로부터 받은 데이터들을 모아서 하나의 DTO에 담는 역할을 한다.
@@ -34,10 +37,14 @@ public class DomesticStockDetailInfo {
     private final List<IncomeStatement> incomeStatements; // 손익 계산표. 매출액, 영업이익, 경상이익, 당기순이익
     private final List<BalanceSheet> balanceSheets; // 대차대조표. 자산, 부채, 자본, 이익잉여금 등
     private final List<InvestorTrade> investorTrades; // 외국인, 개인, 기관 매수/매도/순매수 비율
+    private final List<ShortSale> shortSales;
+    private final List<LoanTransaction> loanTransactions;
     private final FinancialAnalysis financialAnalysis; // 매출, 영업이익, 순이익을 가지고, 지표를 분석하기 위한 레코드
     private final LocalDateTime quoteUpdatedAt;
     private final LocalDateTime financialUpdatedAt;
     private final LocalDateTime investorUpdatedAt;
+    private final LocalDateTime shortSaleUpdatedAt;
+    private final LocalDateTime loanTransactionUpdatedAt;
 
     private DomesticStockDetailInfo(boolean supported,
                                     Quote quote,
@@ -45,25 +52,33 @@ public class DomesticStockDetailInfo {
                                     List<IncomeStatement> incomeStatements,
                                     List<BalanceSheet> balanceSheets,
                                     List<InvestorTrade> investorTrades,
+                                    List<ShortSale> shortSales,
+                                    List<LoanTransaction> loanTransactions,
                                     FinancialAnalysis financialAnalysis,
                                     LocalDateTime quoteUpdatedAt,
                                     LocalDateTime financialUpdatedAt,
-                                    LocalDateTime investorUpdatedAt) {
+                                    LocalDateTime investorUpdatedAt,
+                                    LocalDateTime shortSaleUpdatedAt,
+                                    LocalDateTime loanTransactionUpdatedAt) {
         this.supported = supported;
         this.quote = quote;
         this.financialRatios = financialRatios;
         this.incomeStatements = incomeStatements;
         this.balanceSheets = balanceSheets;
         this.investorTrades = investorTrades;
+        this.shortSales = shortSales;
+        this.loanTransactions = loanTransactions;
         this.financialAnalysis = financialAnalysis;
         this.quoteUpdatedAt = quoteUpdatedAt;
         this.financialUpdatedAt = financialUpdatedAt;
         this.investorUpdatedAt = investorUpdatedAt;
+        this.shortSaleUpdatedAt = shortSaleUpdatedAt;
+        this.loanTransactionUpdatedAt = loanTransactionUpdatedAt;
     }
 
     public static DomesticStockDetailInfo unsupported() {
-        return new DomesticStockDetailInfo(false, null, List.of(), List.of(), List.of(), List.of(), null,
-                null, null, null);
+        return new DomesticStockDetailInfo(false, null, List.of(), List.of(), List.of(), List.of(),
+                List.of(), List.of(), null, null, null, null, null, null);
     }
 
     // 여러 API를 통해 받은 데이터를 DomesticStockDetailInfo라는 하나의 DTO로 묶는다.
@@ -73,7 +88,10 @@ public class DomesticStockDetailInfo {
                                              List<DomesticStockIncomeStatement> incomeStatements,
                                              List<DomesticStockBalanceSheet> balanceSheets,
                                              List<DomesticStockInvestorDailyTrade> investorTrades,
-                                             DomesticStockDetailRefreshState refreshState) {
+                                             List<DomesticStockShortSaleDaily> shortSales,
+                                             List<DomesticStockLoanTransactionDaily> loanTransactions,
+                                             DomesticStockDetailRefreshState refreshState,
+                                             DomesticStockDailyFlowSnapshot intradayFlow) {
         // 손익계산서 엔티티 DomesticStockIncomeStatement를 화면용 DTO인 DomesticStockDetailInfo.IncomeStatement 로 변환한다.
         List<IncomeStatement> cumulativeIncomeStatements = incomeStatements.stream()
                 .map(IncomeStatement::from)
@@ -83,19 +101,82 @@ public class DomesticStockDetailInfo {
         // KIS API의 분기 실적은 이전분기 누적이기 때문에, 이를 계산해서 각 분기별 실적으로 변환한다.
         List<IncomeStatement> quarterlyIncomeStatements = IncomeStatement.toStandaloneQuarters(
                 cumulativeIncomeStatements);
+        List<InvestorTrade> investorTradeView = mergeInvestorTrades(investorTrades, intradayFlow);
+        List<ShortSale> shortSaleView = mergeShortSales(shortSales, intradayFlow);
+        List<LoanTransaction> loanTransactionView = mergeLoanTransactions(loanTransactions, intradayFlow);
         return new DomesticStockDetailInfo(
                 true,
                 currentQuote != null ? Quote.from(currentQuote) : quote == null ? null : Quote.from(quote),
                 ratios.stream().map(FinancialRatio::from).toList(),
                 quarterlyIncomeStatements.stream().limit(4).toList(), // 화면에는 최근 4개의 분기 실적만 공개한다.
                 balanceSheets.stream().map(BalanceSheet::from).toList(),
-                investorTrades.stream().map(InvestorTrade::from).toList(),
+                investorTradeView,
+                shortSaleView,
+                loanTransactionView,
                 FinancialAnalysis.from(quarterlyIncomeStatements),
                 // 현재가는 Redis에 캐싱된 데이터가 있으면 해당 데이터를 사용하고, 없으면 DB에 저장된 데이터를 사용한다.
                 currentQuote != null ? currentQuote.fetchedAt()
                         : refreshState == null ? null : refreshState.getCurrentQuoteUpdatedAt(),
                 financialUpdatedAt(refreshState),
-                refreshState == null ? null : refreshState.getInvestorTradeUpdatedAt());
+                intradayFlow != null && intradayFlow.investorTrade() != null
+                        ? intradayFlow.fetchedAt()
+                        : refreshState == null ? null : refreshState.getInvestorTradeUpdatedAt(),
+                intradayFlow != null && intradayFlow.shortSale() != null
+                        ? intradayFlow.fetchedAt()
+                        : refreshState == null ? null : refreshState.getShortSaleUpdatedAt(),
+                intradayFlow != null && intradayFlow.loanTransaction() != null
+                        ? intradayFlow.fetchedAt()
+                        : refreshState == null ? null : refreshState.getLoanTransactionUpdatedAt());
+    }
+
+    private static List<InvestorTrade> mergeInvestorTrades(
+            List<DomesticStockInvestorDailyTrade> stored,
+            DomesticStockDailyFlowSnapshot intradayFlow) {
+        InvestorTrade current = intradayFlow == null || intradayFlow.investorTrade() == null
+                ? null
+                : InvestorTrade.from(intradayFlow.tradeDate(), intradayFlow.investorTrade());
+        return mergeDailyHistory(stored, intradayFlow, current,
+                DomesticStockInvestorDailyTrade::getTradeDate, InvestorTrade::from, 20);
+    }
+
+    private static List<ShortSale> mergeShortSales(
+            List<DomesticStockShortSaleDaily> stored,
+            DomesticStockDailyFlowSnapshot intradayFlow) {
+        ShortSale current = intradayFlow == null || intradayFlow.shortSale() == null
+                ? null
+                : ShortSale.from(intradayFlow.tradeDate(), intradayFlow.shortSale());
+        return mergeDailyHistory(stored, intradayFlow, current,
+                DomesticStockShortSaleDaily::getTradeDate, ShortSale::from, 70);
+    }
+
+    private static List<LoanTransaction> mergeLoanTransactions(
+            List<DomesticStockLoanTransactionDaily> stored,
+            DomesticStockDailyFlowSnapshot intradayFlow) {
+        LoanTransaction current = intradayFlow == null || intradayFlow.loanTransaction() == null
+                ? null
+                : LoanTransaction.from(intradayFlow.tradeDate(), intradayFlow.loanTransaction());
+        return mergeDailyHistory(stored, intradayFlow, current,
+                DomesticStockLoanTransactionDaily::getTradeDate, LoanTransaction::from, 70);
+    }
+
+    /**
+     * 확정된 DB 이력 앞에 Redis의 금일 스냅샷을 한 건만 합친다.
+     * 같은 거래일이 양쪽에 있으면 Redis 값을 우선하고 화면별 표시 개수만 유지한다.
+     */
+    private static <S, V> List<V> mergeDailyHistory(
+            List<S> stored,
+            DomesticStockDailyFlowSnapshot intradayFlow,
+            V current,
+            Function<S, LocalDate> tradeDateExtractor,
+            Function<S, V> viewMapper,
+            int limit) {
+        LocalDate currentTradeDate = intradayFlow == null ? null : intradayFlow.tradeDate();
+        Stream<V> currentStream = current == null ? Stream.empty() : Stream.of(current);
+        Stream<V> storedStream = stored.stream()
+                .filter(item -> currentTradeDate == null
+                        || !tradeDateExtractor.apply(item).equals(currentTradeDate))
+                .map(viewMapper);
+        return Stream.concat(currentStream, storedStream).limit(limit).toList();
     }
 
     public boolean hasQuote() {
@@ -112,6 +193,10 @@ public class DomesticStockDetailInfo {
 
     public boolean hasInvestorTrades() {
         return !investorTrades.isEmpty();
+    }
+
+    public boolean hasShortLoanData() {
+        return !shortSales.isEmpty() || !loanTransactions.isEmpty();
     }
 
     public String formatNumber(BigDecimal value) {
@@ -454,6 +539,49 @@ public class DomesticStockDetailInfo {
                     trade.getPersonalBuyQuantity(), trade.getPersonalSellQuantity(), trade.getPersonalNetQuantity(),
                     trade.getInstitutionBuyQuantity(), trade.getInstitutionSellQuantity(),
                     trade.getInstitutionNetQuantity());
+        }
+
+        static InvestorTrade from(LocalDate tradeDate, DomesticStockDailyFlowSnapshot.InvestorTrade trade) {
+            return new InvestorTrade(tradeDate, trade.closePrice(), trade.foreignBuyQuantity(),
+                    trade.foreignSellQuantity(), trade.foreignNetQuantity(), trade.personalBuyQuantity(),
+                    trade.personalSellQuantity(), trade.personalNetQuantity(), trade.institutionBuyQuantity(),
+                    trade.institutionSellQuantity(), trade.institutionNetQuantity());
+        }
+    }
+
+    public record ShortSale(LocalDate tradeDate, BigDecimal closePrice, Long accumulatedVolume,
+                            Long shortSaleQuantity, BigDecimal shortSaleVolumeRatio,
+                            BigDecimal accumulatedTradeAmount, BigDecimal shortSaleTradeAmount,
+                            BigDecimal shortSaleTradeAmountRatio, BigDecimal averagePrice) {
+        static ShortSale from(DomesticStockShortSaleDaily daily) {
+            return new ShortSale(daily.getTradeDate(), daily.getClosePrice(), daily.getAccumulatedVolume(),
+                    daily.getShortSaleQuantity(), daily.getShortSaleVolumeRatio(),
+                    daily.getAccumulatedTradeAmount(), daily.getShortSaleTradeAmount(),
+                    daily.getShortSaleTradeAmountRatio(), daily.getAveragePrice());
+        }
+
+        static ShortSale from(LocalDate tradeDate, DomesticStockDailyFlowSnapshot.ShortSale daily) {
+            return new ShortSale(tradeDate, daily.closePrice(), daily.accumulatedVolume(),
+                    daily.shortSaleQuantity(), daily.shortSaleVolumeRatio(), daily.accumulatedTradeAmount(),
+                    daily.shortSaleTradeAmount(), daily.shortSaleTradeAmountRatio(), daily.averagePrice());
+        }
+    }
+
+    public record LoanTransaction(LocalDate tradeDate, BigDecimal closePrice, Long newLoanQuantity,
+                                  Long redeemedLoanQuantity, Long loanBalanceQuantity,
+                                  BigDecimal newLoanAmount, BigDecimal redeemedLoanAmount,
+                                  BigDecimal loanBalanceAmount) {
+        static LoanTransaction from(DomesticStockLoanTransactionDaily daily) {
+            return new LoanTransaction(daily.getTradeDate(), daily.getClosePrice(), daily.getNewLoanQuantity(),
+                    daily.getRedeemedLoanQuantity(), daily.getLoanBalanceQuantity(), daily.getNewLoanAmount(),
+                    daily.getRedeemedLoanAmount(), daily.getLoanBalanceAmount());
+        }
+
+        static LoanTransaction from(LocalDate tradeDate,
+                                    DomesticStockDailyFlowSnapshot.LoanTransaction daily) {
+            return new LoanTransaction(tradeDate, daily.closePrice(), daily.newLoanQuantity(),
+                    daily.redeemedLoanQuantity(), daily.loanBalanceQuantity(), daily.newLoanAmount(),
+                    daily.redeemedLoanAmount(), daily.loanBalanceAmount());
         }
     }
 }

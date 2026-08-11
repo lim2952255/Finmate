@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinMate</title>
     <link rel="stylesheet" th:href="@{/css/common.css}">
+    <script defer th:src="@{/js/currency-switcher.js}"></script>
 </head>
 <body>
 <div class="page">
@@ -17,74 +18,129 @@
                 <p>계좌 개설, 보유계좌 조회, 거래내역 확인을 진행할 수 있습니다.</p>
             </div>
 
-            <section>
-                <h2>계좌 요약</h2>
-                <div class="dashboard-grid">
-                    <div class="metric-card">
-                        <span class="metric-label">총 보유금액</span>
-                        <span class="metric-value" th:if="${#maps.isEmpty(accountHomeInfo.totalBalancesByCurrency)}">0 KRW</span>
-                        <ul class="currency-list" th:unless="${#maps.isEmpty(accountHomeInfo.totalBalancesByCurrency)}">
-                            <li class="currency-pill" th:each="entry : ${accountHomeInfo.totalBalancesByCurrency}">
-                                <span th:text="${#numbers.formatDecimal(entry.value, 1, 'COMMA', entry.key.fractionDigits, 'POINT')}">0</span>
-                                <span th:text="${entry.key.name()}">KRW</span>
-                            </li>
-                        </ul>
+            <section class="home-overview-section">
+                <div class="home-section-heading">
+                    <div>
+                        <h2>계좌 요약</h2>
+                        <p>통화를 선택하면 주 금액과 보조 금액의 위치가 바뀝니다.</p>
                     </div>
-                    <div class="metric-card">
-                        <span class="metric-label">보유계좌 수</span>
-                        <span class="metric-value">
-                            <span th:text="${accountHomeInfo.accountCount}">0</span>개
-                        </span>
-                        <span class="metric-note">일반 입출금 계좌 기준</span>
+                </div>
+                <div class="home-summary-grid">
+                    <div class="home-balance-card">
+                        <div class="currency-switcher" data-currency-switcher>
+                            <span class="currency-switcher-label">총 보유금액</span>
+                            <div class="currency-primary-values" th:if="${#maps.isEmpty(accountHomeInfo.totalBalancesByCurrency)}">
+                                <div class="currency-primary-value is-active">
+                                    <strong>0</strong>
+                                    <span>KRW</span>
+                                </div>
+                            </div>
+                            <div class="currency-primary-values" th:unless="${#maps.isEmpty(accountHomeInfo.totalBalancesByCurrency)}">
+                                <div class="currency-primary-value"
+                                     th:each="entry : ${accountHomeInfo.totalBalancesByCurrency}"
+                                     data-currency-value="true"
+                                     th:attr="data-currency=${entry.key.name()}">
+                                    <strong th:text="${#numbers.formatDecimal(entry.value, 1, 'COMMA', entry.key.fractionDigits, 'POINT')}">0</strong>
+                                    <span th:text="${entry.key.name()}">KRW</span>
+                                </div>
+                            </div>
+                            <div class="currency-options" th:unless="${#maps.isEmpty(accountHomeInfo.totalBalancesByCurrency)}">
+                                <button class="currency-option"
+                                        type="button"
+                                        th:each="entry : ${accountHomeInfo.totalBalancesByCurrency}"
+                                        data-currency-option="true"
+                                        th:attr="data-currency=${entry.key.name()},aria-label=|${entry.key.name()} 금액을 크게 보기|">
+                                    <strong th:text="${#numbers.formatDecimal(entry.value, 1, 'COMMA', entry.key.fractionDigits, 'POINT')}">0</strong>
+                                    <span th:text="${entry.key.name()}">USD</span>
+                                </button>
+                            </div>
+                            <p class="currency-switcher-note">보조 통화를 선택하면 두 금액의 표시 위치가 바뀝니다.</p>
+                        </div>
+                    </div>
+                    <div class="home-count-card">
+                        <span class="home-count-icon" aria-hidden="true">▤</span>
+                        <div>
+                            <span class="metric-label">보유계좌 수</span>
+                            <span class="metric-value">
+                                <span th:text="${accountHomeInfo.accountCount}">0</span>개
+                            </span>
+                            <span class="metric-note">일반 입출금 계좌 기준</span>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <section>
-                <h2>대표계좌</h2>
+            <section class="home-primary-section">
+                <div class="home-section-heading">
+                    <div>
+                        <h2>대표계좌</h2>
+                        <p>가장 자주 사용하는 계좌와 현재 잔액입니다.</p>
+                    </div>
+                </div>
                 <!-- 대표계좌 띄우기-->
-                <div class="entity-card detail-stack" th:if="${accountHomeInfo.primaryAccount != null}">
-                    <div class="detail-row">
-                        <span class="detail-label">은행명</span>
-                        <span class="detail-value" th:text="${accountHomeInfo.primaryAccount.bankCode.displayName}">신한은행</span>
+                <div class="primary-account-card" th:if="${accountHomeInfo.primaryAccount != null}">
+                    <div class="primary-account-identity">
+                        <span class="primary-account-icon" aria-hidden="true">₩</span>
+                        <small>대표 입출금 계좌</small>
+                        <strong th:text="${accountHomeInfo.primaryAccount.bankCode.displayName}">신한은행</strong>
+                        <span th:text="${accountHomeInfo.primaryAccount.accountNumber}">000-000-000000</span>
                     </div>
-                    <div class="detail-row">
-                        <span class="detail-label">계좌번호</span>
-                        <span class="detail-value" th:text="${accountHomeInfo.primaryAccount.accountNumber}">000-000-000000</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">잔액</span>
-                        <span class="detail-value">
+                    <div class="primary-account-balance primary-account-balance-single">
+                        <small>사용 가능 잔액</small>
+                        <strong class="primary-account-main-amount">
                             <span th:text="${#numbers.formatDecimal(accountHomeInfo.primaryAccount.balance, 1, 'COMMA', accountHomeInfo.primaryAccount.currencyCode.fractionDigits, 'POINT')}">0</span>
                             <span th:text="${accountHomeInfo.primaryAccount.currencyCode.name()}">KRW</span>
-                        </span>
+                        </strong>
                     </div>
-                    <div class="action-row">
+                    <div class="primary-account-actions">
                         <a th:href="@{/accounts/transfer(from=${accountHomeInfo.primaryAccount.accountNumber}, fromBankCode=${accountHomeInfo.primaryAccount.bankCode})}">이체</a>
+                        <a th:href="@{/accounts/transactions}">거래내역</a>
                     </div>
                 </div>
-                <p th:if="${accountHomeInfo.primaryAccount == null}">
-                    아직 대표계좌가 설정되어 있지 않습니다. 대표계좌를 설정해주세요.
-                </p>
+                <div class="empty-state" th:if="${accountHomeInfo.primaryAccount == null}">
+                    <strong>대표계좌를 설정해 주세요</strong>
+                    <p>자주 사용하는 계좌를 대표계좌로 지정하면 이체와 거래내역 확인이 더 빨라집니다.</p>
+                    <a th:href="@{/accounts/list}">보유계좌 확인</a>
+                </div>
             </section>
 
+            <section class="home-menu-section">
+                <div class="home-section-heading">
+                    <div>
+                        <h2>계좌 메뉴</h2>
+                        <p>계좌 개설부터 이체와 거래내역까지 바로 이동합니다.</p>
+                    </div>
+                </div>
             <nav aria-label="계좌 관리 메뉴">
-                <ul>
-                    <li>
-                        <a th:href="@{/accounts/open}">계좌 개설</a>
+                <ul class="app-menu-grid home-menu-grid">
+                    <li class="app-menu-card">
+                        <a th:href="@{/accounts/open}" data-icon="＋">
+                            <strong>계좌 개설</strong>
+                            <span>은행과 통화를 선택해 새 계좌를 만듭니다.</span>
+                        </a>
                     </li>
-                    <li>
+                    <li class="app-menu-card">
                         <!-- 대표 계좌 설정은 계좌목록 내에서 수행-->
-                        <a th:href="@{/accounts/list}">보유계좌 목록</a>
+                        <a th:href="@{/accounts/list}" data-icon="▤">
+                            <strong>보유계좌 목록</strong>
+                            <span>잔액과 대표계좌 설정을 한곳에서 관리합니다.</span>
+                        </a>
                     </li>
-                    <li>
-                        <a th:href="@{/accounts/transfer}">계좌 이체</a>
+                    <li class="app-menu-card">
+                        <a th:href="@{/accounts/transfer}" data-icon="↗">
+                            <strong>계좌 이체</strong>
+                            <span>등록된 계좌에서 안전하게 송금합니다.</span>
+                        </a>
                     </li>
-                    <li>
-                        <a th:href="@{/accounts/transactions}">거래내역</a>
+                    <li class="app-menu-card">
+                        <a th:href="@{/accounts/transactions}" data-icon="↕">
+                            <strong>거래내역</strong>
+                            <span>기간별 입출금과 잔액 흐름을 확인합니다.</span>
+                        </a>
                     </li>
                 </ul>
             </nav>
+            </section>
         </section>
     </main>
 </div>

@@ -40,6 +40,7 @@ public class StockConceptCardSyncService {
                     definition.summary(),
                     definition.detailedExplanation(),
                     definition.bakeryExample(),
+                    definition.marketImpact(),
                     definition.caution(),
                     true
             );
@@ -61,6 +62,7 @@ public class StockConceptCardSyncService {
                 definition.summary(),
                 definition.detailedExplanation(),
                 definition.bakeryExample(),
+                definition.marketImpact(),
                 definition.caution(),
                 true
         );
