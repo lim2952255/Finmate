@@ -2,7 +2,7 @@
 
 ## 1. 프로젝트 목적
 
-FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이션에서 관리하는 서버 렌더링 금융 포트폴리오 프로젝트다. 현재 소스가 제공하는 핵심 범위는 다음과 같다.
+FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이션에서 관리하는 React 기반 금융 포트폴리오 프로젝트다. 현재 소스가 제공하는 핵심 범위는 다음과 같다.
 
 - 세션 기반 로컬·Google·Kakao·Naver 로그인과 로그아웃
 - 다중 통화 일반 계좌 개설, 대표 계좌, 이체 한도, 계좌이체 및 거래 내역
@@ -23,7 +23,7 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이�
 - 종목 상세 재무 학습 카드의 제품·데이터·표현 계약: [종목 상세 재무 학습 카드](STOCK_FINANCIAL_DETAIL.md)
 - 로컬 실행·설정·검증: [개발 가이드](DEVELOPMENT_GUIDE.md)
 
-> README에 JWT, FDS, OpenAI, React, Spring Batch, QueryDSL, AWS 배포 등이 목표로 기재되어 있으나 현재 `build.gradle`과 `src/main/java`에서 해당 구현은 확인되지 않는다. **현재 구현되지 않음**.
+> JWT, FDS, OpenAI, Spring Batch, QueryDSL, AWS 배포 등은 현재 `build.gradle`과 `src/main/java`에서 확인되지 않는다. 모든 사용자 화면은 React로 렌더링된다.
 
 ## 2. 실제 기술 스택
 
@@ -31,14 +31,14 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이�
 |---|---|
 | 언어 | Java 17 |
 | 프레임워크 | Spring Boot 3.5.15 |
-| 웹 | Spring MVC, Thymeleaf, Bean Validation |
+| 웹 | React 19, Vite 8, Spring MVC REST API, Bean Validation |
 | 보안 | Spring Security 폼 로그인·Google/Kakao OIDC·Naver OAuth2·인가, BCrypt, HTTP Session 기반 SecurityContext |
 | 영속성 | Spring Data JPA, Hibernate, MySQL Connector/J |
 | DB | MySQL 8.4 (`docker-compose.yml`) |
 | 캐시 | Redis 7.2, `StringRedisTemplate` |
 | 실시간 | Spring WebSocket(브라우저 연결), JDK `HttpClient` WebSocket(KIS 연결) |
 | 외부 통신 | JDK `java.net.http.HttpClient` |
-| 뷰 | Thymeleaf 템플릿과 정적 CSS |
+| 뷰 | React 전체 사용자 화면, 공용 정적 CSS |
 | 빌드·테스트 | Gradle Wrapper, JUnit 5, Spring Boot Test, GitHub Actions CI |
 | 보조 | Lombok, Docker Compose |
 

@@ -75,7 +75,7 @@ public class AccountService {
                 .map(PrimaryAccount::new)
                 .orElse(null);
 
-        return new AccountHomeInfo(primaryAccount, totalBalancesByCurrency, accounts.size());
+        return new AccountHomeInfo(accounts, primaryAccount, totalBalancesByCurrency, accounts.size());
     }
 
     // 계좌 개설

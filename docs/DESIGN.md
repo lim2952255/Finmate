@@ -4,7 +4,7 @@
 - Status: Active
 - Last refreshed: 2026-07-29
 - Primary product surfaces: 홈, 로그인·회원가입, 계좌, 거래내역, 투자, 포트폴리오, 주문, 종목·시장 데이터
-- Evidence reviewed: `docs/PROJECT_OVERVIEW.md`, `docs/ARCHITECTURE.md`, `src/main/resources/static/css/common.css`, Thymeleaf templates, 2026-07-29 desktop screenshots 6장
+- Evidence reviewed: `docs/PROJECT_OVERVIEW.md`, `docs/ARCHITECTURE.md`, `src/main/resources/static/css/common.css`, React 화면, 2026-07-29 desktop screenshots 6장
 
 ## Brand
 - Personality: 신뢰할 수 있고 차분하지만 데이터가 생동감 있게 읽히는 개인 금융 서비스
@@ -72,11 +72,11 @@
 - Microcopy rules: 버튼은 행동형, 빈 상태는 문제 설명 뒤 가능한 다음 행동을 제시
 
 ## Implementation constraints
-- Framework/styling system: Spring MVC + Thymeleaf + 기존 단일 `common.css`
+- Framework/styling system: React + Spring MVC JSON API + 기존 단일 `common.css`
 - Design-token constraints: 새 의존성 없이 CSS custom properties 확장
 - Performance constraints: 외부 폰트·아이콘 런타임 요청 없이 로컬 HTML/CSS/SVG 사용
-- Compatibility constraints: 현재 세션 로그인, OAuth 경로, Thymeleaf 바인딩과 WebSocket DOM 계약 유지
+- Compatibility constraints: 현재 세션 로그인, OAuth 경로, JSON 요청과 WebSocket 메시지 계약 유지
 - Test/screenshot expectations: MVC 테스트, 템플릿 경로 정적 검사, 데스크톱·모바일 주요 화면 육안 검증
 
 ## Open questions
-- [ ] React 전환 시 이 문서의 토큰과 컴포넌트 상태를 프런트엔드 디자인 토큰으로 이관
+- [x] React 전환 시 이 문서의 토큰과 컴포넌트 상태를 프런트엔드 디자인 토큰으로 이관

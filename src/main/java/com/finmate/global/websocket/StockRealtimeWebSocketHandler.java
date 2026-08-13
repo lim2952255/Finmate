@@ -1,5 +1,7 @@
 package com.finmate.global.websocket;
 
+import java.io.EOFException;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.finmate.service.stock.realtime.StockRealtimeSubscriptionPurpose;
@@ -87,11 +89,16 @@ public class StockRealtimeWebSocketHandler extends TextWebSocketHandler {
     // WebSocket 통신 중 오류가 발생했을때 실행되는 메서드
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        log.warn("Stock realtime websocket transport error. sessionId={}", session.getId(), exception);
+        boolean clientDisconnected = exception instanceof EOFException;
+        if (clientDisconnected) {
+            log.debug("Stock realtime websocket client disconnected. sessionId={}", session.getId());
+        } else {
+            log.warn("Stock realtime websocket transport error. sessionId={}", session.getId(), exception);
+        }
         // 오류가 난 세션을 등록목록에서 제거하고, 세션을 종료한다.
         clientSessionService.unregister(session);
         if (session.isOpen()) {
-            session.close(CloseStatus.SERVER_ERROR);
+            session.close(clientDisconnected ? CloseStatus.NORMAL : CloseStatus.SERVER_ERROR);
         }
     }
 

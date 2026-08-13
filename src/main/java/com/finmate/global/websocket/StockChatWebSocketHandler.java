@@ -1,5 +1,7 @@
 package com.finmate.global.websocket;
 
+import java.io.EOFException;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.finmate.global.security.FinMateAuthenticatedPrincipal;
@@ -105,11 +107,16 @@ public class StockChatWebSocketHandler extends TextWebSocketHandler {
     // WebSocket 통신 오류발생시 자동으로 호출된다.
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        log.warn("Stock chat websocket transport error. sessionId={}", session.getId(), exception);
+        boolean clientDisconnected = exception instanceof EOFException;
+        if (clientDisconnected) {
+            log.debug("Stock chat websocket client disconnected. sessionId={}", session.getId());
+        } else {
+            log.warn("Stock chat websocket transport error. sessionId={}", session.getId(), exception);
+        }
         // 웹소켓 연결이 되어있었다면, 해당 세션정보를 제거하고 세션을 닫는다.
         clientSessionService.unregister(session);
         if (session.isOpen()) {
-            session.close(CloseStatus.SERVER_ERROR);
+            session.close(clientDisconnected ? CloseStatus.NORMAL : CloseStatus.SERVER_ERROR);
         }
     }
 

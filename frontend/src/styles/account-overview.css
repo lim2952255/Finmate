@@ -1,0 +1,48 @@
+.overview-state {
+    display: grid;
+    justify-items: start;
+    gap: 12px;
+    padding: 24px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+}
+
+.overview-state p {
+    margin: 0;
+}
+
+.overview-error {
+    padding: 12px 14px;
+    color: #991b1b;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    font-weight: 750;
+}
+
+.table-action-button {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 13px;
+}
+
+.page-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.page-links a {
+    font-weight: 800;
+}
+
+.stock-react-chart {
+    width: 100%;
+    min-height: 320px;
+    color: var(--color-primary);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+}

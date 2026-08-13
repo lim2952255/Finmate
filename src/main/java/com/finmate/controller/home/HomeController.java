@@ -19,6 +19,8 @@ public class HomeController {
 
     @GetMapping("home")
     public String home(){
-        return "home/home"; // 핸들러어뎁터가 Thymeleaf 뷰 이름을 기반으로 Thymeleaf view를 렌더링한다.
+        // 템플릿 이름을 반환하지 않고 Vite가 빌드한 공통 index.html로 내부 전달한다.
+        // 브라우저가 JavaScript를 실행한 뒤 React Router가 /home에 맞는 HomePage를 선택한다.
+        return "forward:/react/index.html";
     }
 }

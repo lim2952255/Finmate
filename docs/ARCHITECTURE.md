@@ -45,17 +45,23 @@ DTO가 별도의 최상위 계층이 아니라 각 도메인 하위에 배치되
 
 ### Controller
 
-Thymeleaf 화면과 폼 요청을 연결한다. 실시간 채팅 이력과 종목 개념 패널처럼 화면에서 비동기로 조회하는
-데이터는 `@RestController`가 JSON DTO로 반환한다.
+React 화면과 JSON 요청을 연결한다. 사용자 화면 URL은 React 진입 문서로 전달하고,
+React 헤더의 인증 상태는 `/api/session`이 세션 사용자와 CSRF 정보를 JSON으로 반환한다. `/api/accounts`와
+`/api/investments`는 홈과 목록의 조회 데이터를 반환하며 각 `/primary` POST API가 기존 서비스의 대표계좌 변경을 호출한다. 투자 학습 카탈로그와
+개념 상세, 주제별 시장 리포트와 모든 업무 데이터도 JSON API로 조회한다. 상태 변경은 CSRF 토큰을 포함한
+JSON 요청으로 받고 기존 Service의 검증과 트랜잭션을 재사용한다.
 
 - `AccountController`: 일반 계좌, 이체, 한도, 내역
-- `InvestmentController`: 투자 계좌, 예수금 이체, 포트폴리오, 주문 내역, 환율·지수
+- `InvestmentController`: 투자 화면 URL을 React 진입 문서로 연결
+- `InvestmentReadApiController`: 포트폴리오의 계좌·최근 평가가·업종 비중·환율과 종목 상세의 OHLC 일봉 데이터를 JSON으로 반환
 - `StockController`: 시장별 종목/업종 검색, 관심 종목, 상세, 랭킹 데이터
 - `StockConceptController`: 종목 ID와 enum 개념 코드를 받아 종목 상세의 개념정보 JSON 반환
 - `OrderController`: 주문 화면, 일반·예약 주문 접수와 취소
 - `LoginController`: 회원가입과 로그인 화면
 
 Spring Security의 `SecurityFilterChain`이 폼 로그인·Google/Kakao OIDC·Naver OAuth2 로그인·로그아웃과 URL 인가를 처리한다. 로컬 로그인은 `FinMateUserDetailsService`와 `DaoAuthenticationProvider`를 사용한다. `FinMateOidcUserService`는 Google·Kakao OIDC 사용자를, `FinMateOAuth2UserService`는 Naver OAuth2 사용자를 로컬 `User`에 매핑한다. 보호 컨트롤러는 로그인 방식과 무관하게 `@AuthenticationPrincipal FinMateAuthenticatedPrincipal`에서 로컬 사용자 ID를 받아 서비스 계층의 소유권 검증에 전달한다.
+
+브라우저가 보호 화면 URL을 Spring에 직접 요청하면 Security가 로그인 페이지로 리다이렉트하고 원래 요청을 저장한다. React Router 내부 이동은 새 HTML 요청이 없으므로 `ProtectedRoute`가 먼저 `/api/session`으로 인증 여부를 확인하고, 비로그인 사용자를 원래 주소가 담긴 `redirect` 파라미터와 함께 `/login`으로 보낸다. 로그인 성공 후에는 검증된 FinMate 내부 경로로 복귀한다. 세션이 만료된 상태에서 `/api/**`를 호출하면 Spring은 로그인 HTML 대신 `401 Unauthorized`를 반환하고, 프론트엔드 공통 HTTP 모듈이 이를 로그인 이동으로 처리한다.
 
 소셜 로그인 흐름은 다음과 같다.
 
@@ -76,10 +82,11 @@ Google·Kakao의 `sub`와 Naver의 프로필 `id`는 각 공급자 내에서 사
 
 ### View
 
-Thymeleaf 화면은 `templates/layout/header.html`의 공통 헤더와 `static/css/common.css`의 데스크톱 UI 토큰을
-공유한다. 업무 화면은 배경 위에 독립된 카드가 놓이는 앱 셸을 사용하며, 페이지 제목·검색 패널·폼·빈 상태와
-업무 메뉴는 공통 클래스로 표현한다. 종목 상세처럼 상호작용이 많은 화면은 서버가 원본 DTO를 전달하고
-브라우저 JavaScript가 차트와 비동기 패널을 렌더링한다.
+`frontend/`의 React 애플리케이션이 전체 사용자 화면과 공통 헤더를 렌더링한다. 각 화면 진입 Controller는
+Gradle 빌드가 `static/react`에 포함한 Vite 진입 문서로 요청을 전달하고, React는 `/api/session`과 업무별
+JSON API를 조회한다. 공통 화면 토큰은 `static/css/common.css`를 사용한다.
+React 최상단 오류 경계는 특정 컴포넌트의 렌더링 오류가 전체 흰 화면으로 번지는 것을 막고, 데이터 조회가 오래 걸리는 화면은 공통 로딩 상태를 표시한다.
+종목 상세는 일봉 원본으로 캔들·거래량·이동평균선을 렌더링하고, 포트폴리오는 서버가 제공한 평균매입가와 최근 종가를 초기 상태로 사용한다. 장중 `STOCK_TRADE` WebSocket 메시지가 도착하면 React 상태의 현재가를 바꾸고 평가금액·손익·수익률 표시를 다시 계산한다. 통화 환산은 화면 표시 전용이며 서버의 실제 잔고나 거래금액을 변경하지 않는다.
 
 ### Service
 
@@ -205,7 +212,8 @@ Redis 금일 스냅샷을 합쳐 화면 DTO를 만든다.
 지수·증시·수급·등락·마감·전망 관련 단어를, 금리는 중앙은행·기준금리·채권·물가·통화정책 관련 단어를,
 환율은 주요 통화·강약세·외환시장·무역 관련 단어를 사용한다. `/api/market-reports/{topic}` 응답의 최종
 10건은 `market_report_cache`의 주제별 한 행에 저장하고 모든 사용자가 기본 6시간 동안 공유한다. 같은 JVM에서
-동일 주제 갱신이 겹치면 하나의 외부 호출만 수행하며, `/investments/reports` 화면은 선택한 주제를 지연 조회한다.
+동일 주제 갱신이 겹치면 하나의 외부 호출만 수행한다. React `/investments/reports` 화면은 선택한 주제만
+`/api/market-reports/{topic}`으로 지연 조회하고, 이미 받은 주제 응답은 브라우저 메모리에 재사용한다.
 
 ### Redis
 
@@ -238,10 +246,11 @@ Canvas에 캔들·거래량·MA5·MA20·MA60과 동적 축을 그린다. 현재 
 또는 하단 기간 바를 움직여 탐색한다. 기간 바의 손잡이 길이와 위치는 전체 조회 기간 중 현재 화면에 보이는
 범위를 나타내며 확대·축소에 따라 함께 변한다. 과거 구간을 추가로 가져오는 별도 페이지 조회 API는 사용하지 않는다.
 
-투자 학습 화면은 `/investment-learning`에서 계좌·거래, 위험관리·포트폴리오, 펀드·ETF,
-시장 안전장치, 파생상품·공매도 카테고리를 제공한다. 목록의 검색·필터는 브라우저에서 처리하고,
-카드를 열 때 `/api/investment-learning/concepts/{conceptCode}`로 DB에 동기화된 정적 설명과 공용 SVG를
-조회한다. 이 API는 투자 학습 카탈로그에 등록된 코드만 허용하며 종목 상세 데이터나 KIS API는 호출하지 않는다.
+React 투자 학습 화면은 `/investment-learning`에서 계좌·거래, 위험관리·포트폴리오, 펀드·ETF,
+시장 안전장치, 파생상품·공매도 카테고리를 제공한다. 최초 진입 시 `/api/investment-learning/catalog`에서
+카테고리와 17개 개념 요약을 조회하고, 검색·필터는 브라우저에서 처리한다. 카드를 열 때
+`/api/investment-learning/concepts/{conceptCode}`로 DB에 동기화된 정적 설명과 공용 SVG를 조회한다.
+상세 API는 투자 학습 카탈로그에 등록된 코드만 허용하며 종목 상세 데이터나 KIS API는 호출하지 않는다.
 투자 학습 카드의 `marketImpact`는 별도의 초록색 `시장과 연결해서 보기` 영역으로 렌더링하며,
 대형기관 리밸런싱·ETF 자금 흐름·파생상품 헤지처럼 개념이 실제 수급과 가격에 연결되는 과정과
 방향성 신호로 단정할 수 없는 이유를 함께 보여준다.

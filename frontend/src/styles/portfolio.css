@@ -1,0 +1,393 @@
+.portfolio-content {
+    gap: 20px;
+}
+
+.portfolio-toolbar {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: flex-start;
+    gap: 12px;
+    margin: 0;
+    padding: 16px;
+    background: #f7f9fc;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+}
+
+.portfolio-toolbar label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 300px;
+    font-weight: 800;
+}
+
+.portfolio-toolbar select {
+    width: auto;
+}
+
+.portfolio-toolbar > a,
+.portfolio-footer-links a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 8px 14px;
+    color: var(--color-primary);
+    background: #ffffff;
+    border: 1px solid rgba(37, 99, 235, 0.20);
+    border-radius: 7px;
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+    font-weight: 850;
+}
+
+.portfolio-currency-view {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.portfolio-currency-view strong {
+    font-size: 14px;
+}
+
+.portfolio-currency-view-buttons {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    background: #e9eef8;
+    border-radius: 10px;
+}
+
+.portfolio-currency-view-buttons button {
+    padding: 8px 12px;
+    color: #475569;
+    background: transparent;
+    box-shadow: none;
+}
+
+.portfolio-currency-view-buttons button.is-active {
+    color: #ffffff;
+    background: var(--color-primary);
+}
+
+.portfolio-currency-view-buttons button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.portfolio-exchange-rate {
+    width: 100%;
+    margin: 0;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.portfolio-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+    margin: 0;
+}
+
+.portfolio-summary-card {
+    position: relative;
+    display: grid;
+    gap: 12px;
+    min-height: 188px;
+    padding: 22px;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 100% 0%, rgba(49, 91, 234, 0.10), transparent 11rem),
+        linear-gradient(145deg, #ffffff 0%, #f6f8fc 100%);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    box-shadow: 0 14px 32px rgba(30, 52, 90, 0.08);
+}
+
+.portfolio-summary-card::before {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 5px;
+    height: 100%;
+    background: var(--color-primary);
+    content: "";
+}
+
+.portfolio-summary-card.positive::before {
+    background: var(--color-positive);
+}
+
+.portfolio-summary-card.negative::before {
+    background: var(--color-negative);
+}
+
+.portfolio-summary-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    color: #475569;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.portfolio-summary-currency {
+    padding: 3px 8px;
+    color: #0f172a;
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    border-radius: 999px;
+    font-size: 12px;
+}
+
+.portfolio-summary-value {
+    display: block;
+    color: var(--color-heading);
+    font-size: clamp(25px, 3vw, 31px);
+    line-height: 1.15;
+}
+
+.portfolio-summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.portfolio-summary-item {
+    display: grid;
+    gap: 4px;
+    padding: 10px 11px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid #e4eaf2;
+    border-radius: 10px;
+}
+
+.portfolio-summary-label {
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.portfolio-summary-item:has(.positive) .portfolio-summary-label {
+    color: var(--color-positive);
+}
+
+.portfolio-summary-item:has(.negative) .portfolio-summary-label {
+    color: var(--color-negative);
+}
+
+.portfolio-summary-status {
+    color: #64748b;
+    font-size: 13px;
+}
+
+.industry-allocation {
+    margin: 0;
+    box-shadow: none;
+}
+
+.industry-allocation-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.industry-allocation-card {
+    display: grid;
+    gap: 8px;
+    padding: 14px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    border: 1px solid var(--color-border);
+    border-radius: 13px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.045);
+}
+
+.industry-allocation-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.industry-allocation-currency {
+    padding: 3px 8px;
+    color: #334155;
+    background: #f1f5f9;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.industry-allocation-tags {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 5px;
+}
+
+.industry-allocation-bar {
+    height: 8px;
+    overflow: hidden;
+    background: #e2e8f0;
+    border-radius: 999px;
+}
+
+.industry-allocation-bar span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, #2563eb 0%, #0ea5e9 100%);
+    border-radius: inherit;
+}
+
+.industry-allocation-value {
+    margin: 0;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.portfolio-account {
+    min-width: 160px;
+}
+
+.portfolio-table {
+    min-width: 1080px;
+}
+
+.portfolio-table th,
+.portfolio-table td {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    vertical-align: middle;
+}
+
+.portfolio-table tbody tr {
+    height: auto;
+}
+
+.portfolio-table .portfolio-stock {
+    min-width: 150px;
+}
+
+.portfolio-account small,
+.portfolio-stock small,
+.money-cell small {
+    display: block;
+    margin-top: 2px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.money-cell {
+    white-space: nowrap;
+}
+
+.positive {
+    color: var(--color-positive) !important;
+    font-weight: 900;
+}
+
+.negative {
+    color: var(--color-negative) !important;
+    font-weight: 900;
+}
+
+.flat {
+    color: #64748b !important;
+    font-weight: 800;
+}
+
+.portfolio-profit,
+.portfolio-profit-rate {
+    min-width: 105px;
+    font-variant-numeric: tabular-nums;
+}
+
+.records-table td.portfolio-profit.positive,
+.records-table td.portfolio-profit-rate.positive {
+    color: var(--color-positive);
+    background: var(--color-positive-soft);
+}
+
+.records-table td.portfolio-profit.negative,
+.records-table td.portfolio-profit-rate.negative {
+    color: var(--color-negative);
+    background: var(--color-negative-soft);
+}
+
+.portfolio-table th:last-child,
+.portfolio-table td:last-child {
+    min-width: 112px;
+    text-align: center;
+}
+
+.market-chip,
+.industry-chip,
+.status-chip {
+    display: inline-flex;
+    width: fit-content;
+    padding: 5px 8px;
+    color: #315bea;
+    background: #eef4ff;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 850;
+    white-space: nowrap;
+}
+
+.industry-chip {
+    color: #315bea;
+    background: #eaf1ff;
+}
+
+.industry-chip.is-empty,
+.status-chip.is-closed {
+    color: #64748b;
+    background: #f1f5f9;
+}
+
+.table-action-link {
+    display: inline-flex;
+    min-height: 32px;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 10px;
+    color: #2563eb;
+    background: #ffffff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    font-weight: 850;
+}
+
+.portfolio-footer-links {
+    display: flex;
+    gap: 8px;
+    margin: 0;
+}
+
+@media (max-width: 720px) {
+    .portfolio-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .portfolio-toolbar > label,
+    .portfolio-toolbar select {
+        width: 100%;
+    }
+
+    .portfolio-currency-view {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .portfolio-currency-view-buttons {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+    }
+}

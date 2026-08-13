@@ -1,0 +1,214 @@
+/* 두 개의 TOP10 표가 데스크톱에서 가로로 잘리지 않도록 이 화면만 본문 폭을 넓힌다. */
+.market-movers-main {
+    width: min(100%, 1600px);
+}
+
+.market-movers-content {
+    width: 100%;
+}
+
+/* 기존 Thymeleaf 화면처럼 제목과 홈 링크만 간결하게 배치한다. */
+.ranking-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.ranking-toolbar h1 {
+    margin-bottom: 8px;
+}
+
+.ranking-toolbar p {
+    margin: 0;
+    color: var(--color-muted);
+}
+
+/* API 요청 상태와 polling 실패 안내 문구를 설정한다. */
+.ranking-state {
+    display: grid;
+    min-height: 220px;
+    place-content: center;
+    justify-items: center;
+    gap: 14px;
+    padding: 24px;
+    border: 1px dashed var(--color-border-strong);
+    border-radius: 18px;
+    background: var(--color-surface-soft);
+    color: var(--color-muted);
+    text-align: center;
+}
+
+.ranking-state p {
+    margin: 0;
+}
+
+.ranking-state button {
+    min-height: 40px;
+    padding: 8px 15px;
+    border: 0;
+    border-radius: 9px;
+    background: var(--color-primary);
+    color: #ffffff;
+    cursor: pointer;
+    font-weight: 800;
+}
+
+.ranking-refresh-warning {
+    margin: 14px 0 0;
+    color: #b45309;
+    font-size: 13px;
+    text-align: right;
+}
+
+/* 시장과 순위 종류별 TOP10 보드를 반응형 그리드로 배치한다. */
+.ranking-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.ranking-board {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-surface);
+}
+
+.ranking-board-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface-soft);
+}
+
+.ranking-board-title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ranking-board-title strong {
+    color: var(--color-heading);
+    font-size: 18px;
+}
+
+.ranking-board-title span {
+    color: var(--color-muted);
+    font-size: 13px;
+}
+
+.market-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.market-status.open {
+    background: #d1fae5;
+    color: #047857;
+}
+
+/* 화면이 좁을 때도 모든 열을 볼 수 있도록 표 영역에 가로 스크롤을 허용한다. */
+.ranking-table-wrap {
+    overflow-x: auto;
+}
+
+.ranking-table {
+    width: 100%;
+    min-width: 640px;
+    border-collapse: collapse;
+}
+
+.ranking-table th,
+.ranking-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #edf1f6;
+    white-space: nowrap;
+}
+
+.ranking-table th {
+    background: #fbfcfe;
+    color: var(--color-muted);
+    font-size: 12px;
+    text-align: left;
+}
+
+.ranking-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.ranking-table tbody tr:hover {
+    background: #f8faff;
+}
+
+.rank-cell {
+    width: 46px;
+    color: var(--color-muted);
+    font-weight: 700;
+    text-align: right;
+}
+
+.stock-cell {
+    min-width: 132px;
+}
+
+.stock-cell a {
+    color: var(--color-heading);
+    font-weight: 800;
+}
+
+.stock-symbol {
+    display: block;
+    margin-top: 3px;
+    color: var(--color-muted);
+    font-size: 12px;
+}
+
+.numeric-cell {
+    text-align: right !important;
+    font-variant-numeric: tabular-nums;
+}
+
+.change-rate.up {
+    color: var(--color-positive);
+}
+
+.change-rate.down {
+    color: var(--color-negative);
+}
+
+.change-rate.flat {
+    color: var(--color-muted);
+}
+
+.empty-ranking {
+    padding: 48px 18px;
+    color: var(--color-muted);
+    text-align: center;
+}
+
+/* 각 표가 최소 너비를 확보하지 못하는 화면에서는 한 열로 배치한다. */
+@media (max-width: 1400px) {
+    .ranking-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 모바일에서는 상단 영역도 세로로 쌓는다. */
+@media (max-width: 720px) {
+    .ranking-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
