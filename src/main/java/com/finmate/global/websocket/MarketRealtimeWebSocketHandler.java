@@ -1,5 +1,7 @@
 package com.finmate.global.websocket;
 
+import java.io.EOFException;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.finmate.service.market.MarketRealtimeClientSessionService;
@@ -56,10 +58,15 @@ public class MarketRealtimeWebSocketHandler extends TextWebSocketHandler {
     // 웹소켓 송수긴간에 오류가 발생한경우, 연결을 해제하고, 클라이언트 세션을 닫는다.
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        log.warn("Market realtime websocket transport error. sessionId={}", session.getId(), exception);
+        boolean clientDisconnected = exception instanceof EOFException;
+        if (clientDisconnected) {
+            log.debug("Market realtime websocket client disconnected. sessionId={}", session.getId());
+        } else {
+            log.warn("Market realtime websocket transport error. sessionId={}", session.getId(), exception);
+        }
         clientSessionService.unregister(session);
         if (session.isOpen()) {
-            session.close(CloseStatus.SERVER_ERROR);
+            session.close(clientDisconnected ? CloseStatus.NORMAL : CloseStatus.SERVER_ERROR);
         }
     }
     // 연결이 종료될경우, ClientSessionService에서 클라이언트 세션을 등록해제한다.

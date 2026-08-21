@@ -1,5 +1,9 @@
 package com.finmate.global.security;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,6 +13,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 
 // 스프링 시큐리티에 대한 설정을 추가한다.
 @Configuration
@@ -34,8 +40,26 @@ public class SecurityConfig {
 				new DaoAuthenticationProvider(userDetailsService);
 		authenticationProvider.setPasswordEncoder(passwordEncoder);
 
+		// 직접 입력한 보호 URL은 로그인 후 원래 주소로 돌아가고, React가 전달한 내부 redirect도 지원한다.
+		SavedRequestAwareAuthenticationSuccessHandler savedRequestSuccessHandler =
+				new SavedRequestAwareAuthenticationSuccessHandler();
+		savedRequestSuccessHandler.setDefaultTargetUrl("/");
+		LoginUrlAuthenticationEntryPoint pageAuthenticationEntryPoint =
+				new LoginUrlAuthenticationEntryPoint("/login");
+
 		http
 				.authenticationProvider(authenticationProvider)
+				// API 호출에는 로그인 HTML을 보내지 않고 401을 반환하여 React가 정확히 처리하게 한다.
+				.exceptionHandling(exception -> exception
+						.authenticationEntryPoint((request, response, authenticationException) -> {
+							String apiPrefix = request.getContextPath() + "/api/";
+							if (request.getRequestURI().startsWith(apiPrefix)) {
+								response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+								return;
+							}
+							pageAuthenticationEntryPoint.commence(request, response, authenticationException);
+						})
+				)
 				// SpringSequrity가 권한없이 접근을 허용할 경로와 권한없이 접근을 차단할 경로를 지정한다.
 				.authorizeHttpRequests(authorize -> authorize
 						.requestMatchers(
@@ -43,11 +67,16 @@ public class SecurityConfig {
 								"/home",
 								"/login",
 								"/signup",
+								// 로그인 전에도 React Header가 현재 상태를 확인할 수 있어야 한다.
+								"/api/session",
+								"/api/auth/**",
 								"/oauth2/**",
 								"/login/oauth2/**",
 								"/css/**",
 								"/js/**",
 								"/images/**",
+								// Vite가 빌드한 React HTML, JavaScript, CSS 정적 파일 경로다.
+								"/react/**",
 								"/favicon.ico",
 								"/error"
 						).permitAll() // 로그인하지 않아도 접근가능
@@ -69,7 +98,25 @@ public class SecurityConfig {
 						.loginProcessingUrl("/login") // /login에 대한 POST 요청을 Spring Sequrity의 로그인 필터가 처리한다.
 						.usernameParameter("userId")
 						.passwordParameter("password")
-						.failureUrl("/login?error") // 로그인 실패 처리
+						.failureHandler((request, response, exception) -> {
+							String redirect = request.getParameter("redirect");
+							String failureUrl = "/login?error";
+							if (redirect != null && redirect.startsWith("/") && !redirect.startsWith("//")) {
+								failureUrl += "&redirect=" + URLEncoder.encode(
+										redirect,
+										StandardCharsets.UTF_8
+								);
+							}
+							response.sendRedirect(request.getContextPath() + failureUrl);
+						})
+						.successHandler((request, response, authentication) -> {
+							String redirect = request.getParameter("redirect");
+							if (redirect != null && redirect.startsWith("/") && !redirect.startsWith("//")) {
+								response.sendRedirect(request.getContextPath() + redirect);
+								return;
+							}
+							savedRequestSuccessHandler.onAuthenticationSuccess(request, response, authentication);
+						})
 						.permitAll()
 				)
 				// 로그아웃요청을 처리

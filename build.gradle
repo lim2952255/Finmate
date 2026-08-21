@@ -21,7 +21,6 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
@@ -40,4 +39,42 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+// React 프로젝트의 위치를 한 번 정의해 아래 Gradle 작업들이 함께 사용한다.
+def frontendDirectory = layout.projectDirectory.dir('frontend')
+
+// package-lock.json에 기록된 정확한 버전으로 프런트엔드 패키지를 설치한다.
+tasks.register('npmInstall', Exec) {
+	workingDir frontendDirectory.asFile
+	inputs.files(
+			frontendDirectory.file('package.json'),
+			frontendDirectory.file('package-lock.json')
+	)
+	outputs.dir(frontendDirectory.dir('node_modules'))
+	commandLine 'npm', 'ci'
+}
+
+// Vite를 실행해 브라우저가 사용할 HTML/CSS/JavaScript를 frontend/dist에 생성한다.
+tasks.register('npmBuild', Exec) {
+	dependsOn 'npmInstall'
+	workingDir frontendDirectory.asFile
+	inputs.file(frontendDirectory.file('index.html'))
+	inputs.file(frontendDirectory.file('vite.config.js'))
+	inputs.dir(frontendDirectory.dir('src'))
+	outputs.dir(frontendDirectory.dir('dist'))
+	commandLine 'npm', 'run', 'build'
+}
+
+tasks.named('processResources') {
+	dependsOn 'npmBuild'
+	// Spring Boot 실행 파일 안의 static/react 경로에 Vite 결과물을 포함한다.
+	from(frontendDirectory.dir('dist')) {
+		into 'static/react'
+	}
+}
+
+tasks.named('clean') {
+	// Gradle clean 시 Java 빌드 결과와 함께 React 빌드 결과도 지운다.
+	delete frontendDirectory.dir('dist')
 }

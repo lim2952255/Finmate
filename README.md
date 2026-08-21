@@ -2,7 +2,7 @@
 
 FinMate는 일반 은행 계좌와 모의 투자 계좌를 함께 관리하는 Spring Boot 기반 금융 포트폴리오 애플리케이션입니다.
 
-브라우저 화면은 Thymeleaf로 서버 렌더링하고, 한국투자증권(KIS) Open API는 종목 마스터·시세·랭킹·실시간 WebSocket 데이터 수집에 사용합니다. 실제 증권사 주문 전송은 하지 않으며, 주식 주문·체결·정산은 FinMate DB 안에서 처리되는 모의 거래입니다.
+모든 사용자 화면은 React로 렌더링하고 Spring MVC는 React 진입 문서와 JSON API를 제공합니다. 한국투자증권(KIS) Open API는 종목 마스터·시세·랭킹·실시간 WebSocket 데이터 수집에 사용합니다. 실제 증권사 주문 전송은 하지 않으며, 주식 주문·체결·정산은 FinMate DB 안에서 처리되는 모의 거래입니다.
 
 ## 현재 구현 범위
 
@@ -22,14 +22,14 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 함께 관리하는 S
 |---|---|
 | Language | Java 17 |
 | Framework | Spring Boot 3.5.15 |
-| Web | Spring MVC, Thymeleaf, Bean Validation |
+| Web | React 19, Vite 8, Spring MVC REST API, Bean Validation |
 | Auth | Spring Security 의존성, BCrypt, 자체 MVC Interceptor, HTTP Session |
 | Persistence | Spring Data JPA, Hibernate, MySQL Connector/J |
 | Database | MySQL 8.4 |
 | Cache | Redis 7.2, `StringRedisTemplate` |
 | Realtime | Spring WebSocket, JDK `HttpClient` WebSocket |
 | External API | 한국투자증권(KIS) Open API |
-| Build/Test | Gradle Wrapper, JUnit 5, Spring Boot Test |
+| Build/Test | Gradle Wrapper, npm, ESLint, JUnit 5, Spring Boot Test |
 | Utility | Lombok, Docker Compose |
 
 ## 지속적 통합
@@ -151,6 +151,9 @@ NASDAQ의 대한민국 시간은 미국 서머타임 여부에 따라 달라지�
 | 종목 상세/랭킹 | `/investments/stocks/detail`, `/investments/stocks/market-movers` |
 | 주문 화면 | `/investments/stocks/order/{stockId}` |
 
+모든 화면은 React가 JSON API를 조회해 렌더링한다. 금융 변경 요청은 CSRF 토큰을 포함한 JSON POST로 전송하며,
+잔액·주문·원장 변경은 기존 Spring Service의 트랜잭션과 검증 규칙을 그대로 사용한다.
+
 ## KIS 연동
 
 ### REST
@@ -197,4 +200,4 @@ KIS WebSocket 최신 payload, 브라우저 세션, 구독 참조 수는 Redis가
 - 공휴일, 조기폐장, 종목별 특수 거래 제한 캘린더는 반영하지 않았습니다.
 - KIS token, WebSocket 연결 상태, 실시간 최신 payload는 단일 JVM 메모리 기준입니다.
 - 다중 서버 fan-out, leader election, 중복 체결 방지 구조는 없습니다.
-- JWT, Refresh Token, FDS, 뉴스 수집, AI 리포트, React 프론트엔드, Spring Batch, QueryDSL, CD와 AWS 배포는 현재 소스 기준 구현 범위가 아닙니다.
+- JWT, Refresh Token, FDS, AI 리포트, Spring Batch, QueryDSL, CD와 AWS 배포는 현재 소스 기준 구현 범위가 아닙니다. 사용자 화면의 React 전환은 완료되었습니다.

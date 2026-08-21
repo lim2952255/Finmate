@@ -2,7 +2,7 @@
 
 ## 1. 프로젝트 목적
 
-FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이션에서 관리하는 서버 렌더링 금융 포트폴리오 프로젝트다. 현재 소스가 제공하는 핵심 범위는 다음과 같다.
+FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이션에서 관리하는 React 기반 금융 포트폴리오 프로젝트다. 현재 소스가 제공하는 핵심 범위는 다음과 같다.
 
 - 세션 기반 로컬·Google·Kakao·Naver 로그인과 로그아웃
 - 다중 통화 일반 계좌 개설, 대표 계좌, 이체 한도, 계좌이체 및 거래 내역
@@ -23,7 +23,7 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이�
 - 종목 상세 재무 학습 카드의 제품·데이터·표현 계약: [종목 상세 재무 학습 카드](STOCK_FINANCIAL_DETAIL.md)
 - 로컬 실행·설정·검증: [개발 가이드](DEVELOPMENT_GUIDE.md)
 
-> README에 JWT, FDS, OpenAI, React, Spring Batch, QueryDSL, AWS 배포 등이 목표로 기재되어 있으나 현재 `build.gradle`과 `src/main/java`에서 해당 구현은 확인되지 않는다. **현재 구현되지 않음**.
+> JWT, FDS, OpenAI, Spring Batch, QueryDSL, AWS 배포 등은 현재 `build.gradle`과 `src/main/java`에서 확인되지 않는다. 모든 사용자 화면은 React로 렌더링된다.
 
 ## 2. 실제 기술 스택
 
@@ -31,14 +31,14 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이�
 |---|---|
 | 언어 | Java 17 |
 | 프레임워크 | Spring Boot 3.5.15 |
-| 웹 | Spring MVC, Thymeleaf, Bean Validation |
+| 웹 | React 19, Vite 8, Spring MVC REST API, Bean Validation |
 | 보안 | Spring Security 폼 로그인·Google/Kakao OIDC·Naver OAuth2·인가, BCrypt, HTTP Session 기반 SecurityContext |
 | 영속성 | Spring Data JPA, Hibernate, MySQL Connector/J |
 | DB | MySQL 8.4 (`docker-compose.yml`) |
 | 캐시 | Redis 7.2, `StringRedisTemplate` |
 | 실시간 | Spring WebSocket(브라우저 연결), JDK `HttpClient` WebSocket(KIS 연결) |
 | 외부 통신 | JDK `java.net.http.HttpClient` |
-| 뷰 | Thymeleaf 템플릿과 정적 CSS |
+| 뷰 | React 전체 사용자 화면, 공용 정적 CSS |
 | 빌드·테스트 | Gradle Wrapper, JUnit 5, Spring Boot Test, GitHub Actions CI |
 | 보조 | Lombok, Docker Compose |
 
@@ -66,9 +66,9 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이�
 
 종목 상세의 실시간 채팅은 별도 `/ws/chat` 연결을 사용한다. 로그인 HTTP 세션에서 사용자를 식별하며, 메시지는 MySQL에 저장해 재접속한 사용자도 과거 기록을 조회할 수 있다. 작성자는 본인 메시지를 수정하거나 소프트 삭제할 수 있고, 다른 메시지를 대상으로 한 답글을 작성할 수 있다.
 
-종목 상세의 뉴스 탭은 탭을 처음 열 때 `/api/stocks/{stockId}/news`를 호출한다. 서버는 `{한글 종목명} 시장정보`를 검색어로 NAVER API HUB 뉴스 검색의 관련도순 후보 40건을 조회한다. 후보의 제목에 투자 핵심 키워드가 포함된 개수를 동일 가중치로 계산해 점수 내림차순, 발행일시 내림차순, NAVER 원본 순서로 정렬하고 상위 10건만 제공한다. 최종 결과와 검색어는 종목별 `stock_news_cache` 행의 JSON으로 저장하고, `updatedAt`이 기본 6시간 이내면 외부 API를 다시 호출하지 않는다. 같은 JVM에서 동일 종목의 캐시 갱신 요청이 겹치면 하나의 갱신만 수행한다.
+종목 상세의 뉴스 탭은 탭을 처음 열 때 `/api/stocks/{stockId}/news`를 호출한다. 서버는 `{한글 종목명} 시장정보`를 검색어로 NAVER API HUB 뉴스 검색의 관련도순 후보 40건을 조회한다. 후보를 한국 날짜 최신순으로 먼저 나누고, 같은 날짜 안에서 제목의 투자 핵심 키워드 포함 개수를 동일 가중치로 계산해 점수 내림차순, 발행일시 내림차순, NAVER 원본 순서로 정렬한 상위 10건만 제공한다. 최종 결과, 검색어와 정렬 정책 버전은 종목별 `stock_news_cache` 행에 저장하고, 정책 버전이 같으며 `updatedAt`이 기본 6시간 이내면 외부 API를 다시 호출하지 않는다. 같은 JVM에서 동일 종목의 캐시 갱신 요청이 겹치면 하나의 갱신만 수행한다.
 
-`/investments/reports`는 KOSPI, KOSDAQ, NASDAQ, S&P 500, 금리, 환율의 6개 시장 뉴스 주제를 탭으로 제공한다. 각 주제는 관련도순 후보 40건을 주제별 제목 키워드로 동일 가중치 점수화한 뒤 최신순을 함께 적용해 상위 10건을 보여준다. 결과는 사용자별로 저장하지 않고 주제별 `market_report_cache` 한 행을 모든 사용자가 공유하며, 기본 6시간이 지난 뒤 첫 조회에서만 갱신한다.
+`/investments/reports`는 KOSPI, KOSDAQ, NASDAQ, S&P 500, 금리, 환율의 6개 시장 뉴스 주제를 탭으로 제공한다. 각 주제는 관련도순 후보 40건을 한국 날짜 최신순으로 먼저 나누고, 같은 날짜 안에서 주제별 제목 키워드 점수와 발행시각을 적용해 상위 10건을 보여준다. 결과는 사용자별로 저장하지 않고 주제별 `market_report_cache` 한 행을 모든 사용자가 공유하며, 기본 6시간이 지난 뒤 첫 조회에서만 갱신한다.
 
 ### 모의 주식 거래
 

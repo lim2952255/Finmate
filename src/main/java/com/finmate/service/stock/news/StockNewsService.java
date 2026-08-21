@@ -113,11 +113,16 @@ public class StockNewsService {
 
         // DB에 캐싱할 엔티티를 새로 생성
         StockNewsCache cacheToSave = recheckedCache == null
-                ? StockNewsCache.create(stock, query, responseJson, refreshedAt)
+                ? StockNewsCache.create(
+                        stock,
+                        query,
+                        responseJson,
+                        newsRankingService.policyVersion(),
+                        refreshedAt)
                 : recheckedCache;
         if (recheckedCache != null) {
             // 이미 엔티티가 존재했다면, 해당 엔티티를 update
-            cacheToSave.refresh(query, responseJson, refreshedAt);
+            cacheToSave.refresh(query, responseJson, newsRankingService.policyVersion(), refreshedAt);
         }
         // DB에 새로운 엔티티를 저장한다.
         cacheRepository.save(cacheToSave);
@@ -145,6 +150,8 @@ public class StockNewsService {
         // DB에 뉴스기사가 저장되어 있지 않거나, TTL이 만료된 경우에는 null을 리턴하여 유효하지 않음을 나타낸다.
         if (cache == null
                 || !Objects.equals(cache.getQuery(), query)
+				// 기사 정렬 버전을 검사한다.
+                || !Objects.equals(cache.getRankingPolicyVersion(), newsRankingService.policyVersion())
                 || cache.getUpdatedAt() == null
                 || !cache.getUpdatedAt().plus(cacheTtl()).isAfter(now)) {
             return null;

@@ -1,5 +1,6 @@
 package com.finmate.global.security;
 
+import com.finmate.controller.login.AuthApiController;
 import com.finmate.controller.login.LoginController;
 import com.finmate.service.user.UserService;
 import org.junit.jupiter.api.DisplayName;
@@ -11,12 +12,15 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(
-        controllers = LoginController.class,
+        controllers = {
+                LoginController.class,
+                AuthApiController.class
+        },
         properties = {
                 "finmate.oauth.google.enabled=true",
                 "finmate.oauth.google.client-id=test-client-id",
@@ -51,25 +55,13 @@ class SocialOAuthAuthorizationMvcTest {
     private FinMateOAuth2UserService oauth2UserService;
 
     @Test
-    @DisplayName("활성화된 소셜 로그인 공급자 링크를 모두 표시한다")
-    void displaysSocialLoginLinks() throws Exception {
-        mockMvc.perform(get("/login"))
+    @DisplayName("활성화된 소셜 로그인 공급자 정보를 JSON으로 제공한다")
+    void providesSocialLoginOptions() throws Exception {
+        mockMvc.perform(get("/api/auth/options"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(
-                        org.hamcrest.Matchers.containsString(
-                                "/oauth2/authorization/google"
-                        )
-                ))
-                .andExpect(content().string(
-                        org.hamcrest.Matchers.containsString(
-                                "/oauth2/authorization/kakao"
-                        )
-                ))
-                .andExpect(content().string(
-                        org.hamcrest.Matchers.containsString(
-                                "/oauth2/authorization/naver"
-                        )
-                ));
+                .andExpect(jsonPath("$.google").value(true))
+                .andExpect(jsonPath("$.kakao").value(true))
+                .andExpect(jsonPath("$.naver").value(true));
     }
 
     @Test

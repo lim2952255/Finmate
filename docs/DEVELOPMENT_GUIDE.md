@@ -3,6 +3,7 @@
 ## 1. 전제 조건
 
 - JDK 17
+- Node.js 20.19 이상 또는 22.12 이상과 npm
 - Docker와 Docker Compose
 - 프로젝트에 포함된 Gradle Wrapper 사용 권장
 - KIS 연동 기능을 사용할 경우 유효한 KIS app key와 secret
@@ -142,6 +143,28 @@ docker compose down
 ./gradlew bootRun
 ```
 
+Gradle의 `processResources`는 `npm ci`와 React production build를 먼저 실행하고 결과를 Spring 정적 리소스의
+`/react` 경로에 포함한다. 모든 사용자 화면 URL은 이 React 진입 문서를 반환하고 업무 데이터와 변경 요청은
+`/api` 하위 JSON API가 처리한다.
+
+React 화면을 빠른 새로고침으로 수정할 때는 Spring과 Vite 개발 서버를 각각 실행한다.
+
+```bash
+# 터미널 1: API, 인증, React production 진입 문서
+./gradlew bootRun
+
+# 터미널 2: React 개발 서버
+cd frontend
+npm install
+npm run dev
+```
+
+브라우저는 `http://localhost:5173/home`, `http://localhost:5173/investment-learning`,
+`http://localhost:5173/investments/reports` 또는
+`http://localhost:5173/investments/stocks/market-movers`로 접속한다.
+Vite가 `/api`, `/login`, 기존 업무 화면 URL과 WebSocket 요청을 `http://localhost:8080`의 Spring 서버로
+전달한다.
+
 기본 datasource는 `localhost:3306/finmate`, 사용자 `finmate`, 비밀번호 `finmate-password`다. Docker Compose의 값과 일치하도록 환경변수를 설정해야 한다. Redis 기본 주소는 `localhost:6379`다.
 
 KIS 키가 비어 있어도 context 생성 자체는 지연 호출 구조상 가능하지만, 서버 시작 직후 랭킹 스케줄러가 기본 100ms 뒤 실행되어 KIS 관련 경고를 반복할 수 있다. 로컬 UI만 확인할 때는 초기 지연을 크게 설정할 수 있다.
@@ -159,6 +182,12 @@ STOCK_RANKING_INITIAL_DELAY_MILLIS=600000 ./gradlew bootRun
 따라서 컨텍스트별 `create-drop` 종료 작업이 같은 FK를 반복 삭제하는 로그를 만들지 않는다.
 
 ```bash
+# React 정적 검사와 production build
+cd frontend
+npm run lint
+npm run build
+cd ..
+
 # 전체 테스트
 ./gradlew test
 
@@ -238,7 +267,7 @@ STOCK_RANKING_INITIAL_DELAY_MILLIS=600000 ./gradlew bootRun
 
 ### Spring Security 로그인 문제
 
-`SecurityConfig`의 공개 경로, 로그인 처리 URL(`/login`), 아이디 파라미터명(`userId`)과 로그아웃 URL(`/logout`)을 확인한다. 인증 정보는 `FinMateUserDetailsService`가 조회하고 `BCryptPasswordEncoder`가 비밀번호를 검증한다. 로그인·로그아웃 POST는 CSRF 토큰이 필요하며 Thymeleaf의 `th:action` 폼은 토큰을 자동 렌더링한다. 인증 성공 상태는 서버 HTTP session의 `SecurityContext`에 저장된다.
+`SecurityConfig`의 공개 경로, 로그인 처리 URL(`/login`), 아이디 파라미터명(`userId`)과 로그아웃 URL(`/logout`)을 확인한다. 인증 정보는 `FinMateUserDetailsService`가 조회하고 `BCryptPasswordEncoder`가 비밀번호를 검증한다. 로그인·로그아웃과 JSON 상태 변경 POST는 `/api/session`이 제공한 CSRF 토큰을 포함해야 한다. 인증 성공 상태는 서버 HTTP session의 `SecurityContext`에 저장된다.
 
 소셜 로그인 버튼이 보이지 않으면 해당 공급자의 `*_OAUTH_ENABLED=true`와 Client ID/Secret 주입을 확인한다. callback 오류가 발생하면 실제 접속 주소와 공급자 콘솔에 등록한 Redirect URI가 정확히 일치하는지 확인한다. 인증 성공 후에는 `OAuthAccount(provider, providerSubject)`로 로컬 `User`를 찾으며, 최초 사용자는 로컬 비밀번호 없이 생성된다.
 
