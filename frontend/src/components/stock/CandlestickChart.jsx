@@ -40,6 +40,7 @@ export default function CandlestickChart({ candles = [], currency = "KRW", perio
   const dragRef = useRef(null);
   const rangeDragRef = useRef(null);
   const wheelPanRemainderRef = useRef(0);
+  const wheelHandlerRef = useRef(null);
   const normalized = useMemo(() => candles.map((candle) => ({
     ...candle,
     open: valueOf(candle.openPrice),
@@ -64,6 +65,14 @@ export default function CandlestickChart({ candles = [], currency = "KRW", perio
       setHoverIndex(null);
     }, 0);
     return () => window.clearTimeout(timer);
+  }, [normalized.length]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+    const handleWheel = (event) => wheelHandlerRef.current?.(event);
+    canvas.addEventListener("wheel", handleWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", handleWheel);
   }, [normalized.length]);
 
   const clampStart = useCallback((value, count = visibleCount) => (
@@ -246,8 +255,6 @@ export default function CandlestickChart({ candles = [], currency = "KRW", perio
     return () => observer.disconnect();
   }, [changeAmount, currency, detail?.latestClosePrice, hoverIndex, normalized, startIndex, viewport]);
 
-  if (!normalized.length) return <p>표시할 일봉 데이터가 없습니다.</p>;
-
   const pointerIndex = (event) => {
     const rect = canvasRef.current.getBoundingClientRect();
     const plotWidth = rect.width - PADDING.left - PADDING.right;
@@ -289,6 +296,11 @@ export default function CandlestickChart({ candles = [], currency = "KRW", perio
     setVisibleCount(nextCount);
     setStartIndex(nextStart);
   };
+  useEffect(() => {
+    wheelHandlerRef.current = zoom;
+  });
+
+  if (!normalized.length) return <p>표시할 일봉 데이터가 없습니다.</p>;
 
   const rangeWidth = Math.max(8, visibleCount / normalized.length * 100);
   const rangeLeft = normalized.length === visibleCount
@@ -327,7 +339,6 @@ export default function CandlestickChart({ candles = [], currency = "KRW", perio
             className="stock-chart-canvas"
             role="img"
             aria-label="일봉 가격, 거래량 및 이동평균선 차트"
-            onWheel={zoom}
             onPointerMove={(event) => {
               if (dragRef.current) {
                 event.preventDefault();
@@ -351,6 +362,7 @@ export default function CandlestickChart({ candles = [], currency = "KRW", perio
             }}
             onPointerDown={(event) => {
               if (event.button !== 0) return;
+              event.preventDefault();
               dragRef.current = { clientX: event.clientX, startIndex };
               setDragging(true);
               event.currentTarget.setPointerCapture(event.pointerId);

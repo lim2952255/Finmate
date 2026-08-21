@@ -45,6 +45,10 @@ public class MarketReportCache {
     @Column(name = "response_json", nullable = false, columnDefinition = "LONGTEXT")
     private String responseJson; // 네이버 뉴스 API 응답 데이터(캐싱 용도이기 때문에 JSON 문자열을 그대로 저장한다)
 
+	// 뉴스 정렬 버전을 저장한다.
+    @Column(name = "ranking_policy_version", length = 30)
+    private String rankingPolicyVersion;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -54,21 +58,27 @@ public class MarketReportCache {
     public static MarketReportCache create(MarketReportTopic topic,
                                            String query,
                                            String responseJson,
+                                           String rankingPolicyVersion,
                                            LocalDateTime refreshedAt) {
         validateRequired(topic, "시장 리포트 주제는 필수입니다.");
         MarketReportCache cache = new MarketReportCache();
         cache.topic = topic;
-        cache.refresh(query, responseJson, refreshedAt);
+        cache.refresh(query, responseJson, rankingPolicyVersion, refreshedAt);
         cache.createdAt = refreshedAt;
         return cache;
     }
 
-    public void refresh(String query, String responseJson, LocalDateTime refreshedAt) {
+    public void refresh(String query,
+                        String responseJson,
+                        String rankingPolicyVersion,
+                        LocalDateTime refreshedAt) {
         validateRequired(query, "시장 리포트 검색어는 필수입니다.");
         validateRequired(responseJson, "시장 리포트 검색 결과는 필수입니다.");
+        validateRequired(rankingPolicyVersion, "시장 리포트 정렬 정책 버전은 필수입니다.");
         validateRequired(refreshedAt, "시장 리포트 갱신 시각은 필수입니다.");
         this.query = query;
         this.responseJson = responseJson;
+        this.rankingPolicyVersion = rankingPolicyVersion;
         this.updatedAt = refreshedAt;
     }
 

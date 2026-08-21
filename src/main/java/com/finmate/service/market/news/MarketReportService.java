@@ -95,11 +95,20 @@ public class MarketReportService {
         String responseJson = serialize(items);
         // 만약 캐시가 아예 비어있었다면 엔티티를 새로 생성한다.
         MarketReportCache cacheToSave = recheckedCache == null
-                ? MarketReportCache.create(topic, topic.getQuery(), responseJson, refreshedAt)
+                ? MarketReportCache.create(
+                        topic,
+                        topic.getQuery(),
+                        responseJson,
+                        newsRankingService.policyVersion(),
+                        refreshedAt)
                 : recheckedCache;
         if (recheckedCache != null) {
             // 만약 캐시가 존재는 했지만 TTL이 만료된 경우였다면 데이터를 update해준다.
-            cacheToSave.refresh(topic.getQuery(), responseJson, refreshedAt);
+            cacheToSave.refresh(
+                    topic.getQuery(),
+                    responseJson,
+                    newsRankingService.policyVersion(),
+                    refreshedAt);
         }
         cacheRepository.save(cacheToSave);
 
@@ -113,6 +122,8 @@ public class MarketReportService {
         // 캐싱되어있는 데이터가 없거나, TTL이 만료된 경우 null을 리턴하여 캐싱된 데이터가 유효하지 않음을 나타낸다.
         if (cache == null
                 || !Objects.equals(cache.getQuery(), topic.getQuery())
+				// 기사 정렬 버전을 검사한다.
+                || !Objects.equals(cache.getRankingPolicyVersion(), newsRankingService.policyVersion())
                 || cache.getUpdatedAt() == null
                 || !cache.getUpdatedAt().plus(cacheTtl()).isAfter(now)) {
             return null;

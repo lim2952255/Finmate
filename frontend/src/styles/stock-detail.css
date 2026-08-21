@@ -384,6 +384,7 @@
             background: #ffffff;
             cursor: crosshair;
             touch-action: none;
+            overscroll-behavior-x: none;
             user-select: none;
         }
 
@@ -1686,6 +1687,23 @@
             color: #1e293b;
             font-weight: 750;
             line-height: 1.7;
+        }
+
+        .concept-formula-label {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 10px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: #eaf1ff;
+            color: #2563eb;
+            font-size: 11px;
+            font-weight: 850;
+        }
+
+        .concept-formula-expression {
+            color: #172033;
+            font-variant-numeric: tabular-nums;
         }
 
         .concept-card-section--bakery {

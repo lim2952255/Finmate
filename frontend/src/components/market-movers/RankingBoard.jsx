@@ -17,7 +17,7 @@ function RankingRows({ items }) {
         <span className="stock-symbol">{item.symbol}</span>
       </td>
       <td className="numeric-cell">{item.displayCurrentPrice}</td>
-      <td className="numeric-cell">
+      <td className={`numeric-cell ranking-change-cell ${item.changeRateClass}`}>
         {/* 등락 방향에 따라 up, down, flat CSS class를 적용하여 글자 색상을 바꾼다. */}
         <span className={`change-rate ${item.changeRateClass}`}>
           {item.displayChangeRate}

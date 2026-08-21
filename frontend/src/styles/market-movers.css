@@ -1,6 +1,6 @@
-/* 두 개의 TOP10 표가 데스크톱에서 가로로 잘리지 않도록 이 화면만 본문 폭을 넓힌다. */
+/* 기존 화면과 동일한 본문 폭 안에서 두 개의 TOP10 표를 배치한다. */
 .market-movers-main {
-    width: min(100%, 1600px);
+    width: min(100%, 1320px);
 }
 
 .market-movers-content {
@@ -190,6 +190,22 @@
 
 .change-rate.flat {
     color: var(--color-muted);
+}
+
+.ranking-change-cell {
+    font-weight: 800;
+}
+
+.ranking-change-cell.up {
+    background: #fff1f2;
+}
+
+.ranking-change-cell.down {
+    background: #eff6ff;
+}
+
+.ranking-change-cell.flat {
+    background: #f8fafc;
 }
 
 .empty-ranking {

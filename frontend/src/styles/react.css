@@ -77,6 +77,60 @@
     width: min(100%, 360px);
 }
 
+.orders-toolbar {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: end;
+    justify-content: flex-start;
+    gap: 12px;
+    margin: 0;
+    padding: 18px;
+    background: linear-gradient(145deg, #ffffff 0%, #f7f9fc 100%);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    box-shadow: 0 10px 28px rgba(30, 52, 90, 0.055);
+}
+
+.orders-toolbar label { display: flex; flex-direction: column; gap: 6px; min-width: 300px; }
+
+.history-section {
+    display: grid;
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(30, 52, 90, 0.065);
+}
+
+.history-section::before { content: none !important; }
+.history-section-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 20px 22px 4px; }
+.history-section-title { display: grid; gap: 4px; }
+.history-section-title h2, .history-section-title p { margin: 0; }
+.history-section-title p { color: #64748b; font-size: 13px; }
+.history-count { display: inline-flex; align-items: center; justify-content: center; min-width: 42px; min-height: 30px; padding: 5px 10px; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; font-size: 13px; font-weight: 900; }
+.history-section .table-scroll { border: 0; border-radius: 0; }
+.history-table { min-width: 1040px; }
+.history-table th, .history-table td { padding: 13px 14px; }
+.history-table tbody tr { position: relative; }
+.history-table tbody tr[data-side="BUY"] { box-shadow: inset 3px 0 0 #ef4444; }
+.history-table tbody tr[data-side="SELL"] { box-shadow: inset 3px 0 0 #3b82f6; }
+.history-index { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; color: #475569; background: #f1f5f9; border: 1px solid #dbe4ee; border-radius: 9px; font-variant-numeric: tabular-nums; font-weight: 900; }
+.history-order-summary, .history-quantity, .history-price, .history-time { display: grid; gap: 5px; }
+.history-badges { display: flex; flex-wrap: wrap; gap: 5px; }
+.history-primary-value { color: var(--color-heading); font-weight: 900; white-space: nowrap; }
+.history-secondary-value { color: #64748b; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.history-price .execution-price, .execution-price { color: #047857; }
+.history-empty { margin: 0 22px 22px; padding: 28px; color: #64748b; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; text-align: center; font-weight: 750; }
+.history-footer-links { display: flex; flex-wrap: wrap; gap: 10px; margin: 0; }
+
+@media (max-width: 720px) {
+    .orders-toolbar > label, .orders-toolbar select { width: 100%; }
+    .history-section-header { align-items: flex-start; }
+}
+
 .order-form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
