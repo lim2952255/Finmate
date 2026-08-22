@@ -1,6 +1,7 @@
 package com.finmate.domain.stock.dto.detail;
 
 import com.finmate.domain.stock.price.StockDailyPrice;
+import com.finmate.domain.stock.price.StockPeriodPrice;
 
 import java.math.BigDecimal;
 
@@ -25,6 +26,18 @@ public record StockChartCandleData(
                 dailyPrice.getClosePrice(),
                 dailyPrice.getAccumulatedVolume(),
                 dailyPrice.getAccumulatedTradeAmount()
+        );
+    }
+
+    public static StockChartCandleData from(StockPeriodPrice periodPrice) {
+        return new StockChartCandleData(
+                periodPrice.getCandleDate().toString(),
+                periodPrice.getOpenPrice(),
+                periodPrice.getHighPrice(),
+                periodPrice.getLowPrice(),
+                periodPrice.getClosePrice(),
+                periodPrice.getAccumulatedVolume(),
+                periodPrice.getAccumulatedTradeAmount()
         );
     }
 }

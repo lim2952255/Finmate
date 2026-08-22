@@ -4,6 +4,7 @@ const DEFAULT_VISIBLE_CANDLES = 63;
 const MINIMUM_VISIBLE_CANDLES = 20;
 const CHART_HEIGHT = 540;
 const PADDING = { top: 28, right: 78, bottom: 86, left: 18 };
+const KOREAN_WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 const valueOf = (value) => Number(String(value ?? "0").replaceAll(",", ""));
 
@@ -18,6 +19,14 @@ function formatPrice(value, currency) {
 
 function formatNumber(value) {
   return new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 0 }).format(value);
+}
+
+function formatChartDate(value, includeWeekday = false) {
+  const [year, month, day] = String(value ?? "").split("-").map(Number);
+  if (!year || !month || !day) return value || "-";
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const formatted = `${year}.${String(month).padStart(2, "0")}.${String(day).padStart(2, "0")}`;
+  return includeWeekday ? `${formatted}(${KOREAN_WEEKDAYS[date.getUTCDay()]})` : formatted;
 }
 
 function movingAverage(candles, endIndex, days) {
@@ -35,7 +44,7 @@ function directionClass(value) {
   return "flat";
 }
 
-export default function CandlestickChart({ candles = [], currency = "KRW", periodLabel, detail, orderbook }) {
+export default function CandlestickChart({ candles = [], currency = "KRW", intervalLabel, detail, orderbook }) {
   const canvasRef = useRef(null);
   const dragRef = useRef(null);
   const rangeDragRef = useRef(null);
@@ -226,7 +235,7 @@ export default function CandlestickChart({ candles = [], currency = "KRW", perio
       context.fillStyle = "#64748b";
       viewport.forEach((candle, index) => {
         if (index % dateStep === 0 || index === viewport.length - 1) {
-          context.fillText(candle.tradeDate.slice(5), x(index), CHART_HEIGHT - 8);
+          context.fillText(formatChartDate(candle.tradeDate), x(index), CHART_HEIGHT - 8);
         }
       });
 
@@ -300,7 +309,7 @@ export default function CandlestickChart({ candles = [], currency = "KRW", perio
     wheelHandlerRef.current = zoom;
   });
 
-  if (!normalized.length) return <p>표시할 일봉 데이터가 없습니다.</p>;
+  if (!normalized.length) return <p>표시할 {intervalLabel || "차트"} 데이터가 없습니다.</p>;
 
   const rangeWidth = Math.max(8, visibleCount / normalized.length * 100);
   const rangeLeft = normalized.length === visibleCount
@@ -331,14 +340,14 @@ export default function CandlestickChart({ candles = [], currency = "KRW", perio
 
         <div
           className={`chart-scroll${dragging ? " dragging" : ""}`}
-          aria-label="마우스 휠로 확대·축소하고 드래그로 이동할 수 있는 일봉 캔들 차트"
+          aria-label={`마우스 휠로 확대·축소하고 드래그로 이동할 수 있는 ${intervalLabel || "캔들"} 차트`}
           onDoubleClick={resetViewport}
         >
           <canvas
             ref={canvasRef}
             className="stock-chart-canvas"
             role="img"
-            aria-label="일봉 가격, 거래량 및 이동평균선 차트"
+            aria-label={`${intervalLabel || "캔들"} 가격, 거래량 및 이동평균선 차트`}
             onPointerMove={(event) => {
               if (dragRef.current) {
                 event.preventDefault();
@@ -381,7 +390,7 @@ export default function CandlestickChart({ candles = [], currency = "KRW", perio
           />
           {hovered && (
             <div className="chart-tooltip visible" aria-hidden="false" style={{ left: hoverPoint.x, top: hoverPoint.y }}>
-              <div className="chart-tooltip-title">{hovered.tradeDate}</div>
+              <div className="chart-tooltip-title">{formatChartDate(hovered.tradeDate, true)}</div>
               {[["시가", hovered.open, previous?.close], ["고가", hovered.high, previous?.close], ["저가", hovered.low, previous?.close], ["종가", hovered.close, previous?.close]].map(([label, value, comparison]) => {
                 const change = rate(value, comparison);
                 return <div className="chart-tooltip-row" key={label}><span className="chart-tooltip-label">{label}</span><span className={`chart-tooltip-value ${directionClass(change || 0)}`}>{formatPrice(value, currency)}{change === null ? "" : ` (${change > 0 ? "+" : ""}${change.toFixed(2)}%)`}</span></div>;
@@ -390,7 +399,7 @@ export default function CandlestickChart({ candles = [], currency = "KRW", perio
               <div className="chart-tooltip-row"><span className="chart-tooltip-label">거래대금</span><span className="chart-tooltip-value">{formatNumber(hovered.amount)}</span></div>
             </div>
           )}
-          <div className="chart-interaction-guide">기본 약 3개월 · 전체 기간까지 축소 · 두 손가락 또는 드래그로 좌우 이동</div>
+          <div className="chart-interaction-guide">최근 63개 봉부터 표시 · 전체 기간까지 축소 · 두 손가락 또는 드래그로 좌우 이동</div>
         </div>
 
         <div
@@ -423,13 +432,13 @@ export default function CandlestickChart({ candles = [], currency = "KRW", perio
             />
           </div>
         </div>
-        <p className="chart-caption">{normalized[0]?.tradeDate}부터 {normalized.at(-1)?.tradeDate}까지의 수정주가 기준 {periodLabel} 일봉입니다.</p>
+        <p className="chart-caption">{normalized[0]?.tradeDate}부터 {normalized.at(-1)?.tradeDate}까지의 수정주가 기준 {intervalLabel}입니다.</p>
       </div>
 
       <aside className="chart-side-panel">
         <div className="chart-side-item"><span>종목</span><strong>{detail?.symbol || "-"}</strong></div>
         <div className="chart-side-item"><span>시장</span><strong>{detail?.market || "-"}</strong></div>
-        <div className="chart-side-item"><span>기간</span><strong>{periodLabel}</strong></div>
+        <div className="chart-side-item"><span>봉 주기</span><strong>{intervalLabel}</strong></div>
         <div className="chart-side-item"><span>최근 거래일</span><strong>{detail?.latestTradeDate || "-"}</strong></div>
         <div className="chart-side-item"><span>조회 일수</span><strong>{normalized.length}</strong></div>
         {detail?.chartPriceSummary && <><div className="chart-side-item"><span>기간 최고</span><strong>{formatPrice(valueOf(detail.chartPriceSummary.highestPrice), currency)}</strong><small>{detail.chartPriceSummary.highestTradeDate}</small></div><div className="chart-side-item"><span>기간 최저</span><strong>{formatPrice(valueOf(detail.chartPriceSummary.lowestPrice), currency)}</strong><small>{detail.chartPriceSummary.lowestTradeDate}</small></div></>}

@@ -10,7 +10,7 @@ import com.finmate.domain.stock.Stock;
 import com.finmate.domain.stock.concept.StockConceptCode;
 import com.finmate.domain.stock.dto.detail.StockChartCandleData;
 import com.finmate.domain.stock.dto.detail.DomesticStockDetailInfo;
-import com.finmate.domain.stock.dto.detail.StockChartPeriod;
+import com.finmate.domain.stock.dto.detail.StockChartInterval;
 import com.finmate.domain.stock.dto.detail.StockChartPriceSummary;
 import com.finmate.domain.stock.dto.detail.StockDetailPageInfo;
 import com.finmate.domain.stock.dto.detail.StockMetadataDisplayInfo;
@@ -75,11 +75,12 @@ public class InvestmentReadApiController {
                 info.getHoldings().stream().map(holding -> HoldingResponse.from(holding, info)).toList());
     }
 
+	// React에서 차트간격을 파라미터로 넘겨주면, 이에 해당하는 기간봉 데이터를 내려준다.
     @GetMapping("/stock-detail")
     public StockDetailResponse stockDetail(@RequestParam Long stockId,
-                                           @RequestParam(defaultValue = "ONE_YEAR") StockChartPeriod period,
+                                           @RequestParam(defaultValue = "DAY") StockChartInterval interval,
                                            @AuthenticationPrincipal FinMateAuthenticatedPrincipal principal) {
-        StockDetailPageInfo info = stockDetailService.getStockDetailPageInfo(stockId, period);
+        StockDetailPageInfo info = stockDetailService.getStockDetailPageInfo(stockId, interval);
         Stock stock = info.getStock();
         return new StockDetailResponse(stock.getId(), stock.getSymbol(), stock.getNameKo(), stock.getNameEn(),
                 stock.getMarketType().name(), stock.getSecurityType().name(), stock.getCurrency(), stock.isTradable(),
@@ -89,7 +90,10 @@ public class InvestmentReadApiController {
                 info.getLatestChangeAmount() == null ? null : info.getLatestChangeAmount().toPlainString(),
                 info.getLatestChangeRate() == null ? null : info.getLatestChangeRate().toPlainString(),
                 info.getCurrencySymbol(), info.getPriceDecimalDigits(), info.getChartPriceSummary(),
-                info.getSelectedPeriod().name(), Arrays.stream(info.getChartPeriods()).map(value -> new Option(value.name(), value.getDisplayName())).toList(),
+                info.getSelectedInterval().name(), Arrays.stream(info.getChartIntervals()).map(value -> new Option(value.name(), value.getDisplayName())).toList(),
+                info.getCurrentCandleTradeDate(),
+                info.getCurrentCandleBaseVolume() == null ? null : info.getCurrentCandleBaseVolume().toString(),
+                info.getCurrentCandleBaseTradeAmount() == null ? null : info.getCurrentCandleBaseTradeAmount().toPlainString(),
                 Arrays.stream(StockConceptCode.values())
                         .filter(STOCK_DETAIL_CONCEPTS::contains)
                         .map(value -> new Option(value.name(), conceptLabel(value)))
@@ -159,7 +163,9 @@ public class InvestmentReadApiController {
                                       String latestChangeAmount, String latestChangeRate,
                                       String currencySymbol, int priceDecimalDigits,
                                       StockChartPriceSummary chartPriceSummary,
-                                      String selectedPeriod, List<Option> periods,
+                                      String selectedInterval, List<Option> intervals,
+                                      java.time.LocalDate currentCandleTradeDate,
+                                      String currentCandleBaseVolume, String currentCandleBaseTradeAmount,
                                       List<Option> concepts, List<StockChartCandleData> candles,
                                       StockMetadataDisplayInfo metadataDisplayInfo,
                                       DomesticStockDetailInfo domesticDetailInfo,

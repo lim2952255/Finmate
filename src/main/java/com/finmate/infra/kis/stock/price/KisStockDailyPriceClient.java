@@ -2,6 +2,7 @@ package com.finmate.infra.kis.stock.price;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.finmate.domain.stock.dto.detail.StockChartInterval;
 import com.finmate.infra.kis.core.KisApiResponse;
 import com.finmate.infra.kis.rest.KisRestClient;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 import static com.finmate.global.validation.RequiredValidator.validateRequired;
 
+// KIS API에 일봉 / 주봉 / 월봉 / 연봉 데이터를 요청하는 클라이언트
 @Component
 @RequiredArgsConstructor
 public class KisStockDailyPriceClient {
@@ -33,10 +35,20 @@ public class KisStockDailyPriceClient {
                                                                LocalDate startDate,
                                                                LocalDate endDate,
                                                                boolean adjustedPrice) {
+        return fetchDomesticPrices(symbol, startDate, endDate, StockChartInterval.DAY, adjustedPrice);
+    }
+
+	// 파라미터를 기반으로 국내 종목에 대해서 해당 기간의 차트데이터를 요청하고 받은 데이터를 리턴한다.
+    public DomesticDailyPriceResponse fetchDomesticPrices(String symbol,
+                                                          LocalDate startDate,
+                                                          LocalDate endDate,
+                                                          StockChartInterval interval,
+                                                          boolean adjustedPrice) {
         // 입력 파라미터 검증
         validateRequired(symbol, "국내 종목코드는 필수입니다.");
         validateRequired(startDate, "조회 시작일자는 필수입니다.");
         validateRequired(endDate, "조회 종료일자는 필수입니다.");
+        validateRequired(interval, "봉 주기는 필수입니다.");
 
         // api호출에 필요한 쿼리 파라미터 채우기
         Map<String, String> params = new LinkedHashMap<>();
@@ -45,7 +57,7 @@ public class KisStockDailyPriceClient {
         params.put("FID_INPUT_ISCD", symbol); // 조회하고자 하는 종목
         params.put("FID_INPUT_DATE_1", formatDate(startDate)); // 조회 시작일자
         params.put("FID_INPUT_DATE_2", formatDate(endDate)); // 조회 종료일자
-        params.put("FID_PERIOD_DIV_CODE", "D"); // 기간분류코드: 일봉
+        params.put("FID_PERIOD_DIV_CODE", interval.getKisPeriodCode());
         // 국내 API는 0=수정주가, 1=원주가다.
         params.put("FID_ORG_ADJ_PRC", adjustedPrice ? "0" : "1");
 
@@ -61,16 +73,29 @@ public class KisStockDailyPriceClient {
                                                                String symbol,
                                                                LocalDate baseDate,
                                                                boolean adjustedPrice) {
+        return fetchOverseasPrices(exchangeCode, symbol, baseDate, StockChartInterval.DAY, adjustedPrice);
+    }
+
+	// 파라미터를 기반으로 해외 종목에 대해서 해당 기간의 차트데이터를 요청하고 받은 데이터를 리턴한다.
+    public OverseasDailyPriceResponse fetchOverseasPrices(String exchangeCode,
+                                                          String symbol,
+                                                          LocalDate baseDate,
+                                                          StockChartInterval interval,
+                                                          boolean adjustedPrice) {
         // 입력 파라미터 검증
         validateRequired(exchangeCode, "해외 거래소코드는 필수입니다.");
         validateRequired(symbol, "해외 종목코드는 필수입니다.");
+        validateRequired(interval, "봉 주기는 필수입니다.");
+        if (interval == StockChartInterval.YEAR) {
+            throw new IllegalArgumentException("해외주식 기간별시세 API는 연봉을 직접 지원하지 않습니다.");
+        }
 
         // api호출에 필요한 쿼리 파라미터 채우기
         Map<String, String> params = new LinkedHashMap<>();
         params.put("AUTH", ""); // 사용자 권한 정보(""로 설정)
         params.put("EXCD", exchangeCode); // 거래소 코드(NAS: 나스닥 ..)
         params.put("SYMB", symbol); // 종목코드(TSLA)
-        params.put("GUBN", "0"); // 일/주/월 구분(0: 일, 1: 주, 2: 월)
+        params.put("GUBN", overseasPeriodCode(interval));
         params.put("BYMD", formatNullableDate(baseDate)); // 조회기준일자
         // 해외 API는 0=수정주가 미반영, 1=수정주가 반영이다.
         params.put("MODP", adjustedPrice ? "1" : "0");
@@ -93,6 +118,15 @@ public class KisStockDailyPriceClient {
         }
 
         return date.format(REQUEST_DATE_FORMATTER);
+    }
+
+    private String overseasPeriodCode(StockChartInterval interval) {
+        return switch (interval) {
+            case DAY -> "0";
+            case WEEK -> "1";
+            case MONTH -> "2";
+            case YEAR -> throw new IllegalArgumentException("해외 연봉 코드는 지원하지 않습니다.");
+        };
     }
 
     // 국내 일봉 API 전체 응답
