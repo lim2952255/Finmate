@@ -55,6 +55,7 @@ JSON 요청으로 받고 기존 Service의 검증과 트랜잭션을 재사용�
 - `InvestmentController`: 투자 화면 URL을 React 진입 문서로 연결
 - `InvestmentReadApiController`: 포트폴리오의 계좌·최근 평가가·업종 비중·환율과 종목 상세의 일·주·월·연 OHLCV 데이터를 JSON으로 반환
 - `StockController`: 시장별 종목/업종 검색, 관심 종목, 상세, 랭킹 데이터
+- `StockPriceLineController`: 로그인 사용자·종목별 차트 가로선 조회, 생성, 개별 삭제와 전체 초기화
 - `StockConceptController`: 종목 ID와 enum 개념 코드를 받아 종목 상세의 개념정보 JSON 반환
 - `OrderController`: 주문 화면, 일반·예약 주문 접수와 취소
 - `LoginController`: 회원가입과 로그인 화면
@@ -88,6 +89,8 @@ JSON API를 조회한다. 공통 화면 토큰은 `static/css/common.css`를 사
 React 최상단 오류 경계는 특정 컴포넌트의 렌더링 오류가 전체 흰 화면으로 번지는 것을 막고, 데이터 조회가 오래 걸리는 화면은 공통 로딩 상태를 표시한다.
 종목 상세는 선택한 일·주·월·연봉 원본으로 캔들·거래량·이동평균선을 렌더링한다. 장중 `STOCK_TRADE`
 WebSocket 메시지가 도착하면 현재 봉의 고가·저가·종가와 당일 누적 거래량·거래대금을 합성해 차트를 갱신한다.
+거래량은 가격 영역과 분리된 패널과 만·억 단위 축으로 표시한다. 사용자가 선 만들기 모드에서 캔들을 선택하면
+해당 종가를 사용자·종목별 `StockPriceLine`으로 저장하고, 우클릭 개별 삭제 또는 전체 초기화를 제공한다.
 포트폴리오는 서버가 제공한 평균매입가와 최근 종가를 초기 상태로 사용하며, 통화 환산은 화면 표시 전용이다.
 
 ### Service

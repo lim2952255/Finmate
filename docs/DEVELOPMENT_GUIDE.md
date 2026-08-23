@@ -167,6 +167,11 @@ Vite가 `/api`, `/login`, 기존 업무 화면 URL과 WebSocket 요청을 `http:
 
 기본 datasource는 `localhost:3306/finmate`, 사용자 `finmate`, 비밀번호 `finmate-password`다. Docker Compose의 값과 일치하도록 환경변수를 설정해야 한다. Redis 기본 주소는 `localhost:6379`다.
 
+종목 분봉 캐시의 TTL은 기본 3일이며 `STOCK_DETAIL_MINUTE_CHART_CACHE_DAYS`로 조정할 수 있다.
+KIS REST로 조회한 1분봉 스냅샷은 DB에 적재되지 않고 Redis/JVM fallback에 저장된다. 화면의 미확정 봉은
+브라우저가 WebSocket 체결 메시지로 실시간 갱신한다. 국내 과거 분봉과 해외 종목 분봉은
+KIS 실전 환경 전용이므로 해당 기능을 로컬에서 실제 호출하려면 실전 REST 자격 증명이 필요하다.
+
 KIS 키가 비어 있어도 context 생성 자체는 지연 호출 구조상 가능하지만, 서버 시작 직후 랭킹 스케줄러가 기본 100ms 뒤 실행되어 KIS 관련 경고를 반복할 수 있다. 로컬 UI만 확인할 때는 초기 지연을 크게 설정할 수 있다.
 
 ```bash

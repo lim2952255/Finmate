@@ -95,6 +95,8 @@ public class StockPeriodPriceSyncService {
 	// 기간별 chunk의 범위를 결정한다. (WEEK: 90주, MONTH: 90개월, YEAR: 90년)
     private LocalDate domesticChunkEnd(LocalDate startDate, StockChartInterval interval) {
         return switch (interval) {
+            case MINUTE_1, MINUTE_3, MINUTE_5, MINUTE_15 ->
+                    throw new IllegalArgumentException("분봉 구간은 기간봉 동기화에서 지원하지 않습니다.");
             case WEEK -> startDate.plusWeeks(90).minusDays(1);
             case MONTH -> startDate.plusMonths(90).minusDays(1);
             case YEAR -> startDate.plusYears(90).minusDays(1);

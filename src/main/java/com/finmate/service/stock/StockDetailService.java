@@ -22,6 +22,7 @@ import com.finmate.repository.stock.price.StockPeriodPriceRepository;
 import com.finmate.service.stock.price.StockChartCandleAggregator;
 import com.finmate.service.stock.price.StockDailyPriceSyncService;
 import com.finmate.service.stock.price.StockPeriodPriceSyncService;
+import com.finmate.service.stock.price.StockMinuteChartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -47,6 +48,7 @@ public class StockDetailService {
     private final StockPeriodPriceRepository stockPeriodPriceRepository;
     private final StockDailyPriceSyncService stockDailyPriceSyncService; // 일봉 데이터를 동기화하는 서비스
     private final StockPeriodPriceSyncService stockPeriodPriceSyncService; // 주봉 / 월봉 / 연봉 데이터를 동기화하는 서비스
+    private final StockMinuteChartService stockMinuteChartService;
     private final StockIndustryCodeService stockIndustryCodeService;
     private final DomesticStockMetadataRepository domesticStockMetadataRepository;
     private final OverseasStockMetadataRepository overseasStockMetadataRepository;
@@ -67,8 +69,8 @@ public class StockDetailService {
                 ? dailyHistoryStartDate
                 : selectedInterval.periodStart(marketDate);
 
-        int savedPriceCount = selectedInterval == StockChartInterval.DAY
-                ? syncDailyIfNeeded(stock, dailySyncStartDate, expectedLatestTradeDate)
+        int savedPriceCount = selectedInterval.isMinute()
+                ? 0
                 : syncDailyIfNeeded(stock, dailySyncStartDate, expectedLatestTradeDate);
 
         LocalDate chartStartDate;
@@ -76,7 +78,11 @@ public class StockDetailService {
         List<StockChartCandleData> chartCandles;
         Long currentCandleBaseVolume = 0L;
         BigDecimal currentCandleBaseTradeAmount = BigDecimal.ZERO;
-        if (selectedInterval == StockChartInterval.DAY) {
+        if (selectedInterval.isMinute()) {
+            chartCandles = stockMinuteChartService.getCandles(stock, selectedInterval); // Redis에서 혹은 KIS API를 호출해서 분봉데이터를 조회한다.
+            chartStartDate = candleDate(chartCandles, 0, marketDate);
+            chartEndDate = candleDate(chartCandles, chartCandles.size() - 1, marketDate);
+        } else if (selectedInterval == StockChartInterval.DAY) {
             chartStartDate = dailyHistoryStartDate;
             chartEndDate = expectedLatestTradeDate;
             chartCandles = stockDailyPriceRepository
@@ -334,6 +340,7 @@ public class StockDetailService {
                                                       StockChartInterval interval,
                                                       LocalDate marketDate) {
         LocalDate requestedStart = switch (interval) {
+            case MINUTE_1, MINUTE_3, MINUTE_5, MINUTE_15 -> marketDate;
             case DAY -> marketDate.minusYears(INITIAL_HISTORY_YEARS); // 일봉 데이터의 경우 3년치 일봉 데이터를 제공
             case WEEK -> marketDate.minusYears(WEEK_HISTORY_YEARS); // 주봉 데이터의 경우에는 10년치 주봉 데이터를 제공한다.
             case MONTH, YEAR -> stock.getListedDate() == null // 월봉과 연봉은 상장일을 알면 해당 상장일부터, 모르면 1900년부터 모두 조회한다.
@@ -341,6 +348,14 @@ public class StockDetailService {
                     : stock.getListedDate();
         };
         return interval.periodStart(resolveHistoryStartDate(stock, requestedStart));
+    }
+
+    private LocalDate candleDate(List<StockChartCandleData> candles, int index, LocalDate fallback) {
+        if (candles == null || candles.isEmpty() || index < 0 || index >= candles.size()) {
+            return fallback;
+        }
+        String value = candles.get(index).tradeDate();
+        return value == null || value.length() < 10 ? fallback : LocalDate.parse(value.substring(0, 10));
     }
 
     // 종목 상장일과 3년점 시점중 더 최근 시점을 리턴한다. (기준일자)

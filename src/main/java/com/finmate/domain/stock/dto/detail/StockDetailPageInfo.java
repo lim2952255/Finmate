@@ -19,6 +19,7 @@ public class StockDetailPageInfo {
     private final LocalDate chartStartDate;
     private final LocalDate chartEndDate;
     private final LocalDate latestTradeDate;
+    private final String latestCandleAt;
     private final BigDecimal latestClosePrice;
     private final BigDecimal latestChangeAmount;
     private final BigDecimal latestChangeRate;
@@ -72,6 +73,9 @@ public class StockDetailPageInfo {
                 ? validCandles
                 : validDailyCandles;
         this.chartCandles = validCandles;
+        this.latestCandleAt = validCandles.isEmpty()
+                ? null
+                : validCandles.get(validCandles.size() - 1).tradeDate();
         this.latestTradeDate = latestTradeDate(quoteCandles);
         this.latestClosePrice = latestClosePrice(quoteCandles);
         this.latestChangeAmount = latestChangeAmount(quoteCandles);
@@ -111,7 +115,7 @@ public class StockDetailPageInfo {
         if (candles.isEmpty()) {
             return null;
         }
-        return LocalDate.parse(candles.get(candles.size() - 1).tradeDate());
+        return parseCandleDate(candles.get(candles.size() - 1).tradeDate());
     }
 
     private BigDecimal latestClosePrice(List<StockChartCandleData> candles) {
@@ -158,10 +162,17 @@ public class StockDetailPageInfo {
         }
         return new StockChartPriceSummary(
                 highest.highPrice(),
-                LocalDate.parse(highest.tradeDate()),
+                parseCandleDate(highest.tradeDate()),
                 lowest.lowPrice(),
-                LocalDate.parse(lowest.tradeDate())
+                parseCandleDate(lowest.tradeDate())
         );
+    }
+
+    private LocalDate parseCandleDate(String value) {
+        if (value == null || value.length() < 10) {
+            return null;
+        }
+        return LocalDate.parse(value.substring(0, 10));
     }
 
     private boolean hasValidPrice(StockChartCandleData candle) {

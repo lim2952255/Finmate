@@ -33,7 +33,8 @@ public final class StockChartCandleAggregator {
                 sorted.stream().map(StockDailyPrice::getLowPrice).min(BigDecimal::compareTo).orElseThrow(), // 저가 계산
                 sorted.get(sorted.size() - 1).getClosePrice(), // 종가 계산
                 sorted.stream().mapToLong(StockDailyPrice::getAccumulatedVolume).sum(), // 거래량 계산
-                sumTradeAmounts(sorted) // 거래대금 계산
+                sumTradeAmounts(sorted), // 거래대금 계산
+                false
         ));
     }
 

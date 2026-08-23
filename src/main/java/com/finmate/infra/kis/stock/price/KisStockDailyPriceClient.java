@@ -89,6 +89,9 @@ public class KisStockDailyPriceClient {
         if (interval == StockChartInterval.YEAR) {
             throw new IllegalArgumentException("해외주식 기간별시세 API는 연봉을 직접 지원하지 않습니다.");
         }
+        if (interval.isMinute()) {
+            throw new IllegalArgumentException("해외주식 기간별시세 API는 분봉을 지원하지 않습니다.");
+        }
 
         // api호출에 필요한 쿼리 파라미터 채우기
         Map<String, String> params = new LinkedHashMap<>();
@@ -122,6 +125,8 @@ public class KisStockDailyPriceClient {
 
     private String overseasPeriodCode(StockChartInterval interval) {
         return switch (interval) {
+            case MINUTE_1, MINUTE_3, MINUTE_5, MINUTE_15 ->
+                    throw new IllegalArgumentException("해외 분봉 코드는 별도 API를 사용해야 합니다.");
             case DAY -> "0";
             case WEEK -> "1";
             case MONTH -> "2";

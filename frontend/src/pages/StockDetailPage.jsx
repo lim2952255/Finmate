@@ -16,6 +16,23 @@ const tabs = [
   { value: "news", label: "뉴스" }
 ];
 
+const MINUTE_INTERVALS = {
+  MINUTE_1: 1,
+  MINUTE_3: 3,
+  MINUTE_5: 5,
+  MINUTE_15: 15
+};
+
+function minuteBucketDate(tradeDate, tradeTime, interval) {
+  const date = String(tradeDate || "").replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3");
+  const time = String(tradeTime || "").padStart(6, "0");
+  const minutes = MINUTE_INTERVALS[interval];
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !minutes || !/^\d{6}$/.test(time)) return null;
+  const hour = Number(time.slice(0, 2));
+  const minute = Math.floor(Number(time.slice(2, 4)) / minutes) * minutes;
+  return `${date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
+}
+
 function intervalStartDate(tradeDate, interval) {
   const [year, month, day] = tradeDate.split("-").map(Number);
   if (!year || !month || !day) return tradeDate;
@@ -233,6 +250,37 @@ export default function StockDetailPage() {
         setData((current) => {
           if (!current) return current;
           const currentPrice = Number(message.currentPrice);
+          const minuteBucket = minuteBucketDate(message.tradeDate, message.tradeTime, current.selectedInterval);
+          if (minuteBucket) {
+            const candles = [...current.candles];
+            const existingCandle = candles.at(-1)?.tradeDate === minuteBucket ? candles.at(-1) : null;
+            const tradeVolume = Number(message.tradeVolume ?? 0);
+            const realtimeCandle = {
+              tradeDate: minuteBucket,
+              openPrice: String(existingCandle?.openPrice ?? currentPrice),
+              highPrice: String(Math.max(Number(existingCandle?.highPrice ?? currentPrice), currentPrice)),
+              lowPrice: String(Math.min(Number(existingCandle?.lowPrice ?? currentPrice), currentPrice)),
+              closePrice: String(currentPrice),
+              accumulatedVolume: String(Number(existingCandle?.accumulatedVolume ?? 0) + tradeVolume),
+              accumulatedTradeAmount: String(Number(existingCandle?.accumulatedTradeAmount ?? 0) + currentPrice * tradeVolume),
+              completed: false
+            };
+            if (existingCandle) {
+              candles[candles.length - 1] = realtimeCandle;
+            } else {
+              if (candles.length) candles[candles.length - 1] = { ...candles.at(-1), completed: true };
+              candles.push(realtimeCandle);
+            }
+            return {
+              ...current,
+              candles,
+              latestTradeDate: minuteBucket.slice(0, 10),
+              latestCandleAt: minuteBucket,
+              latestClosePrice: String(message.currentPrice),
+              latestChangeAmount: String(message.change ?? current.latestChangeAmount),
+              latestChangeRate: String(message.changeRate ?? current.latestChangeRate)
+            };
+          }
           const openPrice = Number(message.openPrice ?? currentPrice);
           const highPrice = Math.max(Number(message.highPrice ?? currentPrice), openPrice, currentPrice);
           const lowPrice = Math.min(Number(message.lowPrice ?? currentPrice), openPrice, currentPrice);
@@ -333,7 +381,7 @@ export default function StockDetailPage() {
                 <form className="chart-control-form" onSubmit={(event) => event.preventDefault()}><label>봉 주기<select value={requestedInterval} onChange={(event) => changeInterval(event.target.value)}>{data.intervals.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label><button type="submit" disabled={detailLoading}>{detailLoading ? "조회 중" : "조회"}</button></form>
                 {detailLoading
                   ? <div className="chart-loading-state" role="status" aria-live="polite"><span className="route-spinner" aria-hidden="true" /><strong>{data.intervals.find((item) => item.value === requestedInterval)?.label || requestedInterval} 데이터를 불러오는 중입니다.</strong><p>KIS API 응답을 기다리고 있습니다.</p></div>
-                  : <CandlestickChart candles={data.candles} currency={data.currency} intervalLabel={data.intervals.find((item) => item.value === data.selectedInterval)?.label || data.selectedInterval} detail={data} orderbook={orderbook} />}
+                  : <CandlestickChart candles={data.candles} currency={data.currency} interval={data.selectedInterval} intervalLabel={data.intervals.find((item) => item.value === data.selectedInterval)?.label || data.selectedInterval} detail={data} orderbook={orderbook} stockId={data.id} />}
               </section>
               <div className="stock-detail-tabs" role="tablist" aria-label="종목 상세 정보">{tabs.map((item) => <button className="stock-detail-tab" role="tab" aria-selected={tab === item.value} tabIndex={tab === item.value ? 0 : -1} key={item.value} type="button" onClick={() => setTab(item.value)}>{item.label}</button>)}</div>
               <div className="stock-detail-panel" role="tabpanel" tabIndex="0">

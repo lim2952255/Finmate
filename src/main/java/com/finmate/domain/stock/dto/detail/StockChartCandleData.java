@@ -15,7 +15,8 @@ public record StockChartCandleData(
         BigDecimal lowPrice,
         BigDecimal closePrice,
         Long accumulatedVolume,
-        BigDecimal accumulatedTradeAmount
+        BigDecimal accumulatedTradeAmount,
+        boolean completed
 ) {
     public static StockChartCandleData from(StockDailyPrice dailyPrice) {
         return new StockChartCandleData(
@@ -25,7 +26,8 @@ public record StockChartCandleData(
                 dailyPrice.getLowPrice(),
                 dailyPrice.getClosePrice(),
                 dailyPrice.getAccumulatedVolume(),
-                dailyPrice.getAccumulatedTradeAmount()
+                dailyPrice.getAccumulatedTradeAmount(),
+                true
         );
     }
 
@@ -37,7 +39,8 @@ public record StockChartCandleData(
                 periodPrice.getLowPrice(),
                 periodPrice.getClosePrice(),
                 periodPrice.getAccumulatedVolume(),
-                periodPrice.getAccumulatedTradeAmount()
+                periodPrice.getAccumulatedTradeAmount(),
+                true
         );
     }
 }

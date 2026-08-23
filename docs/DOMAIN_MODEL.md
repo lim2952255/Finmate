@@ -30,6 +30,8 @@ erDiagram
     Stock ||--o| StockNewsCache : caches
     Stock ||--o{ StockChatMessage : discusses
     User ||--o{ StockChatMessage : writes
+    Stock ||--o{ StockPriceLine : marks
+    User ||--o{ StockPriceLine : creates
     StockChatMessage o|--o{ StockChatMessage : replies
     StockOrderReservation o|--o| StockOrder : converts_to
     StockOrder ||--o{ StockTradeTransaction : executions
@@ -125,6 +127,13 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 - 종목 검색은 `StockSearchType`으로 종목명/종목코드 검색과 업종명/업종코드 검색을 분리하고, 선택한 `StockMarketType`이 있으면 KOSPI·KOSDAQ·NASDAQ 시장 조건을 함께 적용한다. 업종 검색은 국내 대·중·소 업종코드와 업종명, 해외 거래소별 업종코드와 업종명을 대상으로 한다.
 - 국내 종목 업종 표시는 소업종, 중업종, 대업종 순서로 가장 세부적인 유효 업종 하나를 사용한다. 포트폴리오는 국내 종목을 국내 업종명 기준으로 집계하고, 해외 종목은 거래소별 업종 체계가 다르므로 거래소 그룹과 업종명을 함께 사용해 통화별 매입금액 비중을 계산한다.
 - 포트폴리오 평가손익은 브라우저 WebSocket 실시간 시세가 수신되면 실시간 가격으로 계산한다. 실시간 가격이 아직 없거나 장마감 상태이면 서버가 최신 일봉 종가를 DB에서 찾고, 부족하면 KIS 일봉 API로 최근 구간을 보충한 뒤 fallback 가격으로 내려보낸다.
+
+### 사용자 차트 가로선
+
+- `StockPriceLine`은 사용자가 종목 차트의 캔들을 선택해 만든 지지선·저항선 가격을 저장한다.
+- `User`, `Stock`, 양수 `price`, 생성시각만 저장하며 주문·체결·평가금액에는 사용하지 않는다.
+- `(user_id, stock_id, price)` 조합은 unique다. 같은 사용자가 같은 종목의 같은 가격을 다시 선택해도 가로선을 중복 생성하지 않는다.
+- 조회와 삭제는 로그인 사용자 ID와 종목 ID를 함께 확인하므로 다른 사용자의 가로선을 노출하거나 삭제하지 않는다.
 
 ### 뉴스 캐시
 
