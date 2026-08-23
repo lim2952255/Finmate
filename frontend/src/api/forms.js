@@ -18,3 +18,15 @@ export async function postJson(url, body, { csrf = true } = {}) {
   });
   return readJson(response, "요청을 처리하지 못했습니다.");
 }
+
+export async function deleteJson(url, { csrf = true } = {}) {
+  const session = csrf ? await getSession() : null;
+  const response = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      Accept: "application/json",
+      ...(session ? { [session.csrf.headerName]: session.csrf.token } : {})
+    }
+  });
+  return readJson(response, "삭제 요청을 처리하지 못했습니다.");
+}

@@ -1,6 +1,7 @@
 package com.finmate.domain.stock.dto.detail;
 
 import com.finmate.domain.stock.price.StockDailyPrice;
+import com.finmate.domain.stock.price.StockPeriodPrice;
 
 import java.math.BigDecimal;
 
@@ -14,7 +15,8 @@ public record StockChartCandleData(
         BigDecimal lowPrice,
         BigDecimal closePrice,
         Long accumulatedVolume,
-        BigDecimal accumulatedTradeAmount
+        BigDecimal accumulatedTradeAmount,
+        boolean completed
 ) {
     public static StockChartCandleData from(StockDailyPrice dailyPrice) {
         return new StockChartCandleData(
@@ -24,7 +26,21 @@ public record StockChartCandleData(
                 dailyPrice.getLowPrice(),
                 dailyPrice.getClosePrice(),
                 dailyPrice.getAccumulatedVolume(),
-                dailyPrice.getAccumulatedTradeAmount()
+                dailyPrice.getAccumulatedTradeAmount(),
+                true
+        );
+    }
+
+    public static StockChartCandleData from(StockPeriodPrice periodPrice) {
+        return new StockChartCandleData(
+                periodPrice.getCandleDate().toString(),
+                periodPrice.getOpenPrice(),
+                periodPrice.getHighPrice(),
+                periodPrice.getLowPrice(),
+                periodPrice.getClosePrice(),
+                periodPrice.getAccumulatedVolume(),
+                periodPrice.getAccumulatedTradeAmount(),
+                true
         );
     }
 }

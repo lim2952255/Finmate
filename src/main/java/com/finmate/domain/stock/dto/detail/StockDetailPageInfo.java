@@ -1,7 +1,6 @@
 package com.finmate.domain.stock.dto.detail;
 
 import com.finmate.domain.stock.Stock;
-import com.finmate.domain.stock.price.StockDailyPrice;
 import com.finmate.global.format.DisplayFormatUtils;
 import lombok.Getter;
 
@@ -15,19 +14,23 @@ import java.util.List;
 @Getter
 public class StockDetailPageInfo {
     private final Stock stock;
-    private final StockChartPeriod selectedPeriod;
-    private final StockChartPeriod[] chartPeriods;
+    private final StockChartInterval selectedInterval;
+    private final StockChartInterval[] chartIntervals;
     private final LocalDate chartStartDate;
     private final LocalDate chartEndDate;
     private final LocalDate latestTradeDate;
+    private final String latestCandleAt;
     private final BigDecimal latestClosePrice;
     private final BigDecimal latestChangeAmount;
     private final BigDecimal latestChangeRate;
     private final String latestPriceChangeClass;
     private final String currencySymbol;
     private final int priceDecimalDigits;
-    private final int savedDailyPriceCount;
+    private final int savedPriceCount;
     private final List<StockChartCandleData> chartCandles;
+    private final LocalDate currentCandleTradeDate;
+    private final Long currentCandleBaseVolume;
+    private final BigDecimal currentCandleBaseTradeAmount;
     private final StockChartPriceSummary chartPriceSummary;
     private final StockMetadataDisplayInfo metadataDisplayInfo;
     private final DomesticStockDetailInfo domesticDetailInfo;
@@ -35,43 +38,57 @@ public class StockDetailPageInfo {
     private final String stockTradingTimeDescription;
 
     public StockDetailPageInfo(Stock stock,
-                               StockChartPeriod selectedPeriod,
+                               StockChartInterval selectedInterval,
                                LocalDate chartStartDate,
                                LocalDate chartEndDate,
-                               int savedDailyPriceCount,
-                               List<StockDailyPrice> dailyPrices,
+                               int savedPriceCount,
+                               List<StockChartCandleData> candles,
+                               List<StockChartCandleData> latestDailyCandles,
+                               LocalDate currentCandleTradeDate,
+                               Long currentCandleBaseVolume,
+                               BigDecimal currentCandleBaseTradeAmount,
                                StockMetadataDisplayInfo metadataDisplayInfo,
                                DomesticStockDetailInfo domesticDetailInfo,
                                boolean stockTradingAvailable,
                                String stockTradingTimeDescription) {
         this.stock = stock;
-        this.selectedPeriod = selectedPeriod;
-        this.chartPeriods = StockChartPeriod.values();
+        this.selectedInterval = selectedInterval;
+        this.chartIntervals = StockChartInterval.values();
         this.chartStartDate = chartStartDate;
         this.chartEndDate = chartEndDate;
-        this.savedDailyPriceCount = savedDailyPriceCount;
+        this.savedPriceCount = savedPriceCount;
+        this.currentCandleTradeDate = currentCandleTradeDate;
+        this.currentCandleBaseVolume = currentCandleBaseVolume;
+        this.currentCandleBaseTradeAmount = currentCandleBaseTradeAmount;
         this.currencySymbol = resolveCurrencySymbol(stock);
         this.priceDecimalDigits = resolvePriceDecimalDigits(stock);
 
-        List<StockDailyPrice> validDailyPrices = dailyPrices.stream()
+        List<StockChartCandleData> validCandles = candles.stream()
                 .filter(this::hasValidPrice)
                 .toList();
-        this.chartCandles = validDailyPrices.stream()
-                .map(StockChartCandleData::from)
+        List<StockChartCandleData> validDailyCandles = latestDailyCandles.stream()
+                .filter(this::hasValidPrice)
                 .toList();
-        this.latestTradeDate = latestTradeDate(validDailyPrices);
-        this.latestClosePrice = latestClosePrice(validDailyPrices);
-        this.latestChangeAmount = latestChangeAmount(validDailyPrices);
-        this.latestChangeRate = latestChangeRate(this.latestChangeAmount, previousClosePrice(validDailyPrices));
+        List<StockChartCandleData> quoteCandles = validDailyCandles.isEmpty()
+                ? validCandles
+                : validDailyCandles;
+        this.chartCandles = validCandles;
+        this.latestCandleAt = validCandles.isEmpty()
+                ? null
+                : validCandles.get(validCandles.size() - 1).tradeDate();
+        this.latestTradeDate = latestTradeDate(quoteCandles);
+        this.latestClosePrice = latestClosePrice(quoteCandles);
+        this.latestChangeAmount = latestChangeAmount(quoteCandles);
+        this.latestChangeRate = latestChangeRate(this.latestChangeAmount, previousClosePrice(quoteCandles));
         this.latestPriceChangeClass = priceChangeClass(this.latestChangeAmount);
-        this.chartPriceSummary = chartPriceSummary(validDailyPrices);
+        this.chartPriceSummary = chartPriceSummary(validCandles);
         this.metadataDisplayInfo = metadataDisplayInfo;
         this.domesticDetailInfo = domesticDetailInfo;
         this.stockTradingAvailable = stockTradingAvailable;
         this.stockTradingTimeDescription = stockTradingTimeDescription;
     }
 
-    public boolean hasDailyPrices() {
+    public boolean hasPrices() {
         return !chartCandles.isEmpty();
     }
 
@@ -94,30 +111,30 @@ public class StockDetailPageInfo {
         return DisplayFormatUtils.formatSignedPercent(latestChangeRate, 2);
     }
 
-    private LocalDate latestTradeDate(List<StockDailyPrice> dailyPrices) {
-        if (dailyPrices.isEmpty()) {
+    private LocalDate latestTradeDate(List<StockChartCandleData> candles) {
+        if (candles.isEmpty()) {
             return null;
         }
-        return dailyPrices.get(dailyPrices.size() - 1).getTradeDate();
+        return parseCandleDate(candles.get(candles.size() - 1).tradeDate());
     }
 
-    private BigDecimal latestClosePrice(List<StockDailyPrice> dailyPrices) {
-        if (dailyPrices.isEmpty()) {
+    private BigDecimal latestClosePrice(List<StockChartCandleData> candles) {
+        if (candles.isEmpty()) {
             return null;
         }
-        return dailyPrices.get(dailyPrices.size() - 1).getClosePrice();
+        return candles.get(candles.size() - 1).closePrice();
     }
 
-    private BigDecimal previousClosePrice(List<StockDailyPrice> dailyPrices) {
-        if (dailyPrices.size() < 2) {
+    private BigDecimal previousClosePrice(List<StockChartCandleData> candles) {
+        if (candles.size() < 2) {
             return null;
         }
-        return dailyPrices.get(dailyPrices.size() - 2).getClosePrice();
+        return candles.get(candles.size() - 2).closePrice();
     }
 
-    private BigDecimal latestChangeAmount(List<StockDailyPrice> dailyPrices) {
-        BigDecimal latestClose = latestClosePrice(dailyPrices);
-        BigDecimal previousClose = previousClosePrice(dailyPrices);
+    private BigDecimal latestChangeAmount(List<StockChartCandleData> candles) {
+        BigDecimal latestClose = latestClosePrice(candles);
+        BigDecimal previousClose = previousClosePrice(candles);
         if (latestClose == null || previousClose == null) {
             return null;
         }
@@ -133,37 +150,44 @@ public class StockDetailPageInfo {
                 .multiply(BigDecimal.valueOf(100));
     }
 
-    private StockChartPriceSummary chartPriceSummary(List<StockDailyPrice> dailyPrices) {
-        StockDailyPrice highest = dailyPrices.stream()
-                .max(Comparator.comparing(StockDailyPrice::getHighPrice))
+    private StockChartPriceSummary chartPriceSummary(List<StockChartCandleData> candles) {
+        StockChartCandleData highest = candles.stream()
+                .max(Comparator.comparing(StockChartCandleData::highPrice))
                 .orElse(null);
-        StockDailyPrice lowest = dailyPrices.stream()
-                .min(Comparator.comparing(StockDailyPrice::getLowPrice))
+        StockChartCandleData lowest = candles.stream()
+                .min(Comparator.comparing(StockChartCandleData::lowPrice))
                 .orElse(null);
         if (highest == null || lowest == null) {
             return null;
         }
         return new StockChartPriceSummary(
-                highest.getHighPrice(),
-                highest.getTradeDate(),
-                lowest.getLowPrice(),
-                lowest.getTradeDate()
+                highest.highPrice(),
+                parseCandleDate(highest.tradeDate()),
+                lowest.lowPrice(),
+                parseCandleDate(lowest.tradeDate())
         );
     }
 
-    private boolean hasValidPrice(StockDailyPrice dailyPrice) {
-        if (dailyPrice == null
-                || !isPositive(dailyPrice.getOpenPrice())
-                || !isPositive(dailyPrice.getHighPrice())
-                || !isPositive(dailyPrice.getLowPrice())
-                || !isPositive(dailyPrice.getClosePrice())) {
+    private LocalDate parseCandleDate(String value) {
+        if (value == null || value.length() < 10) {
+            return null;
+        }
+        return LocalDate.parse(value.substring(0, 10));
+    }
+
+    private boolean hasValidPrice(StockChartCandleData candle) {
+        if (candle == null
+                || !isPositive(candle.openPrice())
+                || !isPositive(candle.highPrice())
+                || !isPositive(candle.lowPrice())
+                || !isPositive(candle.closePrice())) {
             return false;
         }
 
-        BigDecimal highPrice = dailyPrice.getHighPrice();
-        BigDecimal lowPrice = dailyPrice.getLowPrice();
-        BigDecimal openPrice = dailyPrice.getOpenPrice();
-        BigDecimal closePrice = dailyPrice.getClosePrice();
+        BigDecimal highPrice = candle.highPrice();
+        BigDecimal lowPrice = candle.lowPrice();
+        BigDecimal openPrice = candle.openPrice();
+        BigDecimal closePrice = candle.closePrice();
         return highPrice.compareTo(lowPrice) >= 0
                 && highPrice.compareTo(openPrice) >= 0
                 && highPrice.compareTo(closePrice) >= 0

@@ -53,8 +53,9 @@ JSON 요청으로 받고 기존 Service의 검증과 트랜잭션을 재사용�
 
 - `AccountController`: 일반 계좌, 이체, 한도, 내역
 - `InvestmentController`: 투자 화면 URL을 React 진입 문서로 연결
-- `InvestmentReadApiController`: 포트폴리오의 계좌·최근 평가가·업종 비중·환율과 종목 상세의 OHLC 일봉 데이터를 JSON으로 반환
+- `InvestmentReadApiController`: 포트폴리오의 계좌·최근 평가가·업종 비중·환율과 종목 상세의 일·주·월·연 OHLCV 데이터를 JSON으로 반환
 - `StockController`: 시장별 종목/업종 검색, 관심 종목, 상세, 랭킹 데이터
+- `StockPriceLineController`: 로그인 사용자·종목별 차트 가로선 조회, 생성, 개별 삭제와 전체 초기화
 - `StockConceptController`: 종목 ID와 enum 개념 코드를 받아 종목 상세의 개념정보 JSON 반환
 - `OrderController`: 주문 화면, 일반·예약 주문 접수와 취소
 - `LoginController`: 회원가입과 로그인 화면
@@ -86,7 +87,11 @@ Google·Kakao의 `sub`와 Naver의 프로필 `id`는 각 공급자 내에서 사
 Gradle 빌드가 `static/react`에 포함한 Vite 진입 문서로 요청을 전달하고, React는 `/api/session`과 업무별
 JSON API를 조회한다. 공통 화면 토큰은 `static/css/common.css`를 사용한다.
 React 최상단 오류 경계는 특정 컴포넌트의 렌더링 오류가 전체 흰 화면으로 번지는 것을 막고, 데이터 조회가 오래 걸리는 화면은 공통 로딩 상태를 표시한다.
-종목 상세는 일봉 원본으로 캔들·거래량·이동평균선을 렌더링하고, 포트폴리오는 서버가 제공한 평균매입가와 최근 종가를 초기 상태로 사용한다. 장중 `STOCK_TRADE` WebSocket 메시지가 도착하면 React 상태의 현재가를 바꾸고 평가금액·손익·수익률 표시를 다시 계산한다. 통화 환산은 화면 표시 전용이며 서버의 실제 잔고나 거래금액을 변경하지 않는다.
+종목 상세는 선택한 일·주·월·연봉 원본으로 캔들·거래량·이동평균선을 렌더링한다. 장중 `STOCK_TRADE`
+WebSocket 메시지가 도착하면 현재 봉의 고가·저가·종가와 당일 누적 거래량·거래대금을 합성해 차트를 갱신한다.
+거래량은 가격 영역과 분리된 패널과 만·억 단위 축으로 표시한다. 사용자가 선 만들기 모드에서 캔들을 선택하면
+해당 종가를 사용자·종목별 `StockPriceLine`으로 저장하고, 우클릭 개별 삭제 또는 전체 초기화를 제공한다.
+포트폴리오는 서버가 제공한 평균매입가와 최근 종가를 초기 상태로 사용하며, 통화 환산은 화면 표시 전용이다.
 
 ### Service
 
@@ -110,8 +115,11 @@ React 최상단 오류 경계는 특정 컴포넌트의 렌더링 오류가 전�
 - `StockConceptAnalysisService`: 요청 종목의 상세 갱신·조회 결과를 개념 코드별 실제 값, 계산식,
   기준시점과 중립적인 설명으로 변환하며 산정 기준이 다른 값은 임의로 재계산하지 않음
 - `InvestmentLearningCatalog`: 투자 학습 화면에 노출할 17개 개념의 카테고리와 표시 순서를 관리
-- `StockDetailService`: 선택 기간의 일봉을 조회해 화면에 OHLCV 원본 DTO로 전달한다. 캔들 좌표,
-  가격·날짜축, 이동평균선과 확대·이동 같은 표현 계산은 브라우저 차트 렌더러가 담당한다.
+- `StockDetailService`: 기본 일봉과 선택한 주·월·연봉의 확정 이력을 증분 동기화하고, 현재 기간의 확정
+  일봉을 임시 상위 봉으로 합성해 OHLCV DTO로 전달한다. 캔들 좌표, 가격·날짜축, 이동평균선과 확대·이동
+  같은 표현 계산은 브라우저 차트 렌더러가 담당한다.
+- `StockPeriodPriceSyncService`: 국내 주·월·연봉과 해외 주·월봉을 KIS에서 받아 `stock_period_price`에
+  저장한다. 해외 개별 종목 연봉은 KIS 월봉을 연 단위로 집계한다.
 - `StockNewsService`: `{종목명} 시장정보`로 조회한 NAVER 뉴스 후보를 한국 날짜, 제목의 투자 핵심 키워드 수,
   발행일시 순으로 정렬하고, 상위 10건을 종목별 MySQL 캐시에 저장해 `updatedAt`이 기본 6시간을 넘었을 때만 갱신한다.
 - `MarketReportService`: KOSPI·KOSDAQ·NASDAQ·S&P 500·금리·환율 주제별 NAVER 뉴스 후보를 한국 날짜,
@@ -133,7 +141,7 @@ JPA 엔티티, enum, 정책과 DTO를 포함한다. 잔액 변경, 자산 잠금
 
 - 공통 설정, REST 인증·호출 제한·재시도
 - 종목 마스터 파일과 국내 업종코드 파일 다운로드
-- 일봉·랭킹 REST API client
+- 종목 일·주·월·연 기간별 시세와 랭킹 REST API client
 - 국내 종목 상세의 현재가·재무비율·손익계산서·대차대조표·투자자 일별 수급 REST client
 - KIS WebSocket approval key, 연결·재연결, 구독 메시지와 payload 파싱
 
@@ -240,10 +248,11 @@ Redis 금일 스냅샷을 합쳐 화면 DTO를 만든다.
 
 KIS payload는 `KisRealtimeStore`에 최신값으로 저장되고 Spring 동기 이벤트로 발행된다. `StockRealtimeClientSessionService`와 `MarketRealtimeClientSessionService`는 구독 브라우저에 JSON을 보내며, `StockTradingRealtimeExecutionListener`는 같은 이벤트로 체결을 시도한다.
 
-종목 상세 일봉 차트는 서버가 `StockChartCandleData`로 날짜·OHLCV·거래대금만 전달하고, 브라우저가
-Canvas에 캔들·거래량·MA5·MA20·MA60과 동적 축을 그린다. 현재 전달받은 조회 범위 안에서 휠 확대·축소,
-마우스 드래그, 트랙패드 두 손가락 좌우 이동과 십자선 툴팁을 처리한다. 최초 화면에는 최근 63거래일
-(약 3개월)을 표시하며, 축소하면 선택한 조회 기간 전체를 한 화면에서 볼 수 있다. 나머지 일봉은 차트 드래그
+종목 상세 차트는 서버가 `StockChartCandleData`로 날짜·OHLCV·거래대금만 전달하고, 브라우저가 Canvas에
+캔들·거래량·MA5·MA20·MA60과 동적 축을 그린다. 기본값은 일봉이며 일봉은 3년, 주봉은 10년, 월봉과
+연봉은 상장 이후 이력을 조회한다. 현재 전달받은 조회 범위 안에서 휠 확대·축소, 마우스 드래그, 트랙패드
+두 손가락 좌우 이동과 십자선 툴팁을 처리한다. 최초 화면에는 최근 63개 봉을 표시하며, 축소하면 선택한
+조회 범위 전체를 한 화면에서 볼 수 있다. 나머지 봉은 차트 드래그
 또는 하단 기간 바를 움직여 탐색한다. 기간 바의 손잡이 길이와 위치는 전체 조회 기간 중 현재 화면에 보이는
 범위를 나타내며 확대·축소에 따라 함께 변한다. 과거 구간을 추가로 가져오는 별도 페이지 조회 API는 사용하지 않는다.
 

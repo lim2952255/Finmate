@@ -16,6 +16,35 @@ const tabs = [
   { value: "news", label: "뉴스" }
 ];
 
+const MINUTE_INTERVALS = {
+  MINUTE_1: 1,
+  MINUTE_3: 3,
+  MINUTE_5: 5,
+  MINUTE_15: 15
+};
+
+function minuteBucketDate(tradeDate, tradeTime, interval) {
+  const date = String(tradeDate || "").replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3");
+  const time = String(tradeTime || "").padStart(6, "0");
+  const minutes = MINUTE_INTERVALS[interval];
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !minutes || !/^\d{6}$/.test(time)) return null;
+  const hour = Number(time.slice(0, 2));
+  const minute = Math.floor(Number(time.slice(2, 4)) / minutes) * minutes;
+  return `${date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
+}
+
+function intervalStartDate(tradeDate, interval) {
+  const [year, month, day] = tradeDate.split("-").map(Number);
+  if (!year || !month || !day) return tradeDate;
+  if (interval === "YEAR") return `${year}-01-01`;
+  if (interval === "MONTH") return `${year}-${String(month).padStart(2, "0")}-01`;
+  if (interval !== "WEEK") return tradeDate;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const daysSinceMonday = (date.getUTCDay() + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - daysSinceMonday);
+  return date.toISOString().slice(0, 10);
+}
+
 function normalizeNewsText(value) {
   if (!value) return "";
   return new DOMParser().parseFromString(value, "text/html").body.textContent || "";
@@ -182,11 +211,14 @@ export default function StockDetailPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const stockId = new URLSearchParams(location.search).get("stockId");
+  const requestedInterval = new URLSearchParams(location.search).get("interval") || "DAY";
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const [loadedSearch, setLoadedSearch] = useState(null);
   const [tab, setTab] = useState("quote");
   const [orderbook, setOrderbook] = useState(null);
   const [drawer, setDrawer] = useState({ open: false, loading: false, title: "", concept: null, error: null });
+  const detailLoading = loadedSearch !== location.search;
   const pageError = stockId ? error : new Error("조회할 종목이 지정되지 않았습니다.");
   useDocumentTitle(`${data?.nameKo || "종목 상세"} | FinMate`);
 
@@ -197,9 +229,12 @@ export default function StockDetailPage() {
 
     const controller = new AbortController();
     getJson(`/api/investment-read/stock-detail${location.search}`, { signal: controller.signal })
-      .then((detail) => { setData(detail); setError(null); })
+      .then((detail) => { setData(detail); setError(null); setLoadedSearch(location.search); })
       .catch((requestError) => {
-        if (requestError.name !== "AbortError") setError(requestError);
+        if (requestError.name !== "AbortError") {
+          setError(requestError);
+          setLoadedSearch(location.search);
+        }
       });
     return () => controller.abort();
   }, [location.search, stockId]);
@@ -215,25 +250,79 @@ export default function StockDetailPage() {
         setData((current) => {
           if (!current) return current;
           const currentPrice = Number(message.currentPrice);
+          const minuteBucket = minuteBucketDate(message.tradeDate, message.tradeTime, current.selectedInterval);
+          if (minuteBucket) {
+            const candles = [...current.candles];
+            const existingCandle = candles.at(-1)?.tradeDate === minuteBucket ? candles.at(-1) : null;
+            const tradeVolume = Number(message.tradeVolume ?? 0);
+            const realtimeCandle = {
+              tradeDate: minuteBucket,
+              openPrice: String(existingCandle?.openPrice ?? currentPrice),
+              highPrice: String(Math.max(Number(existingCandle?.highPrice ?? currentPrice), currentPrice)),
+              lowPrice: String(Math.min(Number(existingCandle?.lowPrice ?? currentPrice), currentPrice)),
+              closePrice: String(currentPrice),
+              accumulatedVolume: String(Number(existingCandle?.accumulatedVolume ?? 0) + tradeVolume),
+              accumulatedTradeAmount: String(Number(existingCandle?.accumulatedTradeAmount ?? 0) + currentPrice * tradeVolume),
+              completed: false
+            };
+            if (existingCandle) {
+              candles[candles.length - 1] = realtimeCandle;
+            } else {
+              if (candles.length) candles[candles.length - 1] = { ...candles.at(-1), completed: true };
+              candles.push(realtimeCandle);
+            }
+            return {
+              ...current,
+              candles,
+              latestTradeDate: minuteBucket.slice(0, 10),
+              latestCandleAt: minuteBucket,
+              latestClosePrice: String(message.currentPrice),
+              latestChangeAmount: String(message.change ?? current.latestChangeAmount),
+              latestChangeRate: String(message.changeRate ?? current.latestChangeRate)
+            };
+          }
           const openPrice = Number(message.openPrice ?? currentPrice);
           const highPrice = Math.max(Number(message.highPrice ?? currentPrice), openPrice, currentPrice);
           const lowPrice = Math.min(Number(message.lowPrice ?? currentPrice), openPrice, currentPrice);
           const tradeDate = String(message.tradeDate || current.latestTradeDate || "").replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3");
+          const candleDate = intervalStartDate(tradeDate, current.selectedInterval);
+          const existingCandle = current.candles.at(-1)?.tradeDate === candleDate ? current.candles.at(-1) : null;
+          const dailyVolume = Number(message.accumulatedVolume ?? 0);
+          const dailyTradeAmount = Number(message.accumulatedTradeAmount ?? 0);
+          const sameRealtimeDay = current.realtimeTradeDate === tradeDate;
+          const serverBaseApplies = current.currentCandleTradeDate === tradeDate;
+          const baseVolume = sameRealtimeDay
+            ? Number(current.realtimeBaseVolume ?? 0)
+            : current.selectedInterval === "DAY" ? 0
+              : serverBaseApplies ? Number(current.currentCandleBaseVolume ?? 0)
+                : Number(existingCandle?.accumulatedVolume ?? 0);
+          const rawBaseTradeAmount = sameRealtimeDay
+            ? current.realtimeBaseTradeAmount
+            : current.selectedInterval === "DAY" ? 0
+              : serverBaseApplies ? current.currentCandleBaseTradeAmount
+                : existingCandle?.accumulatedTradeAmount;
+          const baseTradeAmountKnown = current.selectedInterval === "DAY" || rawBaseTradeAmount != null;
+          const baseTradeAmount = Number(rawBaseTradeAmount ?? 0);
           const realtimeCandle = {
-            tradeDate,
-            openPrice: String(openPrice),
-            highPrice: String(highPrice),
-            lowPrice: String(lowPrice),
+            tradeDate: candleDate,
+            openPrice: String(existingCandle?.openPrice ?? openPrice),
+            highPrice: String(Math.max(Number(existingCandle?.highPrice ?? highPrice), highPrice)),
+            lowPrice: String(Math.min(Number(existingCandle?.lowPrice ?? lowPrice), lowPrice)),
             closePrice: String(currentPrice),
-            accumulatedVolume: String(message.accumulatedVolume ?? 0),
-            accumulatedTradeAmount: String(message.accumulatedTradeAmount ?? 0)
+            accumulatedVolume: String(baseVolume + dailyVolume),
+            accumulatedTradeAmount: baseTradeAmountKnown && message.accumulatedTradeAmount != null
+              ? String(baseTradeAmount + dailyTradeAmount)
+              : null
           };
           const candles = [...current.candles];
-          if (candles.at(-1)?.tradeDate === tradeDate) candles[candles.length - 1] = realtimeCandle;
+          if (existingCandle) candles[candles.length - 1] = realtimeCandle;
           else candles.push(realtimeCandle);
           return {
             ...current,
             candles,
+            realtimeTradeDate: tradeDate,
+            realtimeBaseVolume: baseVolume,
+            realtimeBaseTradeAmount: baseTradeAmountKnown ? baseTradeAmount : null,
             latestTradeDate: tradeDate,
             latestClosePrice: String(message.currentPrice),
             latestChangeAmount: String(message.change ?? current.latestChangeAmount),
@@ -261,9 +350,12 @@ export default function StockDetailPage() {
     };
   }, [stockId]);
 
-  const changePeriod = (value) => {
+  const changeInterval = (value) => {
+    if (value === requestedInterval) return;
+    setError(null);
     const next = new URLSearchParams(location.search);
-    next.set("period", value);
+    next.delete("period");
+    next.set("interval", value);
     navigate(`${location.pathname}?${next}`);
   };
 
@@ -285,9 +377,11 @@ export default function StockDetailPage() {
             <>
               <div className="page-heading"><h1>{data.nameKo}{data.nameEn ? ` (${data.nameEn})` : ""}</h1><p>실시간 시세와 기업 재무, 투자자별 매매 수급을 탭으로 확인합니다.</p></div>
               <section>
-                <div className="detail-heading-with-concept"><h2>일봉 차트</h2><button className="concept-help-button concept-help-button--summary" type="button" onClick={() => openConcept("DAILY_CANDLE_CHART", "일봉 차트 보는 법")} aria-label="일봉 차트 보는 법 개념 익히기">차트 보는 법</button></div>
-                <form className="chart-control-form" onSubmit={(event) => { event.preventDefault(); changePeriod(data.selectedPeriod); }}><label>기간<select value={data.selectedPeriod} onChange={(event) => changePeriod(event.target.value)}>{data.periods.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label><button type="submit">조회</button></form>
-                <CandlestickChart candles={data.candles} currency={data.currency} periodLabel={data.periods.find((item) => item.value === data.selectedPeriod)?.label || data.selectedPeriod} detail={data} orderbook={orderbook} />
+                <div className="detail-heading-with-concept"><h2>{data.intervals.find((item) => item.value === requestedInterval)?.label || requestedInterval} 차트</h2><button className="concept-help-button concept-help-button--summary" type="button" onClick={() => openConcept("DAILY_CANDLE_CHART", "캔들 차트 보는 법")} aria-label="캔들 차트 보는 법 개념 익히기">차트 보는 법</button></div>
+                <form className="chart-control-form" onSubmit={(event) => event.preventDefault()}><label>봉 주기<select value={requestedInterval} onChange={(event) => changeInterval(event.target.value)}>{data.intervals.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label><button type="submit" disabled={detailLoading}>{detailLoading ? "조회 중" : "조회"}</button></form>
+                {detailLoading
+                  ? <div className="chart-loading-state" role="status" aria-live="polite"><span className="route-spinner" aria-hidden="true" /><strong>{data.intervals.find((item) => item.value === requestedInterval)?.label || requestedInterval} 데이터를 불러오는 중입니다.</strong><p>KIS API 응답을 기다리고 있습니다.</p></div>
+                  : <CandlestickChart candles={data.candles} currency={data.currency} interval={data.selectedInterval} intervalLabel={data.intervals.find((item) => item.value === data.selectedInterval)?.label || data.selectedInterval} detail={data} orderbook={orderbook} stockId={data.id} />}
               </section>
               <div className="stock-detail-tabs" role="tablist" aria-label="종목 상세 정보">{tabs.map((item) => <button className="stock-detail-tab" role="tab" aria-selected={tab === item.value} tabIndex={tab === item.value ? 0 : -1} key={item.value} type="button" onClick={() => setTab(item.value)}>{item.label}</button>)}</div>
               <div className="stock-detail-panel" role="tabpanel" tabIndex="0">

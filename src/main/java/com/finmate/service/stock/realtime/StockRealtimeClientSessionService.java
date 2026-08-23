@@ -221,6 +221,7 @@ public class StockRealtimeClientSessionService {
                 parseNullableBigDecimal(payload.change()),
                 parseNullableBigDecimal(payload.changeRate()),
                 value(values, "PRDY_VRSS_SIGN", "SIGN"),
+                parseNullableLong(value(values, "CNTG_VOL", "EVOL")),
                 parseNullableLong(value(values, "ACML_VOL", "TVOL")),
                 parseNullableBigDecimal(value(values, "ACML_TR_PBMN", "TAMT")),
                 value(values, "BSOP_DATE", "XYMD"),

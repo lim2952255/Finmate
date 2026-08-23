@@ -274,6 +274,35 @@
             gap: 18px;
         }
 
+        .chart-loading-state {
+            display: grid;
+            align-content: center;
+            justify-items: center;
+            min-height: 620px;
+            padding: 40px 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+            color: #64748b;
+            text-align: center;
+        }
+
+        .chart-loading-state .route-spinner {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 18px;
+        }
+
+        .chart-loading-state strong {
+            color: #0f172a;
+            font-size: 18px;
+        }
+
+        .chart-loading-state p {
+            margin: 7px 0 0;
+            font-size: 14px;
+        }
+
         .chart-main-header {
             display: flex;
             align-items: flex-end;
@@ -341,6 +370,16 @@
             font-weight: 700;
         }
 
+        .market-session-badge.open {
+            background: #ecfdf5;
+            color: #047857;
+        }
+
+        .market-session-badge.closed {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
         .chart-legend {
             display: flex;
             flex-wrap: wrap;
@@ -348,6 +387,72 @@
             gap: 10px;
             color: #475569;
             font-size: 13px;
+        }
+
+        .chart-header-tools {
+            display: grid;
+            justify-items: end;
+            gap: 10px;
+        }
+
+        .price-line-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .price-line-button,
+        .price-line-reset-button {
+            min-height: 34px;
+            padding: 0 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #334155;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .price-line-button:hover,
+        .price-line-reset-button:hover:not(:disabled) {
+            border-color: #8b5cf6;
+            color: #6d28d9;
+        }
+
+        .price-line-button.active {
+            border-color: #7c3aed;
+            background: #7c3aed;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.22);
+        }
+
+        .price-line-button:disabled,
+        .price-line-reset-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.48;
+        }
+
+        .price-line-mode-hint,
+        .price-line-error {
+            margin-bottom: 10px;
+            padding: 9px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 750;
+        }
+
+        .price-line-mode-hint {
+            border: 1px solid #ddd6fe;
+            background: #f5f3ff;
+            color: #6d28d9;
+        }
+
+        .price-line-error {
+            border: 1px solid #fecaca;
+            background: #fef2f2;
+            color: #b91c1c;
         }
 
         .legend-item {
@@ -375,10 +480,22 @@
             background: #7c3aed;
         }
 
+        .legend-color.user-price-line {
+            height: 4px;
+            background: #6d28d9;
+            box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.14);
+        }
+
+        .legend-color.forming {
+            height: 8px;
+            border: 1px dashed #f97316;
+            background: transparent;
+        }
+
         .chart-scroll {
             position: relative;
             overflow: hidden;
-            height: 540px;
+            height: 620px;
             border: 1px solid #dbe3ef;
             border-radius: 8px;
             background: #ffffff;
@@ -392,11 +509,50 @@
             cursor: grabbing;
         }
 
+        .chart-scroll.line-mode {
+            cursor: cell;
+            box-shadow: inset 0 0 0 2px rgba(124, 58, 237, 0.22);
+        }
+
         .stock-chart-canvas {
             display: block;
             width: 100%;
             height: 100%;
             background: #ffffff;
+        }
+
+        .price-line-context-menu {
+            position: absolute;
+            z-index: 8;
+            display: grid;
+            min-width: 148px;
+            overflow: hidden;
+            border: 1px solid #ddd6fe;
+            border-radius: 9px;
+            background: #ffffff;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+        }
+
+        .price-line-context-menu strong {
+            padding: 9px 12px 7px;
+            color: #6d28d9;
+            font-size: 12px;
+        }
+
+        .price-line-context-menu button {
+            padding: 8px 12px;
+            border: 0;
+            border-top: 1px solid #ede9fe;
+            background: #ffffff;
+            color: #dc2626;
+            font-size: 12px;
+            font-weight: 800;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .price-line-context-menu button:hover {
+            background: #fef2f2;
         }
 
         .chart-interaction-guide {
@@ -2873,6 +3029,16 @@
 
             .chart-legend {
                 justify-content: flex-start;
+            }
+
+            .chart-header-tools {
+                justify-items: start;
+                width: 100%;
+            }
+
+            .price-line-toolbar {
+                justify-content: flex-start;
+                flex-wrap: wrap;
             }
 
             .stock-action-section {
