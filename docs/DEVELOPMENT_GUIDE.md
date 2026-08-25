@@ -61,7 +61,7 @@ NAVER_NEWS_CACHE_TTL_HOURS=6
 Google 로그인을 사용하지 않으면 `GOOGLE_OAUTH_ENABLED`를 생략하거나 `false`로 둔다. 사용할 때는 Google Cloud Console에서 Web application OAuth client를 만들고 로컬 Authorized redirect URI를 다음과 같이 등록한다.
 
 ```text
-http://localhost:8080/login/oauth2/code/google
+http://localhost:5173/login/oauth2/code/google
 ```
 
 배포 환경에서는 `{서비스 base URL}/login/oauth2/code/google`을 별도로 등록한다. Client ID와 Client Secret은 `.env` 또는 운영 비밀 저장소로만 주입하고 저장소에 커밋하지 않는다.
@@ -69,15 +69,15 @@ http://localhost:8080/login/oauth2/code/google
 Kakao 로그인은 [Kakao Developers](https://developers.kakao.com/)에서 애플리케이션을 만든 뒤 Kakao Login과 OpenID Connect를 활성화한다. `KAKAO_CLIENT_ID`에는 REST API key를, `KAKAO_CLIENT_SECRET`에는 Client secret code를 사용하고 다음 Redirect URI를 등록한다.
 
 ```text
-http://localhost:8080/login/oauth2/code/kakao
+http://localhost:5173/login/oauth2/code/kakao
 ```
 
 현재 코드는 OIDC `openid`, `profile_nickname` 범위만 요청한다. 이메일이 필요하면 Kakao Developers에서 이메일 동의 항목 권한을 확인한 뒤 코드의 scope를 함께 확장해야 한다.
 
-Naver 로그인은 [Naver Developers](https://developers.naver.com/)에서 애플리케이션을 등록하고 사용 API로 `네이버 로그인`을 선택한다. 서비스 URL은 `http://localhost:8080`, Callback URL은 다음과 같이 등록한다.
+Naver 로그인은 [Naver Developers](https://developers.naver.com/)에서 애플리케이션을 등록하고 사용 API로 `네이버 로그인`을 선택한다. 서비스 URL은 `http://localhost:5173`, Callback URL은 다음과 같이 등록한다.
 
 ```text
-http://localhost:8080/login/oauth2/code/naver
+http://localhost:5173/login/oauth2/code/naver
 ```
 
 발급된 Client ID와 Client Secret을 각각 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`에 설정한다. 배포 환경에서는 Kakao와 Naver에도 실제 HTTPS base URL을 사용한 callback을 별도로 등록한다.
@@ -140,30 +140,39 @@ docker compose down
 ## 4. 애플리케이션 실행
 
 ```bash
-./gradlew bootRun
-```
-
-Gradle의 `processResources`는 `npm ci`와 React production build를 먼저 실행하고 결과를 Spring 정적 리소스의
-`/react` 경로에 포함한다. 모든 사용자 화면 URL은 이 React 진입 문서를 반환하고 업무 데이터와 변경 요청은
-`/api` 하위 JSON API가 처리한다.
-
-React 화면을 빠른 새로고침으로 수정할 때는 Spring과 Vite 개발 서버를 각각 실행한다.
-
-```bash
-# 터미널 1: API, 인증, React production 진입 문서
+# 터미널 1: API, 인증, WebSocket 서버
 ./gradlew bootRun
 
-# 터미널 2: React 개발 서버
+# 터미널 2: React 화면과 정적 자산을 제공하는 개발 서버
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
 브라우저는 `http://localhost:5173/home`, `http://localhost:5173/investment-learning`,
 `http://localhost:5173/investments/reports` 또는
 `http://localhost:5173/investments/stocks/market-movers`로 접속한다.
-Vite가 `/api`, `/login`, 기존 업무 화면 URL과 WebSocket 요청을 `http://localhost:8080`의 Spring 서버로
-전달한다.
+Vite가 React 화면과 정적 자산을 제공하고 `/api`, 로그인·OAuth 경로와 WebSocket 요청을
+`http://localhost:8080`의 Spring 서버로 전달한다. `http://localhost:8080`은 백엔드 전용이며 React 화면을
+제공하지 않는다.
+
+Gradle과 프런트엔드 빌드는 독립되어 있다. `./gradlew bootJar`가 만든 JAR에는 React 빌드 결과가 들어가지
+않는다. 운영에서는 `frontend`에서 `npm ci && npm run build`로 만든 `dist`를 Nginx 같은 정적 웹 서버에
+배포하고, `/api`, 로그인·OAuth, `/ws` 요청만 Spring으로 reverse proxy한다.
+
+Vite proxy는 개발 요청의 `localhost:5173` Host와 프로토콜을 forwarded headers로 Spring에 전달하고,
+Spring redirect의 내부 `localhost:8080` 주소도 요청 origin으로 재작성한다. 운영 Nginx도 다음 헤더를
+Spring에 전달해야 한다.
+
+```nginx
+proxy_set_header Host $host;
+proxy_set_header X-Forwarded-Host $host;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header X-Forwarded-Port $server_port;
+```
+
+따라서 운영 redirect는 Spring의 내부 `8080`이나 포트 번호 `443`을 직접 하드코딩하지 않고 사용자가 접속한
+`https://서비스도메인`을 기준으로 생성된다.
 
 기본 datasource는 `localhost:3306/finmate`, 사용자 `finmate`, 비밀번호 `finmate-password`다. Docker Compose의 값과 일치하도록 환경변수를 설정해야 한다. Redis 기본 주소는 `localhost:6379`다.
 
@@ -202,7 +211,7 @@ cd ..
 # 정리 후 전체 빌드(테스트 포함)
 ./gradlew clean build
 
-# 실행 가능한 jar 생성
+# React 정적 파일이 포함되지 않은 실행 가능한 jar 생성
 ./gradlew bootJar
 ```
 

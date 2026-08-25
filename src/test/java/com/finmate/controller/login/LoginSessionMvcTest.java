@@ -43,7 +43,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // 로그인, 세션 저장, 세션 재사용, 로그아웃을 검증한다.
 // 이때 @WebMvcTest는 전체 애플리케이션을 띄우는 것이 아니라, MVC 관련 구성만 load한다.
 @WebMvcTest(controllers = {
-        LoginController.class,
         LoginSessionMvcTest.ProtectedRouteController.class
 }, properties = {
         "finmate.oauth.google.enabled=false",

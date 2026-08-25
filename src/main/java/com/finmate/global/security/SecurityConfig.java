@@ -40,7 +40,7 @@ public class SecurityConfig {
 				new DaoAuthenticationProvider(userDetailsService);
 		authenticationProvider.setPasswordEncoder(passwordEncoder);
 
-		// 직접 입력한 보호 URL은 로그인 후 원래 주소로 돌아가고, React가 전달한 내부 redirect도 지원한다.
+			// React가 전달한 내부 redirect를 검증해 로그인 후 원래 화면으로 돌아간다.
 		SavedRequestAwareAuthenticationSuccessHandler savedRequestSuccessHandler =
 				new SavedRequestAwareAuthenticationSuccessHandler();
 		savedRequestSuccessHandler.setDefaultTargetUrl("/");
@@ -60,42 +60,25 @@ public class SecurityConfig {
 							pageAuthenticationEntryPoint.commence(request, response, authenticationException);
 						})
 				)
-				// SpringSequrity가 권한없이 접근을 허용할 경로와 권한없이 접근을 차단할 경로를 지정한다.
+				// Spring Security가 권한 없이 접근을 허용할 경로와 차단할 경로를 지정한다.
 				.authorizeHttpRequests(authorize -> authorize
 						.requestMatchers(
-								"/",
-								"/home",
-								"/login",
-								"/signup",
-								// 로그인 전에도 React Header가 현재 상태를 확인할 수 있어야 한다.
-								"/api/session",
-								"/api/auth/**",
-								"/oauth2/**",
-								"/login/oauth2/**",
-								"/css/**",
-								"/js/**",
-								"/images/**",
-								// Vite가 빌드한 React HTML, JavaScript, CSS 정적 파일 경로다.
-								"/react/**",
-								"/favicon.ico",
-								"/error"
+									"/login",
+									// 로그인 전에도 React Header가 현재 상태를 확인할 수 있어야 한다.
+									"/api/session",
+									"/api/auth/**",
+									"/oauth2/**",
+									"/login/oauth2/**",
+									"/error"
 						).permitAll() // 로그인하지 않아도 접근가능
 						.anyRequest().authenticated() // 나머지 모든 경로들은 권한이 있어야 접근 가능
-						/*
-						 * 만약 권한없는 사용자가 /accounts에 접근하려고 하면 다음과 같은 순서로 동작한다.
-						 * 1. Spring Sequrity가 인증정보가 없다는 것을 확인한다.
-						 * 2. 원래 요청 /acocunts를 RequestCache에 저장한다.
-						 * 3. /login 페이지로 리다이렉트한다.
-						 * 4. 로그인 성공후 RequestCache에 저장했던 /accounts로 리다이렉트한다.
-						*/
-
 				)
 				// login 페이지 설정 및, 입력받는 파라미터 정보등을 설정한다.
 				// 이때 로그인 처리는 사용자가 입력한 userId를 기반으로 UserDetailService에서 DB에 저장된 사용자 정보를 꺼내,
 				// 요청으로 들어온 파라미터와 DB에서 조회한 사용자 정보를 비교/검증한다.
 				.formLogin(form -> form
 						.loginPage("/login")
-						.loginProcessingUrl("/login") // /login에 대한 POST 요청을 Spring Sequrity의 로그인 필터가 처리한다.
+								.loginProcessingUrl("/login") // /login에 대한 POST 요청을 Spring Security의 로그인 필터가 처리한다.
 						.usernameParameter("userId")
 						.passwordParameter("password")
 						.failureHandler((request, response, exception) -> {

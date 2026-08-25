@@ -63,7 +63,7 @@ export function MarketDataDetailPage({ type }) {
   useEffect(() => {
     if (!data?.indicator) return undefined;
     const controller = new AbortController();
-    const loadRealtime = () => getJson(`/investments/market-data/realtime?indicator=${data.indicator}`, { signal: controller.signal })
+    const loadRealtime = () => getJson(`/api/market-data/realtime?indicator=${data.indicator}`, { signal: controller.signal })
       .then(setRealtime)
       .catch((requestError) => { if (requestError.name !== "AbortError") setRealtime(null); });
     loadRealtime();

@@ -5,7 +5,7 @@
 ```text
 com.finmate
 ├─ controller
-│  ├─ home, login
+│  ├─ login, account
 │  ├─ normal.account
 │  ├─ investment
 │  ├─ stock
@@ -45,24 +45,25 @@ DTO가 별도의 최상위 계층이 아니라 각 도메인 하위에 배치되
 
 ### Controller
 
-React 화면과 JSON 요청을 연결한다. 사용자 화면 URL은 React 진입 문서로 전달하고,
-React 헤더의 인증 상태는 `/api/session`이 세션 사용자와 CSRF 정보를 JSON으로 반환한다. `/api/accounts`와
+Spring Controller는 JSON API, 로그인·OAuth 처리 경로와 WebSocket 연결만 담당한다. 사용자 화면 URL과 정적
+자산은 개발 환경의 Vite 또는 운영 환경의 정적 웹 서버가 제공한다. React 헤더의 인증 상태는 `/api/session`이
+세션 사용자와 CSRF 정보를 JSON으로 반환한다. `/api/accounts`와
 `/api/investments`는 홈과 목록의 조회 데이터를 반환하며 각 `/primary` POST API가 기존 서비스의 대표계좌 변경을 호출한다. 투자 학습 카탈로그와
 개념 상세, 주제별 시장 리포트와 모든 업무 데이터도 JSON API로 조회한다. 상태 변경은 CSRF 토큰을 포함한
 JSON 요청으로 받고 기존 Service의 검증과 트랜잭션을 재사용한다.
 
-- `AccountController`: 일반 계좌, 이체, 한도, 내역
-- `InvestmentController`: 투자 화면 URL을 React 진입 문서로 연결
+- `AccountOverviewController`, `AccountOperationApiController`: 일반 계좌 조회, 이체, 한도, 내역
+- `MarketRealtimeController`: 최신 환율·지수 시세를 JSON으로 반환
 - `InvestmentReadApiController`: 포트폴리오의 계좌·최근 평가가·업종 비중·환율과 종목 상세의 일·주·월·연 OHLCV 데이터를 JSON으로 반환
-- `StockController`: 시장별 종목/업종 검색, 관심 종목, 상세, 랭킹 데이터
+- `StockCatalogController`: 시장별 종목/업종 검색, 관심 종목, 랭킹 데이터
 - `StockPriceLineController`: 로그인 사용자·종목별 차트 가로선 조회, 생성, 개별 삭제와 전체 초기화
 - `StockConceptController`: 종목 ID와 enum 개념 코드를 받아 종목 상세의 개념정보 JSON 반환
-- `OrderController`: 주문 화면, 일반·예약 주문 접수와 취소
-- `LoginController`: 회원가입과 로그인 화면
+- `TradingApiController`: 주문 화면 데이터, 일반·예약 주문 접수와 취소
+- `AuthApiController`: 회원가입과 활성화된 소셜 로그인 공급자 정보를 JSON으로 반환
 
 Spring Security의 `SecurityFilterChain`이 폼 로그인·Google/Kakao OIDC·Naver OAuth2 로그인·로그아웃과 URL 인가를 처리한다. 로컬 로그인은 `FinMateUserDetailsService`와 `DaoAuthenticationProvider`를 사용한다. `FinMateOidcUserService`는 Google·Kakao OIDC 사용자를, `FinMateOAuth2UserService`는 Naver OAuth2 사용자를 로컬 `User`에 매핑한다. 보호 컨트롤러는 로그인 방식과 무관하게 `@AuthenticationPrincipal FinMateAuthenticatedPrincipal`에서 로컬 사용자 ID를 받아 서비스 계층의 소유권 검증에 전달한다.
 
-브라우저가 보호 화면 URL을 Spring에 직접 요청하면 Security가 로그인 페이지로 리다이렉트하고 원래 요청을 저장한다. React Router 내부 이동은 새 HTML 요청이 없으므로 `ProtectedRoute`가 먼저 `/api/session`으로 인증 여부를 확인하고, 비로그인 사용자를 원래 주소가 담긴 `redirect` 파라미터와 함께 `/login`으로 보낸다. 로그인 성공 후에는 검증된 FinMate 내부 경로로 복귀한다. 세션이 만료된 상태에서 `/api/**`를 호출하면 Spring은 로그인 HTML 대신 `401 Unauthorized`를 반환하고, 프론트엔드 공통 HTTP 모듈이 이를 로그인 이동으로 처리한다.
+Vite 또는 운영 정적 웹 서버가 보호 화면에도 공통 `index.html`을 반환한다. React Router의 `ProtectedRoute`가 먼저 `/api/session`으로 인증 여부를 확인하고, 비로그인 사용자를 원래 주소가 담긴 `redirect` 파라미터와 함께 `/login`으로 보낸다. 로그인 성공 후에는 검증된 FinMate 내부 경로로 복귀한다. 세션이 만료된 상태에서 `/api/**`를 호출하면 Spring은 `401 Unauthorized`를 반환하고, 프론트엔드 공통 HTTP 모듈이 이를 로그인 이동으로 처리한다. 실제 데이터와 상태 변경 권한은 항상 Spring Security와 서비스 소유권 검증이 보호한다.
 
 소셜 로그인 흐름은 다음과 같다.
 
@@ -83,9 +84,12 @@ Google·Kakao의 `sub`와 Naver의 프로필 `id`는 각 공급자 내에서 사
 
 ### View
 
-`frontend/`의 React 애플리케이션이 전체 사용자 화면과 공통 헤더를 렌더링한다. 각 화면 진입 Controller는
-Gradle 빌드가 `static/react`에 포함한 Vite 진입 문서로 요청을 전달하고, React는 `/api/session`과 업무별
-JSON API를 조회한다. 공통 화면 토큰은 `static/css/common.css`를 사용한다.
+`frontend/`의 React 애플리케이션이 전체 사용자 화면과 공통 헤더를 렌더링한다. 로컬에서는 Vite 개발 서버가
+소스 모듈을 변환해 제공하고, 운영에서는 Vite production build의 `dist`를 Nginx 같은 정적 웹 서버가
+제공한다. Spring JAR은 React 파일을 포함하지 않는다. React는 `/api/session`과 업무별 JSON API를 조회하며,
+공통 화면 토큰과 이미지 자산도 `frontend/`가 소유한다.
+Vite와 Nginx는 원래 요청의 Host·프로토콜을 forwarded headers로 Spring에 전달한다. Spring은 이를 기준으로
+로그인·로그아웃 redirect와 OAuth callback을 생성하므로 내부 `8080` 주소가 브라우저에 노출되지 않는다.
 React 최상단 오류 경계는 특정 컴포넌트의 렌더링 오류가 전체 흰 화면으로 번지는 것을 막고, 데이터 조회가 오래 걸리는 화면은 공통 로딩 상태를 표시한다.
 종목 상세는 선택한 일·주·월·연봉 원본으로 캔들·거래량·이동평균선을 렌더링한다. 장중 `STOCK_TRADE`
 WebSocket 메시지가 도착하면 현재 봉의 고가·저가·종가와 당일 누적 거래량·거래대금을 합성해 차트를 갱신한다.
