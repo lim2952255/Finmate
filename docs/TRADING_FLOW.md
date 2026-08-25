@@ -4,7 +4,7 @@
 
 ## 1. 공통 접수 준비
 
-`OrderController`가 세션 사용자 ID와 요청 DTO를 `StockTradingCommandService`에 전달한다.
+`TradingApiController`가 세션 사용자 ID와 요청 DTO를 `StockTradingCommandService`에 전달한다.
 
 1. 종목과 본인 투자 계좌를 조회한다.
 2. 투자 계좌는 `PESSIMISTIC_WRITE`로 잠근다.

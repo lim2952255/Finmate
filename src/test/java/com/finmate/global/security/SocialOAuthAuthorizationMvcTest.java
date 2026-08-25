@@ -1,7 +1,6 @@
 package com.finmate.global.security;
 
 import com.finmate.controller.login.AuthApiController;
-import com.finmate.controller.login.LoginController;
 import com.finmate.service.user.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,7 +17,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(
         controllers = {
-                LoginController.class,
                 AuthApiController.class
         },
         properties = {

@@ -54,6 +54,20 @@ jobs:
       - name: Set up Gradle # Gradle 실행 환경과 캐시를 설정
         uses: gradle/actions/setup-gradle@v6
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Verify frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+
       # Runner에서 테스트 실행
       - name: Run tests # 실제 테스트 코드들을 실행한다. (이 테스트 코드 내부에서 TestContainer 도커 컨테이너 생성 및 테스트 DB작업을 준비한다.) -> 우분투 서버에서 TestContianer를 도커에 연결한다.
         run: ./gradlew test --no-daemon --console=plain

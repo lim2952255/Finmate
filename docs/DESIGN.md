@@ -4,7 +4,7 @@
 - Status: Active
 - Last refreshed: 2026-07-29
 - Primary product surfaces: 홈, 로그인·회원가입, 계좌, 거래내역, 투자, 포트폴리오, 주문, 종목·시장 데이터
-- Evidence reviewed: `docs/PROJECT_OVERVIEW.md`, `docs/ARCHITECTURE.md`, `src/main/resources/static/css/common.css`, React 화면, 2026-07-29 desktop screenshots 6장
+- Evidence reviewed: `docs/PROJECT_OVERVIEW.md`, `docs/ARCHITECTURE.md`, `frontend/src/styles/common.css`, React 화면, 2026-07-29 desktop screenshots 6장
 
 ## Brand
 - Personality: 신뢰할 수 있고 차분하지만 데이터가 생동감 있게 읽히는 개인 금융 서비스

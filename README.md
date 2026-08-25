@@ -292,21 +292,16 @@ NAVER News API
 # MySQL과 Redis
 docker compose up -d mysql redis
 
-# React production build를 포함한 Spring 애플리케이션 실행
+# Spring API 서버
 ./gradlew bootRun
-```
 
-`http://localhost:8080`에서 접속할 수 있습니다. `processResources`가 `npm ci`와 Vite production build를 먼저 실행해 결과물을 Spring 정적 리소스에 포함합니다.
-
-프런트엔드 HMR이 필요한 경우 별도 터미널에서 실행합니다.
-
-```bash
+# 별도 터미널: React 개발 서버
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
-Vite 개발 서버는 `http://localhost:5173`에서 `/api`, 인증 경로와 WebSocket 요청을 Spring 서버로 프록시합니다.
+브라우저는 `http://localhost:5173`으로 접속합니다. Vite가 React 화면과 정적 자산을 제공하고 `/api`, 인증 경로와 WebSocket 요청만 `http://localhost:8080`의 Spring 서버로 프록시합니다. Gradle은 프런트엔드를 빌드하거나 실행 JAR에 포함하지 않습니다.
 
 ## 테스트와 CI
 

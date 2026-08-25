@@ -1,8 +1,8 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import useSession from "../../hooks/useSession.js";
 
-// Spring이 HTML을 만들던 시절에는 화면 URL 요청을 Security가 바로 차단했다.
-// React 내부 이동은 서버에 문서 요청을 보내지 않으므로, 보호 화면 진입 전에 세션을 직접 확인한다.
+// Vite나 운영 정적 웹 서버는 모든 화면에 공통 index.html을 제공하므로,
+// 보호 화면을 렌더링하기 전에 Spring 세션을 직접 확인한다.
 export default function ProtectedRoute() {
   const location = useLocation();
   const { status, session } = useSession();
