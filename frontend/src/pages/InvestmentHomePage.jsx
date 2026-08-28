@@ -10,6 +10,7 @@ import "../styles/account-overview.css";
 const investmentMenus = [
   { href: "/investments/open", icon: "＋", title: "증권 계좌 개설", description: "모의투자를 시작할 새 계좌를 만듭니다." },
   { href: "/investments/list", icon: "₩", title: "내 증권 계좌", description: "계좌별 예수금과 대표계좌를 확인합니다.", reactRoute: true },
+  { href: "/accounts/transfer-investment", icon: "↓", title: "투자금 입금", description: "일반 계좌에서 증권계좌 예수금으로 입금합니다." },
   { href: "/investments/transfer", icon: "↗", title: "투자금 이체", description: "증권계좌의 예수금을 출금합니다." },
   { href: "/investments/currency-exchange", icon: "⇄", title: "증권계좌 환전", description: "원화와 외화를 간편하게 교환합니다." },
   { href: "/investments/currency-exchange/transactions", icon: "FX", title: "환전 내역", description: "통화별 환전 기록을 기간별로 봅니다." },

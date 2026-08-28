@@ -3,7 +3,7 @@
 # github Actions의 workflow 이름
 # workflow는 Github가 자동으로 수행할 전체 작업 절차를 의미한다.
 # github는 .github/workflows 내의 yml파일을 읽어서 자동화 규칙으로 등록한다.
-name: FinMate CI
+name: FinMate CI/CD
 
 # main 브랜치에 push하거나 PR시에 Github Actions가 workflow를 시작한다.
 # on은 workflow를 언제 시작할지 정하는 조건이다.
@@ -20,10 +20,10 @@ on:
 permissions:
   contents: read
 
-# 중복실행 제어. 즉 같은 PR이나 같은 브랜치에서 이전 CI가 실행중일때, 새 CI가 실행되면 중복실행을 방지하기 위해 이전 CI를 취소한다.
+# PR의 이전 CI는 취소한다. main 배포는 SSM 명령이 Runner 취소 후에도 계속될 수 있으므로 순서대로 실행한다.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # github Actions의 workflow가 수행할 job을 지정
 # actions는 다른사람이 만들어 둔 재사용가능한 자동화 프로그램이다.
@@ -85,3 +85,146 @@ jobs:
             build/reports/problems/
           if-no-files-found: warn
           retention-days: 14 # 레포트 보관기간
+
+  # CD
+  deploy:
+    name: Build images and deploy
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    # test가 성공한 경우에만 CD를 수행한다.
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # github의 production에 설정되어 있는 환경변수들을 사용한다.
+    environment: production
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+      EC2_INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+      ECR_BACKEND_REPOSITORY: ${{ vars.ECR_BACKEND_REPOSITORY }}
+      ECR_FRONTEND_REPOSITORY: ${{ vars.ECR_FRONTEND_REPOSITORY }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Validate deployment variables
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in \
+            AWS_ACCOUNT_ID \
+            AWS_REGION \
+            AWS_ROLE_ARN \
+            EC2_INSTANCE_ID \
+            ECR_BACKEND_REPOSITORY \
+            ECR_FRONTEND_REPOSITORY
+          do
+            if [ -z "${!name:-}" ]; then
+              echo "GitHub production environment variable is missing: ${name}" >&2
+              exit 1
+            fi
+          done
+
+      - name: Configure AWS credentials with GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6.2.3
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          allowed-account-ids: ${{ env.AWS_ACCOUNT_ID }}
+          role-session-name: finmate-${{ github.run_id }}
+
+      - name: Verify assumed AWS identity
+        shell: bash
+        run: aws sts get-caller-identity
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2.1.6
+
+      - name: Build and push immutable images
+        shell: bash
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: sha-${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          backend_image="${ECR_REGISTRY}/${ECR_BACKEND_REPOSITORY}:${IMAGE_TAG}"
+          frontend_image="${ECR_REGISTRY}/${ECR_FRONTEND_REPOSITORY}:${IMAGE_TAG}"
+
+          docker build --file Dockerfile.server --tag "${backend_image}" .
+          docker build --file frontend/Dockerfile.server --tag "${frontend_image}" frontend
+
+          docker push "${backend_image}"
+          docker push "${frontend_image}"
+
+          echo "backend_image=${backend_image}" >> "$GITHUB_OUTPUT"
+          echo "frontend_image=${frontend_image}" >> "$GITHUB_OUTPUT"
+        id: images
+
+      - name: Deploy through AWS Systems Manager
+        shell: bash
+        env:
+          BACKEND_IMAGE: ${{ steps.images.outputs.backend_image }}
+          FRONTEND_IMAGE: ${{ steps.images.outputs.frontend_image }}
+        run: |
+          set -euo pipefail
+
+          compose_base64="$(base64 -w 0 docker-compose.server.yml)"
+          deploy_base64="$(base64 -w 0 scripts/deploy-server.sh)"
+
+          remote_command="$(cat <<EOF
+          set -euo pipefail
+          install -d -m 0755 /opt/finmate
+          printf '%s' '${compose_base64}' | base64 -d > /opt/finmate/docker-compose.server.yml.next
+          printf '%s' '${deploy_base64}' | base64 -d > /opt/finmate/deploy-server.sh.next
+          install -m 0644 /opt/finmate/docker-compose.server.yml.next /opt/finmate/docker-compose.server.yml
+          install -m 0755 /opt/finmate/deploy-server.sh.next /opt/finmate/deploy-server.sh
+          rm -f /opt/finmate/docker-compose.server.yml.next /opt/finmate/deploy-server.sh.next
+          /opt/finmate/deploy-server.sh '${AWS_REGION}' '${BACKEND_IMAGE}' '${FRONTEND_IMAGE}'
+          EOF
+          )"
+
+          jq -n --arg command "${remote_command}" '{commands: [$command]}' > ssm-parameters.json
+
+          command_id="$(aws ssm send-command \
+            --document-name AWS-RunShellScript \
+            --instance-ids "${EC2_INSTANCE_ID}" \
+            --comment "FinMate deploy ${GITHUB_SHA}" \
+            --timeout-seconds 1200 \
+            --parameters file://ssm-parameters.json \
+            --query 'Command.CommandId' \
+            --output text)"
+
+          status=Pending
+          for _ in $(seq 1 120); do
+            status="$(aws ssm get-command-invocation \
+              --command-id "${command_id}" \
+              --instance-id "${EC2_INSTANCE_ID}" \
+              --query 'Status' \
+              --output text 2>/dev/null || true)"
+
+            case "${status}" in
+              Success|Cancelled|Failed|TimedOut|Cancelling)
+                break
+                ;;
+            esac
+
+            sleep 10
+          done
+
+          aws ssm get-command-invocation \
+            --command-id "${command_id}" \
+            --instance-id "${EC2_INSTANCE_ID}" \
+            --query '{Status:Status,StandardOutput:StandardOutputContent,StandardError:StandardErrorContent}'
+
+          if [ "${status}" != Success ]; then
+            echo "SSM deployment did not succeed: ${status}" >&2
+            exit 1
+          fi

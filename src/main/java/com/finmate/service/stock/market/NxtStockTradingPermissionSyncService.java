@@ -6,6 +6,8 @@ import com.finmate.service.stock.market.NxtStockTradingPermissionApplyService.Ap
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +22,12 @@ import java.util.Map;
 public class NxtStockTradingPermissionSyncService {
     private final NxtMarketDataClient nxtMarketDataClient;
     private final NxtStockTradingPermissionApplyService applyService;
+
+    // 정기 동기화 시각 이후에 서버가 시작되어도 당일 NXT 거래대상 정보를 사용할 수 있게 한다.
+    @EventListener(ApplicationReadyEvent.class)
+    public void refreshOnStartup() {
+        refreshSafely();
+    }
 
     // 매일 NXT 장 시작전인 7시 50분에 동기화를 진행한다.
     @Scheduled(

@@ -34,7 +34,7 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이�
 | 웹 | React 19, Vite 8, Spring MVC REST API, Bean Validation |
 | 보안 | Spring Security 폼 로그인·Google/Kakao OIDC·Naver OAuth2·인가, BCrypt, HTTP Session 기반 SecurityContext |
 | 영속성 | Spring Data JPA, Hibernate, MySQL Connector/J |
-| DB | MySQL 8.4 (`docker-compose.yml`) |
+| DB | MySQL 8.4 (`docker-compose.local.yml`) |
 | 캐시 | Redis 7.2, `StringRedisTemplate` |
 | 실시간 | Spring WebSocket(브라우저 연결), JDK `HttpClient` WebSocket(KIS 연결) |
 | 외부 통신 | JDK `java.net.http.HttpClient` |

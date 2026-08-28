@@ -127,6 +127,7 @@ function ChatPanel({ stockId, currentUserId, stockName }) {
   const [history, setHistory] = useState({ nextCursor: null, hasNext: false });
   const [content, setContent] = useState("");
   const [compose, setCompose] = useState(null);
+  const [chatError, setChatError] = useState(null);
 
   const mergeMessages = useCallback((current, incoming) => {
     const byId = new Map(current.map((item) => [Number(item.id), item]));
@@ -157,7 +158,9 @@ function ChatPanel({ stockId, currentUserId, stockName }) {
         loadHistory(Number(message.latestMessageId) + 1 || undefined).catch(() => setMessages([]));
       }
       if (message.type === "PRESENCE") setOnlineCount(Number(message.onlineCount) || 0);
+      if (message.type === "ERROR") setChatError(message.message || "채팅 요청을 처리할 수 없습니다.");
       if (message.type === "CHAT_MESSAGE") {
+        setChatError(null);
         setMessages((current) => mergeMessages(current, [message]));
         if (message.deleted) setCompose((current) => current?.id === message.id ? null : current);
       }
@@ -201,6 +204,7 @@ function ChatPanel({ stockId, currentUserId, stockName }) {
         const own = Number(message.userId) === Number(currentUserId);
         return <article className={`stock-chat-message${own ? " own" : ""}${message.parentMessageId ? " reply" : ""}${message.deleted ? " deleted" : ""}`} key={message.id}><span className="stock-chat-avatar" aria-hidden="true">{own ? "나" : Array.from(message.username || "F")[0]}</span><div className="stock-chat-message-body"><div className="stock-chat-meta"><strong className="stock-chat-author">{own ? "나" : message.username}</strong><time className="stock-chat-time">{formatTime(message.createdAt)}</time>{message.edited && <span className="stock-chat-edited">수정됨</span>}</div>{message.parentMessageId && <div className="stock-chat-reply-reference"><strong className="stock-chat-reply-author">{message.replyToUsername}</strong><span className="stock-chat-reply-content">{message.replyToDeleted ? "삭제된 메시지입니다." : message.replyToContent}</span></div>}<div className="stock-chat-bubble">{message.deleted ? "삭제된 메시지입니다." : message.content}</div>{!message.deleted && <div className="stock-chat-message-actions"><button className="stock-chat-message-action" type="button" onClick={() => beginReply(message)}>답글</button>{own && <><button className="stock-chat-message-action" type="button" onClick={() => beginEdit(message)}>수정</button><button className="stock-chat-message-action delete" type="button" onClick={() => remove(message)}>삭제</button></>}</div>}</div></article>;
       })}</div>
+      {chatError && <p className="overview-error" role="alert">{chatError}</p>}
       <form className="stock-chat-form" onSubmit={send}>{compose && <div className="stock-chat-compose-context"><span>{compose.mode === "edit" ? "메시지 수정 중" : `${compose.username}님에게 답글 작성 중`}</span><button type="button" onClick={() => { setCompose(null); setContent(""); }} aria-label="답글 또는 수정 취소">×</button></div>}<div className="stock-chat-composer"><textarea maxLength="500" rows="1" placeholder="이 종목에 대한 의견을 남겨보세요." aria-label="채팅 메시지" value={content} onChange={(event) => setContent(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form.requestSubmit(); } }} /><div className="stock-chat-compose-actions"><span className="stock-chat-character-count">{content.length}/500</span><button type="submit" disabled={!connected || !content.trim()}>전송</button></div></div></form>
       <div className="stock-chat-footer"><p className={`stock-chat-status${connected ? "" : " error"}`}>{connected ? "실시간 채팅에 연결되었습니다." : "채팅 서버에 연결 중입니다."}</p><span className="stock-chat-input-hint">Enter 전송 · Shift + Enter 줄바꿈</span></div>
     </section>

@@ -1,5 +1,6 @@
 package com.finmate.domain.investment;
 
+import com.finmate.exception.BusinessRuleException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -42,17 +43,17 @@ public enum CurrencyCode {
 
     public void validateAmountScale(BigDecimal amount) {
         if (amount == null) {
-            throw new RuntimeException("금액은 필수입니다.");
+            throw new BusinessRuleException("금액은 필수입니다.");
         }
 
         try {
             amount.setScale(fractionDigits, RoundingMode.UNNECESSARY);
         } catch (ArithmeticException e) {
             if (fractionDigits == 0) {
-                throw new RuntimeException(name() + "는 소수점 없이 입력해주세요.");
+                throw new BusinessRuleException(name() + "는 소수점 없이 입력해주세요.");
             }
 
-            throw new RuntimeException(name() + "는 소수점 " + fractionDigits + "자리까지 입력할 수 있습니다.");
+            throw new BusinessRuleException(name() + "는 소수점 " + fractionDigits + "자리까지 입력할 수 있습니다.");
         }
     }
 }

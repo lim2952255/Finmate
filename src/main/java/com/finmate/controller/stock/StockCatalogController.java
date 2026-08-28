@@ -10,6 +10,8 @@ import com.finmate.domain.stock.dto.search.StockSearchType;
 import com.finmate.global.security.FinMateAuthenticatedPrincipal;
 import com.finmate.service.stock.StockService;
 import com.finmate.service.stock.ranking.StockMarketMoverService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -56,12 +58,12 @@ public class StockCatalogController {
 
     @PostMapping("/favorite")
     public ResponseEntity<Void> toggleFavorite(
-            @RequestBody FavoriteRequest request,
+            @Valid @RequestBody FavoriteRequest request,
             @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser) {
         stockService.toggleFavoriteStock(sessionUser.getId(), request.stockId());
         return ResponseEntity.noContent().build();
     }
 
-    public record FavoriteRequest(Long stockId) {
+    public record FavoriteRequest(@NotNull(message = "종목은 필수입니다.") Long stockId) {
     }
 }

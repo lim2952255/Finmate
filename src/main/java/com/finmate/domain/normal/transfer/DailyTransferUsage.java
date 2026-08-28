@@ -1,5 +1,6 @@
 package com.finmate.domain.normal.transfer;
 
+import com.finmate.exception.BusinessRuleException;
 import com.finmate.domain.normal.account.Account;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -53,7 +54,7 @@ public class DailyTransferUsage {
 
         BigDecimal nextUsedAmount = this.usedAmount.add(amount);
         if (nextUsedAmount.compareTo(dailyTransferLimit) > 0) {
-            throw new RuntimeException("일일 이체한도를 초과했습니다.");
+            throw new BusinessRuleException("일일 이체한도를 초과했습니다.");
         }
 
         this.usedAmount = nextUsedAmount;

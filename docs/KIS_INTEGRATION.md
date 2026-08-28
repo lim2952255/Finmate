@@ -201,7 +201,7 @@ REST 호출이 인증 실패했을 때 access token을 자동 clear 후 재발�
 
 KIS KOSPI/KOSDAQ 종목 마스터에는 NXT 편입 여부가 없으므로 그 파일만으로는 종목별 NXT 거래 가능
 시간을 판단할 수 없다. `NxtStockTradingPermissionSyncService`가 NXT 공식 시장정보의 전체 거래대상
-종목과 `cptrTrdPmsnCd`를 평일 NXT 프리마켓 시작 전 07:50에 하루 한 번 동기화한다. 이 코드는 프리·메인·애프터마켓 허용 비트로
+종목과 `cptrTrdPmsnCd`를 서버 시작 시 한 번, 평일 NXT 프리마켓 시작 전 07:50에 하루 한 번 동기화한다. 이 코드는 프리·메인·애프터마켓 허용 비트로
 `Stock.nxtTradingPermissionCode`에 저장하며, `null`은 NXT 비대상, `0`은 NXT 대상이지만 현재 거래
 제한 상태를 뜻한다. 외부 NXT 목록 조회는 DB 트랜잭션 밖에서 수행하고, 국내 종목 조회·비교·변경은
 `NxtStockTradingPermissionApplyService`의 짧은 트랜잭션에서 dirty checking으로 반영한다. NXT 조회가 실패하거나

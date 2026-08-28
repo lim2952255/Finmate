@@ -4,6 +4,8 @@ import com.finmate.domain.investment.dto.InvestmentHomeInfo;
 import com.finmate.domain.investment.dto.InvestmentOverviewResponse;
 import com.finmate.global.security.FinMateAuthenticatedPrincipal;
 import com.finmate.service.investment.InvestmentService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,7 +30,7 @@ public class InvestmentOverviewController {
 
     @PostMapping("/primary")
     public InvestmentOverviewResponse setPrimary(
-            @RequestBody PrimaryInvestmentRequest request,
+            @Valid @RequestBody PrimaryInvestmentRequest request,
             @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser) {
         investmentService.setPrimary(request.investmentId(), sessionUser.getId());
         return getOverview(sessionUser.getId());
@@ -39,6 +41,6 @@ public class InvestmentOverviewController {
         return InvestmentOverviewResponse.from(homeInfo);
     }
 
-    public record PrimaryInvestmentRequest(Long investmentId) {
+    public record PrimaryInvestmentRequest(@NotNull(message = "대표 증권계좌는 필수입니다.") Long investmentId) {
     }
 }

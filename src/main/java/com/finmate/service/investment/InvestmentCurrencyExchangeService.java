@@ -11,6 +11,7 @@ import com.finmate.domain.investment.dto.exchange.InvestmentCurrencyExchangeTran
 import com.finmate.domain.market.MarketIndicatorSymbol;
 import com.finmate.domain.market.dto.MarketRealtimeMessage;
 import com.finmate.domain.normal.account.transaction.TransactionPeriod;
+import com.finmate.exception.BusinessRuleException;
 import com.finmate.global.pagination.PaginationInfo;
 import com.finmate.repository.investment.InvestmentCashBalanceRepository;
 import com.finmate.repository.investment.InvestmentRepository;
@@ -74,7 +75,7 @@ public class InvestmentCurrencyExchangeService {
 
         Investment investment = investmentRepository
                 .findByUser_IdAndAccountNumberAndSecuritiesCompanyCode(userId, investmentNumber, securitiesCompanyCode)
-                .orElseThrow(() -> new RuntimeException("현재 사용자의 증권 계좌가 아닙니다."));
+                .orElseThrow(() -> new BusinessRuleException("현재 사용자의 증권 계좌가 아닙니다."));
 
         InvestmentCurrencyExchangeRequest request = new InvestmentCurrencyExchangeRequest();
         request.setInvestmentId(investment.getId());
@@ -102,7 +103,7 @@ public class InvestmentCurrencyExchangeService {
 
         // 환전할 증권계좌를 레파지터리에서 조회
         Investment investment = investmentRepository.findByIdForUpdate(request.getInvestmentId())
-                .orElseThrow(() -> new RuntimeException("증권 계좌를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessRuleException("증권 계좌를 찾을 수 없습니다."));
         validateOwnedInvestment(userId, investment);
         validateSecuritiesCompanyCode(request.getSecuritiesCompanyCode(), investment);
 
@@ -196,13 +197,13 @@ public class InvestmentCurrencyExchangeService {
     // 환전 통화 검증
     private void validateSupportedCurrencyPair(CurrencyCode fromCurrencyCode, CurrencyCode toCurrencyCode) {
         if (fromCurrencyCode == toCurrencyCode) {
-            throw new RuntimeException("같은 통화로는 환전할 수 없습니다.");
+            throw new BusinessRuleException("같은 통화로는 환전할 수 없습니다.");
         }
 
         boolean supportedPair = (fromCurrencyCode == CurrencyCode.KRW && toCurrencyCode == CurrencyCode.USD)
                 || (fromCurrencyCode == CurrencyCode.USD && toCurrencyCode == CurrencyCode.KRW);
         if (!supportedPair) {
-            throw new RuntimeException("현재 KRW/USD 환전만 지원합니다.");
+            throw new BusinessRuleException("현재 KRW/USD 환전만 지원합니다.");
         }
     }
 
@@ -226,7 +227,7 @@ public class InvestmentCurrencyExchangeService {
     private void validateExchangeResult(CurrencyCode toCurrencyCode, BigDecimal toAmount) {
         toCurrencyCode.validateAmountScale(toAmount);
         if (toAmount.compareTo(toCurrencyCode.getMinimumAmount()) < 0) {
-            throw new RuntimeException("환전 후 금액이 최소 단위보다 작습니다.");
+            throw new BusinessRuleException("환전 후 금액이 최소 단위보다 작습니다.");
         }
     }
 
@@ -258,18 +259,18 @@ public class InvestmentCurrencyExchangeService {
         return investments.stream()
                 .filter(investment -> investment.getId().equals(investmentId))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("현재 사용자의 증권 계좌가 아닙니다."));
+                .orElseThrow(() -> new BusinessRuleException("현재 사용자의 증권 계좌가 아닙니다."));
     }
 
     private void validateOwnedInvestment(Long userId, Investment investment) {
         if (!investment.getUser().getId().equals(userId)) {
-            throw new RuntimeException("현재 사용자의 증권 계좌가 아닙니다.");
+            throw new BusinessRuleException("현재 사용자의 증권 계좌가 아닙니다.");
         }
     }
 
     private void validateSecuritiesCompanyCode(SecuritiesCompanyCode securitiesCompanyCode, Investment investment) {
         if (!investment.getSecuritiesCompanyCode().equals(securitiesCompanyCode)) {
-            throw new RuntimeException("증권 계좌의 증권사 정보가 일치하지 않습니다.");
+            throw new BusinessRuleException("증권 계좌의 증권사 정보가 일치하지 않습니다.");
         }
     }
 
@@ -283,7 +284,7 @@ public class InvestmentCurrencyExchangeService {
     // InvestmentCashBalanceRepository에서 lock을 획득한채 InvestmentCashBalance를 조회한다.
     private InvestmentCashBalance findCashBalanceForUpdate(Long investmentId, CurrencyCode currencyCode) {
         return investmentCashBalanceRepository.findByInvestmentIdAndCurrencyCodeForUpdate(investmentId, currencyCode)
-                .orElseThrow(() -> new RuntimeException(currencyCode.name() + " 예수금 잔고가 없습니다."));
+                .orElseThrow(() -> new BusinessRuleException(currencyCode.name() + " 예수금 잔고가 없습니다."));
     }
 
     // 조회한 KRW Balance와 USD Balance를 저장하고 있는 레코드

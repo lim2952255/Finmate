@@ -1,5 +1,6 @@
 package com.finmate.domain.normal.account;
 
+import com.finmate.exception.BusinessRuleException;
 import com.finmate.domain.investment.CurrencyCode;
 import com.finmate.domain.normal.transfer.TransferLimitPolicy;
 import com.finmate.domain.user.User;
@@ -107,7 +108,7 @@ public class Account {
         validatePositive(amount, "출금 금액은 0보다 커야 합니다.");
 
         if (this.balance.compareTo(amount) < 0) {
-            throw new RuntimeException("잔액이 부족합니다.");
+            throw new BusinessRuleException("잔액이 부족합니다.");
         }
 
         this.balance = this.balance.subtract(amount);
@@ -131,7 +132,7 @@ public class Account {
         validatePositive(singleTransferLimit, "이체한도는 0보다 커야 합니다.");
 
         if (singleTransferLimit.compareTo(dailyTransferLimit) > 0) {
-            throw new RuntimeException("1회 이체한도는 일일 이체한도보다 클 수 없습니다.");
+            throw new BusinessRuleException("1회 이체한도는 일일 이체한도보다 클 수 없습니다.");
         }
 
         this.dailyTransferLimit = dailyTransferLimit;

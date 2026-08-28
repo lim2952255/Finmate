@@ -1,5 +1,6 @@
 package com.finmate.service.stock.trading;
 
+import com.finmate.exception.BusinessRuleException;
 import com.finmate.domain.stock.Stock;
 import com.finmate.domain.stock.StockMarketType;
 import com.finmate.domain.stock.trading.StockOrderSide;
@@ -26,7 +27,7 @@ public class StockTradingRealtimePriceService {
     // 체결가능한 가격을 반드시 찾아서 리턴하는 메서드. 만약 체결가능한 가격을 찾지 못하면 예외를 발생시킨다.
     public BigDecimal getExecutablePrice(Stock stock, StockOrderSide side) {
         return findExecutablePrice(stock, side)
-                .orElseThrow(() -> new RuntimeException("실시간 호가 수신 전이라 시장가 주문을 처리할 수 없습니다."));
+                .orElseThrow(() -> new BusinessRuleException("실시간 호가 수신 전이라 시장가 주문을 처리할 수 없습니다."));
     }
 
     // 현재 체결가능한 가격을 찾는다.

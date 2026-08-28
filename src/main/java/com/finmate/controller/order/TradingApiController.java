@@ -11,6 +11,7 @@ import com.finmate.domain.stock.trading.StockOrderTriggerCondition;
 import com.finmate.global.security.FinMateAuthenticatedPrincipal;
 import com.finmate.service.stock.trading.StockTradingCommandService;
 import com.finmate.service.stock.trading.StockTradingQueryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -45,8 +46,8 @@ public class TradingApiController {
                 List.of(info.getSides()), List.of(info.getOrderTypes()), List.of(info.getTriggerConditions()), info.isStockTradingAvailable(), info.getStockTradingTimeDescription());
     }
 
-    @PostMapping("/orders") public ResponseEntity<Void> order(@RequestBody StockOrderRequest request, @AuthenticationPrincipal FinMateAuthenticatedPrincipal principal) { commandService.submitOrder(principal.getId(), request); return ResponseEntity.noContent().build(); }
-    @PostMapping("/reservations") public ResponseEntity<Void> reservation(@RequestBody StockOrderReservationRequest request, @AuthenticationPrincipal FinMateAuthenticatedPrincipal principal) { commandService.submitReservation(principal.getId(), request); return ResponseEntity.noContent().build(); }
+    @PostMapping("/orders") public ResponseEntity<Void> order(@Valid @RequestBody StockOrderRequest request, @AuthenticationPrincipal FinMateAuthenticatedPrincipal principal) { commandService.submitOrder(principal.getId(), request); return ResponseEntity.noContent().build(); }
+    @PostMapping("/reservations") public ResponseEntity<Void> reservation(@Valid @RequestBody StockOrderReservationRequest request, @AuthenticationPrincipal FinMateAuthenticatedPrincipal principal) { commandService.submitReservation(principal.getId(), request); return ResponseEntity.noContent().build(); }
     @PostMapping("/orders/{id}/cancel") public ResponseEntity<Void> cancelOrder(@PathVariable Long id, @AuthenticationPrincipal FinMateAuthenticatedPrincipal principal) { commandService.cancelOrder(principal.getId(), id); return ResponseEntity.noContent().build(); }
     @PostMapping("/reservations/{id}/cancel") public ResponseEntity<Void> cancelReservation(@PathVariable Long id, @AuthenticationPrincipal FinMateAuthenticatedPrincipal principal) { commandService.cancelReservation(principal.getId(), id); return ResponseEntity.noContent().build(); }
 

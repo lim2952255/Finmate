@@ -6,6 +6,7 @@ import com.finmate.domain.stock.Stock;
 import com.finmate.domain.stock.market.StockMarketSchedules;
 import com.finmate.domain.stock.trading.StockOrderSide;
 import com.finmate.domain.stock.trading.StockOrderType;
+import com.finmate.exception.BusinessRuleException;
 import com.finmate.repository.investment.InvestmentRepository;
 import com.finmate.repository.stock.StockRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,26 +27,26 @@ public class StockTradingLookupService {
     Stock findStock(Long stockId) {
         validateRequired(stockId, "종목은 필수입니다.");
         return stockRepository.findById(stockId)
-                .orElseThrow(() -> new RuntimeException("종목을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessRuleException("종목을 찾을 수 없습니다."));
     }
 
     Investment findOwnedInvestmentForUpdate(Long userId, Long investmentId) {
         validateRequired(investmentId, "증권 계좌는 필수입니다.");
         Investment investment = investmentRepository.findByIdForUpdate(investmentId)
-                .orElseThrow(() -> new RuntimeException("증권 계좌를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessRuleException("증권 계좌를 찾을 수 없습니다."));
         validateOwnedInvestment(userId, investment);
         return investment;
     }
 
     void validateOwnedInvestment(Long userId, Investment investment) {
         if (!investment.getUser().getId().equals(userId)) {
-            throw new RuntimeException("본인 증권 계좌만 사용할 수 있습니다.");
+            throw new BusinessRuleException("본인 증권 계좌만 사용할 수 있습니다.");
         }
     }
 
     void validateTradable(Stock stock) {
         if (!stock.isActive() || !stock.isTradable() || stock.isTradingHalted()) {
-            throw new RuntimeException("현재 주문할 수 없는 종목입니다.");
+            throw new BusinessRuleException("현재 주문할 수 없는 종목입니다.");
         }
     }
 
@@ -53,7 +54,7 @@ public class StockTradingLookupService {
     void validateTradingTime(Stock stock) {
         ZonedDateTime now = ZonedDateTime.now();
         if (!StockMarketSchedules.isTradingTime(stock, now)) {
-            throw new RuntimeException("현재 거래 가능한 시간이 아닙니다. 거래 가능 시간: "
+            throw new BusinessRuleException("현재 거래 가능한 시간이 아닙니다. 거래 가능 시간: "
                     + StockMarketSchedules.describeTradingHours(stock));
         }
     }
@@ -67,7 +68,7 @@ public class StockTradingLookupService {
             return investments.stream()
                     .filter(investment -> investment.getId().equals(investmentId))
                     .findFirst()
-                    .orElseThrow(() -> new RuntimeException("증권 계좌를 찾을 수 없습니다."));
+                    .orElseThrow(() -> new BusinessRuleException("증권 계좌를 찾을 수 없습니다."));
         }
 
         return investments.stream()
@@ -80,7 +81,7 @@ public class StockTradingLookupService {
         try {
             return CurrencyCode.valueOf(stock.getCurrency());
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("지원하지 않는 종목 통화입니다. currency=" + stock.getCurrency());
+            throw new BusinessRuleException("지원하지 않는 종목 통화입니다. currency=" + stock.getCurrency());
         }
     }
 

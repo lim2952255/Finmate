@@ -29,5 +29,5 @@ export async function toggleFavorite(stockId) {
     },
     body: JSON.stringify({ stockId })
   });
-  if (!response.ok) throw new Error("관심 종목을 변경하지 못했습니다.");
+  return readJson(response, "관심 종목을 변경하지 못했습니다.");
 }

@@ -1,5 +1,6 @@
 package com.finmate.domain.investment;
 
+import com.finmate.exception.BusinessRuleException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -69,7 +70,7 @@ public class InvestmentCashBalance {
         validatePositive(amount, "출금 금액은 0보다 커야 합니다.");
 
         if (this.availableBalance.compareTo(amount) < 0) {
-            throw new RuntimeException("예수금이 부족합니다.");
+            throw new BusinessRuleException("예수금이 부족합니다.");
         }
 
         this.availableBalance = this.availableBalance.subtract(amount);
@@ -81,7 +82,7 @@ public class InvestmentCashBalance {
         validatePositive(amount, "잠금 금액은 0보다 커야 합니다.");
 
         if (this.availableBalance.compareTo(amount) < 0) {
-            throw new RuntimeException("주문 가능 예수금이 부족합니다.");
+            throw new BusinessRuleException("주문 가능 예수금이 부족합니다.");
         }
 
         this.availableBalance = this.availableBalance.subtract(amount);

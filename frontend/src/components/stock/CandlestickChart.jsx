@@ -588,7 +588,13 @@ export default function CandlestickChart({
               <span>{changeRate > 0 ? "+" : ""}{changeRate.toFixed(2)}%</span>
             </span>
             <span className="chart-price-time">{minuteInterval ? formatChartDate(detail?.latestCandleAt, false, true) : detail?.latestTradeDate || "-"}</span>
-            <span className={`market-session-badge ${detail?.tradingAvailable ? "open" : "closed"}`}>{detail?.tradingAvailable ? "장 운영 중" : "장 마감"}</span>
+            <span className="market-session-badges" aria-label="시장별 거래 상태">
+              {(detail?.marketSessions || []).map((session) => (
+                <span className={`market-session-badge ${session.open ? "open" : "closed"}`} key={session.market}>
+                  {session.market} {session.status}
+                </span>
+              ))}
+            </span>
           </div>
           <div className="chart-header-tools">
             <div className="chart-legend">

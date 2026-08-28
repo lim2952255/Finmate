@@ -24,7 +24,9 @@ import com.finmate.service.stock.price.StockDailyPriceSyncService;
 import com.finmate.service.stock.price.StockPeriodPriceSyncService;
 import com.finmate.service.stock.price.StockMinuteChartService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -58,7 +60,7 @@ public class StockDetailService {
 	// 종목 상세정보에서 필요한 정보들을 DTO에 담아서 리턴한다.
     public StockDetailPageInfo getStockDetailPageInfo(Long stockId, StockChartInterval interval) {
         Stock stock = stockRepository.findById(stockId)
-                .orElseThrow(() -> new RuntimeException("종목을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "종목을 찾을 수 없습니다."));
 
         StockChartInterval selectedInterval = interval == null ? StockChartInterval.DAY : interval;
         LocalDate expectedLatestTradeDate = StockMarketSchedules.expectedLatestDailyPriceTradeDate(stock.getMarketType());

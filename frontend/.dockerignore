@@ -1,0 +1,7 @@
+# 프론트엔드 이미지는 컨테이너 안에서 npm ci와 build를 다시 실행한다.
+node_modules
+dist
+
+# 로컬 편집기·로그 파일은 빌드 컨텍스트에 필요하지 않다.
+.DS_Store
+*.log

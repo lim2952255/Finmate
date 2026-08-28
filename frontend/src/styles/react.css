@@ -137,6 +137,192 @@
     gap: 18px;
 }
 
+.order-page-heading {
+    display: grid;
+    gap: 18px;
+}
+
+.order-title-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.order-title-row h1 {
+    margin-bottom: 6px;
+}
+
+.order-symbol {
+    margin: 0;
+    color: var(--color-muted);
+    font-weight: 750;
+}
+
+.order-market-status {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    min-height: 34px;
+    padding: 7px 12px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.order-market-status.open {
+    color: #047857;
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+}
+
+.order-market-status.closed {
+    color: #64748b;
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.order-quote-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.order-quote-card {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+    padding: 18px 20px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    box-shadow: 0 8px 22px rgba(30, 52, 90, 0.05);
+}
+
+.order-quote-card span {
+    color: var(--color-muted);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.order-quote-card strong {
+    overflow: hidden;
+    color: var(--color-heading);
+    font-size: clamp(20px, 2vw, 28px);
+    font-variant-numeric: tabular-nums;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.order-quote-card.current {
+    background: linear-gradient(135deg, #eff6ff, #ffffff);
+    border-color: #bfdbfe;
+}
+
+.order-quote-card.buy strong { color: #dc2626; }
+.order-quote-card.sell strong { color: #2563eb; }
+
+.order-trading-hours {
+    display: grid;
+    gap: 14px;
+    margin: 0;
+    padding: 18px 20px;
+    color: #52627a;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    font-size: 15px;
+    line-height: 1.65;
+}
+
+.order-trading-hours-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.order-trading-hours-heading strong {
+    color: var(--color-heading);
+    font-size: 18px;
+}
+
+.order-trading-hours-heading span {
+    color: var(--color-muted);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.order-trading-hours-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px;
+}
+
+.order-trading-venue {
+    display: grid;
+    grid-template-columns: 58px 1fr;
+    gap: 12px;
+    align-items: start;
+    min-width: 0;
+    padding: 14px 16px;
+    background: #f8faff;
+    border: 1px solid #dfe7f2;
+    border-radius: 11px;
+}
+
+.order-trading-venue strong {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    color: #1d4ed8;
+    background: #eaf1ff;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.order-trading-venue span {
+    color: #334155;
+    font-size: 15px;
+    font-weight: 750;
+    line-height: 1.75;
+}
+
+.order-account-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: -4px;
+}
+
+.order-account-summary span {
+    display: grid;
+    gap: 3px;
+    padding: 10px 12px;
+    color: var(--color-muted);
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 750;
+}
+
+.order-account-summary strong {
+    overflow: hidden;
+    color: var(--color-heading);
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.order-field-note {
+    color: var(--color-muted);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.5;
+}
+
 .order-entry-form {
     padding: 24px;
     background: var(--surface-highlight);
@@ -154,6 +340,14 @@
 .order-entry-form select {
     width: 100%;
     max-width: none;
+}
+
+@media (max-width: 720px) {
+    .order-title-row { align-items: flex-start; }
+    .order-quote-grid { grid-template-columns: 1fr; }
+    .order-trading-hours-heading { display: grid; gap: 2px; }
+    .order-trading-hours-grid, .order-account-summary { grid-template-columns: 1fr; }
+    .order-trading-venue { grid-template-columns: 52px 1fr; }
 }
 
 @keyframes route-spin {

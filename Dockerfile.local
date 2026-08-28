@@ -1,0 +1,43 @@
+# Docker Multi-stage build
+# 1단계에서는 스프링프로젝트를 Gradle과 JDK를 활용하여 JAR파일을 생성한다.
+# 2단계에서는 생성한 JAR파일을 JVM을 활용하여 실행한다.
+
+# 1단계: 소스 코드를 실행 가능한 Spring Boot JAR로 빌드한다.
+# JDK는 컴파일 도구를 포함하므로 빌드 단계에서만 사용한다.
+# 스프링 프로젝트를 컴파일하여 JAR 파일을 생성하기 위해 JDK를 빌드한다.
+FROM eclipse-temurin:17-jdk-jammy AS build
+
+WORKDIR /workspace
+
+# Gradle Wrapper와 빌드 설정을 먼저 복사한다.
+COPY gradlew build.gradle settings.gradle ./
+COPY gradle ./gradle
+RUN chmod +x gradlew
+
+# 백엔드 소스를 복사한 뒤 build/libs 아래에 실행 가능한 JAR를 만든다.
+COPY src ./src
+# daemon으로 Gradle을 통해 스프링 프로젝트를 JAR 파일를 생성한다.
+RUN ./gradlew bootJar --no-daemon
+
+# 2단계: 완성된 JAR를 실제로 실행할 가벼운 이미지다.
+# 컴파일은 끝났으므로 최종 이미지에는 JDK 대신 JRE만 넣는다.
+# JAR 파일이 생성된 다음에는 JDK나 Gradle이 필요없이, JAR 파일을 실행할 JVM만 이미지에 빌드하면 된다.
+FROM eclipse-temurin:17-jre-jammy
+
+# 애플리케이션을 root 권한으로 실행하지 않도록 전용 사용자를 만든다.
+RUN groupadd --system finmate \
+    && useradd --system --gid finmate --home-dir /app --shell /usr/sbin/nologin finmate
+
+WORKDIR /app
+
+# 1단계에서 만든 JAR만 가져와 app.jar라는 이름으로 저장한다.
+COPY --from=build --chown=finmate:finmate /workspace/build/libs/*.jar app.jar
+
+USER finmate
+
+# Spring이 컨테이너 내부에서 사용하는 포트다.
+# EXPOSE만으로 인터넷이나 호스트에 포트가 공개되지는 않는다.
+EXPOSE 8080
+
+# backend 컨테이너가 시작될 때 실행할 명령이다.
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

@@ -26,7 +26,14 @@ export async function readJson(response, fallbackMessage) {
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => null);
-    throw new Error(errorBody?.message || fallbackMessage);
+    const statusMessage = response.status === 403
+      ? "요청 권한이 없거나 보안 인증이 만료되었습니다. 새로고침 후 다시 시도해주세요."
+      : fallbackMessage;
+    const error = new Error(errorBody?.message || statusMessage);
+    error.status = response.status;
+    error.code = errorBody?.code || null;
+    error.fieldErrors = errorBody?.fieldErrors || {};
+    throw error;
   }
 
   return response.status === 204 ? null : response.json();

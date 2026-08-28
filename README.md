@@ -290,7 +290,7 @@ NAVER News API
 
 ```bash
 # MySQL과 Redis
-docker compose up -d mysql redis
+docker compose --env-file .env -f docker-compose.local.yml up -d mysql redis
 
 # Spring API 서버
 ./gradlew bootRun

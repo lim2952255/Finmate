@@ -7,6 +7,7 @@ import com.finmate.domain.market.MarketIndicatorType;
 import com.finmate.domain.market.dto.MarketDataChartPeriod;
 import com.finmate.domain.market.dto.MarketIndicatorPageInfo;
 import com.finmate.domain.market.price.MarketDailyPrice;
+import com.finmate.exception.BusinessRuleException;
 import com.finmate.repository.market.price.MarketDailyPriceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,7 +34,7 @@ public class MarketDataService {
                 ? MarketIndicatorSymbol.defaultFor(indicatorType)
                 : indicator;
         if (selectedIndicator.getType() != indicatorType) {
-            throw new RuntimeException("요청한 화면에서 조회할 수 없는 지수/환율입니다.");
+            throw new BusinessRuleException("요청한 화면에서 조회할 수 없는 지수/환율입니다.");
         }
         // 조회기간은 기본값은 1년
         MarketDataChartPeriod selectedPeriod = period == null ? MarketDataChartPeriod.ONE_YEAR : period;

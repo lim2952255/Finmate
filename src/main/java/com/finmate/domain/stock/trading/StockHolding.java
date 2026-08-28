@@ -1,5 +1,6 @@
 package com.finmate.domain.stock.trading;
 
+import com.finmate.exception.BusinessRuleException;
 import com.finmate.domain.investment.CurrencyCode;
 import com.finmate.domain.investment.Investment;
 import com.finmate.domain.stock.Stock;
@@ -90,7 +91,7 @@ public class StockHolding {
         validatePositiveQuantity(quantity);
 
         if (getAvailableQuantity().compareTo(quantity) < 0) {
-            throw new RuntimeException("매도 가능 수량이 부족합니다.");
+            throw new BusinessRuleException("매도 가능 수량이 부족합니다.");
         }
 
         this.lockedQuantity = this.lockedQuantity.add(quantity);

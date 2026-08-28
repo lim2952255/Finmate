@@ -1,6 +1,7 @@
 package com.finmate.domain.stock.trading;
 
 import com.finmate.domain.investment.CurrencyCode;
+import com.finmate.exception.BusinessRuleException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -114,17 +115,17 @@ public final class TradingAmountValidator {
         validateRequired(now, "현재 시각은 필수입니다.");
 
         if (!expiresAt.isAfter(now)) {
-            throw new RuntimeException(pastMessage);
+            throw new BusinessRuleException(pastMessage);
         }
     }
 
     // 주문의 만료기한을 검증한다.
     private static void validateExpirationWindow(LocalDateTime expiresAt, LocalDateTime now) {
         if (expiresAt.isBefore(now.plus(MIN_EXPIRATION_LEAD_TIME))) {
-            throw new RuntimeException("주문 만료시각은 접수 시각으로부터 최소 5분 이후여야 합니다.");
+            throw new BusinessRuleException("주문 만료시각은 접수 시각으로부터 최소 5분 이후여야 합니다.");
         }
         if (expiresAt.isAfter(now.plus(MAX_EXPIRATION_LEAD_TIME))) {
-            throw new RuntimeException("주문 만료시각은 접수 시각으로부터 최대 30일 이내여야 합니다.");
+            throw new BusinessRuleException("주문 만료시각은 접수 시각으로부터 최대 30일 이내여야 합니다.");
         }
     }
 

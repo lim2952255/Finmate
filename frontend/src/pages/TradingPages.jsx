@@ -12,6 +12,9 @@ const reservationStatusLabels = { ACTIVE: "대기", TRIGGERED: "실행", CANCELE
 const conditionLabels = { PRICE_AT_OR_BELOW: "가격 이하", PRICE_AT_OR_ABOVE: "가격 이상" };
 const formatDate = (value) => value ? value.replace("T", " ").slice(0, 16) : "-";
 const formatDecimal = (value, maximumFractionDigits = 6) => value == null ? "-" : Number(value).toLocaleString("ko-KR", { maximumFractionDigits });
+const formatOrderPrice = (value, currency) => value == null || value === ""
+  ? "-"
+  : `${formatDecimal(value, 2)}${currency ? ` ${currency}` : ""}`;
 
 export function TradingHistoryPage() {
   useDocumentTitle("주문·체결 내역 | FinMate");
@@ -132,24 +135,82 @@ export function OrderPage() {
         <section className="content">
           {!data && !error && <PageLoading message="주문 가능 계좌와 시세를 확인하고 있습니다." />}
           {error && <p className="overview-error" role="alert">{error.message}</p>}
-          {data && <><div className="page-heading"><h1>{data.stockName} 주문</h1><p>{data.symbol} · 현재가 {data.tradePrice || "-"} · 매수 {data.buyExecutablePrice || "-"} · 매도 {data.sellExecutablePrice || "-"} · {data.tradingTimeDescription}</p></div><div className="order-form-grid"><OrderForm data={data} onSubmit={(event) => submit(event, false)} /><OrderForm data={data} reservation onSubmit={(event) => submit(event, true)} /></div></>}
+          {data && <>
+            <div className="page-heading order-page-heading">
+              <span className="eyebrow">STOCK ORDER</span>
+              <div className="order-title-row">
+                <div><h1>{data.stockName} 주문</h1><p className="order-symbol">{data.symbol}{data.currency ? ` · ${data.currency}` : ""}</p></div>
+                <span className={`order-market-status ${data.tradingAvailable ? "open" : "closed"}`}>{data.tradingAvailable ? "거래 가능" : "거래 시간 아님"}</span>
+              </div>
+              <div className="order-quote-grid" aria-label="주문 기준 시세">
+                <div className="order-quote-card current"><span>현재가</span><strong>{formatOrderPrice(data.tradePrice, data.currency)}</strong></div>
+                <div className="order-quote-card buy"><span>매수 기준가</span><strong>{formatOrderPrice(data.buyExecutablePrice, data.currency)}</strong></div>
+                <div className="order-quote-card sell"><span>매도 기준가</span><strong>{formatOrderPrice(data.sellExecutablePrice, data.currency)}</strong></div>
+              </div>
+              <TradingHours description={data.tradingTimeDescription} />
+            </div>
+            <div className="order-form-grid"><OrderForm data={data} onSubmit={(event) => submit(event, false)} /><OrderForm data={data} reservation onSubmit={(event) => submit(event, true)} /></div>
+          </>}
         </section>
       </main>
     </div>
   );
 }
 
+function TradingHours({ description }) {
+  const venues = String(description || "-").split(" / ").map((session) => {
+    const separatorIndex = session.indexOf(" ");
+    return separatorIndex < 0
+      ? { name: session, hours: "" }
+      : { name: session.slice(0, separatorIndex), hours: session.slice(separatorIndex + 1).replace("대한민국 시간 기준 ", "") };
+  });
+
+  return (
+    <section className="order-trading-hours" aria-label="거래 가능 시간">
+      <div className="order-trading-hours-heading"><strong>거래 가능 시간</strong><span>각 거래소의 주문 접수 시간입니다.</span></div>
+      <div className="order-trading-hours-grid">
+        {venues.map((venue, index) => <div className="order-trading-venue" key={`${venue.name}-${index}`}><strong>{venue.name}</strong><span>{venue.hours}</span></div>)}
+      </div>
+    </section>
+  );
+}
+
 function OrderForm({ data, reservation, onSubmit }) {
+  const [investmentId, setInvestmentId] = useState(String(data.defaultInvestmentId ?? data.accounts?.[0]?.id ?? ""));
+  const [side, setSide] = useState(data.sides?.[0] || "BUY");
+  const [orderType, setOrderType] = useState(data.orderTypes?.[0] || "MARKET");
+  const [limitPrice, setLimitPrice] = useState("");
+  const marketOrder = orderType === "MARKET";
+  const displayedOrderPrice = marketOrder ? (reservation ? "" : data.tradePrice ?? "") : limitPrice;
+  const accountSummary = data.summaries?.find((summary) => String(summary.investmentId) === investmentId);
+
   return (
     <form className="order-entry-form" onSubmit={onSubmit}>
       <h2>{reservation ? "예약 주문" : "일반 주문"}</h2>
-      <label>증권계좌<select name="investmentId" defaultValue={data.defaultInvestmentId}>{data.accounts.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
-      <label>매수/매도<select name="side">{(data.sides || ["BUY", "SELL"]).map((value) => <option key={value} value={value}>{sideLabels[value] || value}</option>)}</select></label>
-      <label>주문유형<select name="orderType">{(data.orderTypes || ["MARKET", "LIMIT"]).map((value) => <option key={value} value={value}>{orderTypeLabels[value] || value}</option>)}</select></label>
+      <label>증권계좌<select name="investmentId" value={investmentId} onChange={(event) => setInvestmentId(event.target.value)}>{data.accounts.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+      {accountSummary && <div className="order-account-summary" aria-label="선택 계좌 주문 가능 자산">
+        <span>주문 가능 예수금 <strong>{formatOrderPrice(accountSummary.availableCashBalance, data.currency)}</strong></span>
+        <span>매도 가능 수량 <strong>{formatDecimal(accountSummary.availableQuantity)}주</strong></span>
+      </div>}
+      <label>매수/매도<select name="side" value={side} onChange={(event) => setSide(event.target.value)}>{(data.sides || ["BUY", "SELL"]).map((value) => <option key={value} value={value}>{sideLabels[value] || value}</option>)}</select></label>
+      <label>주문유형<select name="orderType" value={orderType} onChange={(event) => setOrderType(event.target.value)}>{(data.orderTypes || ["MARKET", "LIMIT"]).map((value) => <option key={value} value={value}>{orderTypeLabels[value] || value}</option>)}</select></label>
       <label>수량<input name="quantity" type="number" min="0" step="0.000001" required /></label>
-      <label>주문가격<input name="orderPrice" type="number" min="0" step={data.inputStep || "0.01"} /></label>
+      <label>{marketOrder ? (reservation ? "주문가격 (실행 시 결정)" : "주문가격 (현재가 기준)") : "주문가격"}
+        <input
+          name="orderPrice"
+          type="number"
+          min="0"
+          step={data.inputStep || "0.01"}
+          value={displayedOrderPrice}
+          onChange={(event) => setLimitPrice(event.target.value)}
+          disabled={marketOrder}
+          required={!marketOrder}
+          placeholder={marketOrder && reservation ? "실행 시점의 시장가 적용" : undefined}
+        />
+        {marketOrder && <small className="order-field-note">{reservation ? "조건 충족 후 주문이 실행되는 시점의 시장가가 적용됩니다." : "현재가는 참고 기준이며 실제 체결가는 호가 상황에 따라 달라질 수 있습니다."}</small>}
+      </label>
       {reservation && <><label>실행조건<select name="triggerCondition">{(data.triggerConditions || ["PRICE_AT_OR_BELOW", "PRICE_AT_OR_ABOVE"]).map((value) => <option key={value} value={value}>{conditionLabels[value] || value}</option>)}</select></label><label>조건가격<input name="triggerPrice" type="number" min="0" step={data.inputStep || "0.01"} required /></label></>}
-      <label>만료시각<input name="expiresAt" type="datetime-local" /></label>
+      <label>만료시각<input name="expiresAt" type="datetime-local" disabled={!reservation && marketOrder} required={reservation || !marketOrder} /></label>
       <button disabled={!data.tradingAvailable && !reservation}>{reservation ? "예약 등록" : "주문 접수"}</button>
     </form>
   );

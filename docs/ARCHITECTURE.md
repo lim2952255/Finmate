@@ -65,6 +65,10 @@ Spring Security의 `SecurityFilterChain`이 폼 로그인·Google/Kakao OIDC·Na
 
 Vite 또는 운영 정적 웹 서버가 보호 화면에도 공통 `index.html`을 반환한다. React Router의 `ProtectedRoute`가 먼저 `/api/session`으로 인증 여부를 확인하고, 비로그인 사용자를 원래 주소가 담긴 `redirect` 파라미터와 함께 `/login`으로 보낸다. 로그인 성공 후에는 검증된 FinMate 내부 경로로 복귀한다. 세션이 만료된 상태에서 `/api/**`를 호출하면 Spring은 `401 Unauthorized`를 반환하고, 프론트엔드 공통 HTTP 모듈이 이를 로그인 이동으로 처리한다. 실제 데이터와 상태 변경 권한은 항상 Spring Security와 서비스 소유권 검증이 보호한다.
 
+REST API 오류는 `ApiValidationExceptionHandler`가 `{ code, message, fieldErrors }` 형태로 정규화한다. Bean Validation 실패는 `400 Bad Request`와 필드별 `fieldErrors`를 반환하고, 사용자가 입력을 바꿔 해결할 수 있는 업무 규칙 위반은 `BusinessRuleException`으로 구분하여 안전한 `message`를 반환한다. 중복 리소스는 `409 Conflict`, 잘못된 JSON·요청 파라미터 형식은 `400 Bad Request`로 응답한다. 예상하지 못한 내부 예외는 이 계약에 포함하지 않으며 서버 구현 정보가 노출되지 않도록 Spring의 일반 오류 응답을 유지한다.
+
+React의 모든 REST 모듈은 공통 `readJson`을 통해 이 응답을 읽는다. 화면 공통 오류에는 `message`를 표시하고, 입력 화면은 `fieldErrors`를 해당 필드 가까이에 표시할 수 있다. WebSocket은 HTTP 예외 처리기를 거치지 않으므로 채팅 서버가 `ERROR` 메시지를 별도로 전송하고 클라이언트가 이를 화면에 표시한다.
+
 소셜 로그인 흐름은 다음과 같다.
 
 ```text

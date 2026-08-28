@@ -13,7 +13,9 @@ import com.finmate.repository.stock.StockRepository;
 import com.finmate.repository.stock.news.StockNewsCacheRepository;
 import com.finmate.service.news.NewsRankingService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -55,7 +57,7 @@ public class StockNewsService {
     public StockNewsResponse getNews(Long stockId) {
 
         Stock stock = stockRepository.findById(stockId)
-                .orElseThrow(() -> new IllegalArgumentException("종목을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "종목을 찾을 수 없습니다."));
         // 검색 키워드 생성
         String query = buildQuery(stock);
         LocalDateTime now = LocalDateTime.now();

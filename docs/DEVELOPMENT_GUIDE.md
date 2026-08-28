@@ -21,7 +21,7 @@ MYSQL_DATABASE=finmate
 MYSQL_USER=finmate
 MYSQL_PASSWORD=change-me
 
-SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/finmate?serverTimezone=Asia/Seoul&useUnicode=true&characterEncoding=utf8mb4&connectionCollation=utf8mb4_unicode_ci
+SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/finmate?serverTimezone=Asia/Seoul&useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci
 SPRING_DATASOURCE_USERNAME=finmate
 SPRING_DATASOURCE_PASSWORD=change-me
 
@@ -100,6 +100,7 @@ STOCK_MASTER_DOMESTIC_SYNC_CRON=0 0 8 * * MON-FRI
 STOCK_MASTER_DOMESTIC_SYNC_ZONE=Asia/Seoul
 STOCK_MASTER_NASDAQ_SYNC_CRON=0 0 8 * * MON-FRI
 STOCK_MASTER_NASDAQ_SYNC_ZONE=America/New_York
+STOCK_MASTER_SYNC_ON_STARTUP=false
 STOCK_RANKING_REFRESH_INTERVAL_MILLIS=10000
 STOCK_RANKING_INITIAL_DELAY_MILLIS=100
 STOCK_RANKING_OPEN_CACHE_TTL_SECONDS=30
@@ -114,6 +115,7 @@ STOCK_CONCEPT_SYNC_ZONE=Asia/Seoul
 ```
 
 국내 업종코드 파일은 국내 종목 마스터와 같은 `STOCK_MASTER_DOMESTIC_SYNC_CRON` / `STOCK_MASTER_DOMESTIC_SYNC_ZONE` 설정으로 함께 갱신된다.
+`STOCK_MASTER_SYNC_ON_STARTUP=true`로 설정하면 애플리케이션을 시작할 때 국내·나스닥 종목 마스터를 한 번 동기화한다.
 주문 만료 스케줄러는 기본 10초 간격으로 만료된 활성 주문·예약을 처리하고, 서버 시작 직후에는 중단 중 만료된 건을 즉시 복구한다.
 공식 주식 개념 카드 동기화는 검토 전 DB 변경을 막기 위해 기본 비활성화되어 있다. `STOCK_CONCEPT_SYNC_ENABLED=true`로 활성화하면
 기본적으로 매주 월요일 오전 4시에 `src/main/resources/stock-concepts/stock-concepts.yml`을 DB에 멱등 반영한다.
@@ -121,18 +123,19 @@ STOCK_CONCEPT_SYNC_ZONE=Asia/Seoul
 
 ## 3. MySQL과 Redis 실행
 
-루트 `docker-compose.yml`은 MySQL 8.4와 Redis 7.2를 제공한다.
+루트 `docker-compose.local.yml`은 로컬 개발에 필요한 MySQL 8.4와 Redis 7.2를 제공한다.
+Spring과 React를 IDE에서 직접 실행할 때는 인프라 서비스만 시작한다.
 
 ```bash
-docker compose up -d mysql redis
-docker compose ps
-docker compose logs -f mysql redis
+docker compose --env-file .env -f docker-compose.local.yml up -d mysql redis
+docker compose --env-file .env -f docker-compose.local.yml ps
+docker compose --env-file .env -f docker-compose.local.yml logs -f mysql redis
 ```
 
 종료:
 
 ```bash
-docker compose down
+docker compose --env-file .env -f docker-compose.local.yml down
 ```
 
 `docker compose down -v`는 DB와 Redis 볼륨 데이터를 삭제하므로 일반 개발 종료 명령으로 사용하지 않는다.
@@ -186,6 +189,58 @@ KIS 키가 비어 있어도 context 생성 자체는 지연 호출 구조상 가
 ```bash
 STOCK_RANKING_INITIAL_DELAY_MILLIS=600000 ./gradlew bootRun
 ```
+
+### 전체 배포 형태를 로컬에서 실행
+
+루트 `Dockerfile.local`은 Spring Boot 실행 JAR를 빌드한 뒤 JRE만 포함한 이미지에서 비루트 사용자로 실행한다.
+`frontend/Dockerfile.local`은 Node로 React를 빌드하고, 최종 이미지에서는 Nginx가 빌드 결과만 제공한다.
+`frontend/nginx.local.conf`는 React Router 경로는 `index.html`로 보내고 `/api`, 로그인·OAuth, `/ws` 요청은
+`backend:8080`으로 reverse proxy한다. `docker-compose.local.yml`은 Nginx, Spring, MySQL, Redis를 하나의
+Docker 네트워크에서 함께 실행한다.
+같은 파일에서 `mysql redis` 서비스만 지정하면 IDE 개발용 인프라만 실행할 수 있다.
+
+루트 `.env`에 실제 비밀번호와 필요한 외부 연동 자격증명을 `KEY=value` 형식으로 입력한다. 이 파일은 기존
+로컬 Spring 실행과 배포 형태의 Compose가 공통으로 사용하며 Git에 포함되지 않는다. Compose가 컨테이너
+환경에 맞는 datasource URL과 Redis host를 덮어쓰므로 `.env`의 로컬 `localhost` 설정은 컨테이너에 적용되지
+않는다. 전체 서비스를 빌드하고 실행한다. 기본 공개 포트는 기존 Vite 개발 주소와 동일한 5173이므로 OAuth
+공급자의 로컬 callback URL을 변경하지 않아도 된다.
+
+```bash
+docker compose --env-file .env -f docker-compose.local.yml up -d --build
+docker compose --env-file .env -f docker-compose.local.yml ps
+docker compose --env-file .env -f docker-compose.local.yml logs -f nginx backend
+```
+
+브라우저는 `http://localhost:5173`으로 접속한다. Nginx는 React 화면을 제공하고 백엔드 요청만 Spring으로
+전달한다. Spring의 `127.0.0.1:8080` 포트는 직접 점검용이다. MySQL 3306과 Redis 6379는 IDE 개발도
+지원하도록 호스트의 loopback에만 공개한다. 컨테이너 내부에서 Nginx는 `backend:8080`, Spring은
+`mysql:3306`, `redis:6379`로 연결한다.
+
+```bash
+curl http://localhost:5173/api/session
+```
+
+운영 서버에서는 로컬용 Compose를 사용하지 않는다. `Dockerfile.server`와
+`frontend/Dockerfile.server`로 배포 이미지를 빌드해 registry에 push하고, 서버에서는
+`docker-compose.server.yml`로 Backend와 Frontend 이미지를 pull한다.
+
+```bash
+docker compose --env-file .env -f docker-compose.server.yml pull
+docker compose --env-file .env -f docker-compose.server.yml up -d
+```
+
+Compose 실행만으로 애플리케이션 컨테이너들은 구동되지만 AWS 운영 준비 전체가 끝나는 것은 아니다. 서버의
+보안 그룹에서 80/443을 설정하고, 도메인 DNS와 Certbot 인증서를 구성하고, 실제 HTTPS
+OAuth callback URL을 공급자 콘솔에 등록해야 한다. `.env`는 Git으로 전송하지 말고 AWS 서버나 비밀 저장소에서
+별도로 준비한다. MySQL을 컨테이너로 운영한다면 볼륨 백업과 장애 복구도 별도로 구성해야 한다.
+
+종료할 때는 볼륨을 보존한다.
+
+```bash
+docker compose --env-file .env -f docker-compose.local.yml down
+```
+
+`down -v`는 이 배포 구성의 MySQL과 Redis 데이터를 삭제하므로 데이터 삭제가 명확히 필요한 경우에만 사용한다.
 
 ## 5. 테스트와 빌드
 

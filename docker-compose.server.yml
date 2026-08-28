@@ -1,0 +1,132 @@
+# FinMate 운영 서버 배포용 Docker Compose
+#
+# 이 파일은 EC2에서 소스 코드를 빌드하지 않는다.
+# Backend와 Frontend(Nginx) 이미지는 미리 빌드하여 ECR에 push하고,
+# EC2의 .env에 ECR_BACKEND_IMAGE와 ECR_FRONTEND_IMAGE의 전체 URI를 설정한다.
+#
+# 이 구성은 ALB가 아니라 EC2의 Nginx가 HTTPS를 직접 처리하는 형태다.
+# EC2 호스트의 Certbot 인증서를 Nginx 컨테이너에 read-only로 연결한다.
+#
+# 미정:
+# - 최종 ECR repository 이름과 배포 이미지 tag
+# - MySQL/Redis를 계속 컨테이너로 운영할지, RDS/ElastiCache로 이전할지
+#
+name: finmate-server
+
+services:
+  # React 운영 빌드 결과를 제공하고 Spring 요청을 backend로 전달한다.
+  # ECR_FRONTEND_IMAGE 예시:
+  # 123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/finmate-frontend:미정
+  nginx:
+    image: "${ECR_FRONTEND_IMAGE:?ECR_FRONTEND_IMAGE를 .env에 설정해야 합니다}"
+    pull_policy: always
+    restart: unless-stopped
+
+    # 80은 HTTPS redirect, 443은 실제 HTTPS 서비스에 사용한다.
+    # EC2 보안 그룹에서도 80과 443 inbound를 별도로 허용해야 한다.
+    ports:
+      - "${FINMATE_HTTP_PORT:-80}:80"
+      - "${FINMATE_HTTPS_PORT:-443}:443"
+
+    # Certbot이 EC2 호스트에 발급한 인증서를
+    # Nginx 컨테이너에서 읽을 수 있도록 연결한다.
+    # 인증서는 읽기만 하면 되므로 read-only로 mount한다.
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+
+    depends_on:
+      backend:
+        condition: service_started
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/nginx-health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ECR에서 받은 FinMate Spring Boot 애플리케이션 이미지다.
+  # ECR_BACKEND_IMAGE 예시:
+  # 123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/finmate-backend:미정
+  backend:
+    image: "${ECR_BACKEND_IMAGE:?ECR_BACKEND_IMAGE를 .env에 설정해야 합니다}"
+    pull_policy: always
+    restart: unless-stopped
+
+    # Backend 포트는 EC2 호스트에 공개하지 않는다.
+    # Nginx가 Compose 내부 네트워크의 backend:8080으로 접근한다.
+    env_file:
+      - .env
+
+    environment:
+      # .env의 로컬 접속 주소를 컨테이너 서비스 이름으로 덮어쓴다.
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?serverTimezone=Asia/Seoul&useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # 미정: 향후 RDS로 이전하면 이 서비스를 제거하고
+  # SPRING_DATASOURCE_URL을 RDS endpoint로 변경한다.
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: Asia/Seoul
+
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+09:00
+
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # 미정: 향후 ElastiCache로 이전하면 이 서비스를 제거하고
+  # REDIS_HOST를 ElastiCache endpoint로 변경한다.
+  redis:
+    image: redis:7.2
+    restart: unless-stopped
+
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - ${REDIS_PASSWORD}
+
+    volumes:
+      - redis-data:/data
+
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$REDIS_PASSWORD redis-cli ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+# EC2에서 docker compose down을 실행해도 데이터 볼륨은 유지된다.
+# docker compose down -v는 MySQL과 Redis 데이터를 삭제하므로 사용에 주의한다.
+volumes:
+  mysql-data:
+  redis-data:

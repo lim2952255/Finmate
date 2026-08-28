@@ -1,5 +1,7 @@
 package com.finmate.global.validation;
 
+import com.finmate.exception.BusinessRuleException;
+
 import java.math.BigDecimal;
 
 public final class NumericValidator {
@@ -8,23 +10,23 @@ public final class NumericValidator {
 
     public static void validatePositive(BigDecimal value, String message) {
         if (value == null || value.signum() <= 0) {
-            throw new RuntimeException(message);
+            throw new BusinessRuleException(message);
         }
     }
 
     public static void validatePositive(BigDecimal value, String requiredMessage, String positiveMessage) {
         if (value == null) {
-            throw new RuntimeException(requiredMessage);
+            throw new BusinessRuleException(requiredMessage);
         }
 
         if (value.signum() <= 0) {
-            throw new RuntimeException(positiveMessage);
+            throw new BusinessRuleException(positiveMessage);
         }
     }
 
     public static void validateNonNegative(BigDecimal value, String message) {
         if (value == null || value.signum() < 0) {
-            throw new RuntimeException(message);
+            throw new BusinessRuleException(message);
         }
     }
 
@@ -38,7 +40,7 @@ public final class NumericValidator {
 
     public static void validateNonNegative(Long value, String message) {
         if (value == null || value < 0) {
-            throw new RuntimeException(message);
+            throw new BusinessRuleException(message);
         }
     }
 

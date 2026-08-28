@@ -189,7 +189,7 @@ public final class StockMarketSchedules {
     }
 
     // 종목이 NXT 거래가능 시간대인지를 검사한다.
-    private static boolean isNxtTradingTime(Stock stock, ZonedDateTime dateTime) {
+    public static boolean isNxtTradingTime(Stock stock, ZonedDateTime dateTime) {
         if (stock.getMarketType() == StockMarketType.NASDAQ) {
             return false;
         }

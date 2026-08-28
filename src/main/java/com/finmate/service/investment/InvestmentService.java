@@ -24,6 +24,7 @@ import com.finmate.domain.normal.account.transaction.TransactionPeriod;
 import com.finmate.domain.normal.account.transaction.dto.TransactionSummary;
 import com.finmate.domain.normal.transfer.Transfer;
 import com.finmate.domain.user.User;
+import com.finmate.exception.BusinessRuleException;
 import com.finmate.global.pagination.PaginationInfo;
 import com.finmate.repository.investment.InvestmentCashBalanceRepository;
 import com.finmate.repository.investment.InvestmentRepository;
@@ -173,12 +174,12 @@ public class InvestmentService {
                                            SecuritiesCompanyCode securitiesCompanyCode) {
         return investmentRepository
                 .findByUser_IdAndAccountNumberAndSecuritiesCompanyCode(userId, accountNumber, securitiesCompanyCode)
-                .orElseThrow(() -> new RuntimeException("현재 사용자의 증권 계좌가 아닙니다."));
+                .orElseThrow(() -> new BusinessRuleException("현재 사용자의 증권 계좌가 아닙니다."));
     }
 
     private Account findOwnedAccount(Long userId, String accountNumber, BankCode bankCode) {
         return accountRepository.findByUser_IdAndAccountNumberAndBankCode(userId, accountNumber, bankCode)
-                .orElseThrow(() -> new RuntimeException("현재 사용자의 계좌가 아닙니다."));
+                .orElseThrow(() -> new BusinessRuleException("현재 사용자의 계좌가 아닙니다."));
     }
 
     // 특정 기간동안의 사용자의 모든 예수금 이체 내역을 Page단위로 리턴
@@ -305,7 +306,7 @@ public class InvestmentService {
     public Long openInvestment(OpenInvestment openInvestment, User user) {
         long investmentAccountCount = investmentRepository.countByUser_Id(user.getId());
         if (investmentAccountCount >= MAX_INVESTMENT_ACCOUNT_COUNT) {
-            throw new RuntimeException("증권 계좌는 최대 10개까지만 개설할 수 있습니다.");
+            throw new BusinessRuleException("증권 계좌는 최대 10개까지만 개설할 수 있습니다.");
         }
 
         String accountNumber = accountNumberRegistryService.issueUniqueAccountNumber(AccountType.INVESTMENT);
@@ -325,7 +326,7 @@ public class InvestmentService {
         Investment newPrimary = investments.stream()
                 .filter(investment -> investment.getId().equals(investmentId))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("현재 사용자의 증권 계좌가 아닙니다."));
+                .orElseThrow(() -> new BusinessRuleException("현재 사용자의 증권 계좌가 아닙니다."));
 
         if (newPrimary.isPrimary()) {
             return investmentId;
@@ -353,11 +354,11 @@ public class InvestmentService {
         Investment toInvestment = lockedAccountAndInvestment.investment();
 
         if (!fromAccount.getUser().getId().equals(userId)) {
-            throw new RuntimeException("출금 계좌가 현재 사용자의 계좌가 아닙니다.");
+            throw new BusinessRuleException("출금 계좌가 현재 사용자의 계좌가 아닙니다.");
         }
 
         if (!toInvestment.getUser().getId().equals(userId)) {
-            throw new RuntimeException("입금할 증권 계좌가 현재 사용자의 계좌가 아닙니다.");
+            throw new BusinessRuleException("입금할 증권 계좌가 현재 사용자의 계좌가 아닙니다.");
         }
 
         validateInvestmentDepositCode(investmentDepositRequest, fromAccount, toInvestment);
@@ -425,11 +426,11 @@ public class InvestmentService {
         Investment fromInvestment = lockedAccountAndInvestment.investment();
 
         if (!toAccount.getUser().getId().equals(userId)) {
-            throw new RuntimeException("입금 계좌가 현재 사용자의 계좌가 아닙니다.");
+            throw new BusinessRuleException("입금 계좌가 현재 사용자의 계좌가 아닙니다.");
         }
 
         if (!fromInvestment.getUser().getId().equals(userId)) {
-            throw new RuntimeException("출금할 증권 계좌가 현재 사용자의 계좌가 아닙니다.");
+            throw new BusinessRuleException("출금할 증권 계좌가 현재 사용자의 계좌가 아닙니다.");
         }
 
         validateInvestmentWithdrawalCode(investmentWithdrawalRequest, fromInvestment, toAccount);
@@ -484,10 +485,10 @@ public class InvestmentService {
     // 양방향 이체 요청이 동시에 들어와도 lock 획득 순서가 같아야 서로 다른 순서로 row lock을 기다리는 데드락 가능성을 줄일 수 있다.
     private LockedAccountAndInvestment lockAccountAndInvestmentAvoidingDeadlock(Long accountId, Long investmentId) {
         Account lockedAccount = accountRepository.findByIdForUpdate(accountId)
-                .orElseThrow(() -> new RuntimeException("계좌를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessRuleException("계좌를 찾을 수 없습니다."));
 
         Investment lockedInvestment = investmentRepository.findByIdForUpdate(investmentId)
-                .orElseThrow(() -> new RuntimeException("증권 계좌를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessRuleException("증권 계좌를 찾을 수 없습니다."));
 
         return new LockedAccountAndInvestment(lockedAccount, lockedInvestment);
     }
@@ -497,11 +498,11 @@ public class InvestmentService {
                                                Investment toInvestment) {
         BankCode fromBankCode = investmentDepositRequest.getFromBankCode();
         if (!fromAccount.getBankCode().equals(fromBankCode)) {
-            throw new RuntimeException("출금 계좌의 은행 정보가 일치하지 않습니다.");
+            throw new BusinessRuleException("출금 계좌의 은행 정보가 일치하지 않습니다.");
         }
 
         if (!toInvestment.getSecuritiesCompanyCode().equals(investmentDepositRequest.getToSecuritiesCompanyCode())) {
-            throw new RuntimeException("입금 증권계좌의 증권사 정보가 일치하지 않습니다.");
+            throw new BusinessRuleException("입금 증권계좌의 증권사 정보가 일치하지 않습니다.");
         }
     }
 
@@ -509,11 +510,11 @@ public class InvestmentService {
                                                   Investment fromInvestment,
                                                   Account toAccount) {
         if (!fromInvestment.getSecuritiesCompanyCode().equals(investmentWithdrawalRequest.getFromSecuritiesCompanyCode())) {
-            throw new RuntimeException("출금 증권계좌의 증권사 정보가 일치하지 않습니다.");
+            throw new BusinessRuleException("출금 증권계좌의 증권사 정보가 일치하지 않습니다.");
         }
 
         if (!toAccount.getBankCode().equals(investmentWithdrawalRequest.getToBankCode())) {
-            throw new RuntimeException("입금 계좌의 은행 정보가 일치하지 않습니다.");
+            throw new BusinessRuleException("입금 계좌의 은행 정보가 일치하지 않습니다.");
         }
     }
 

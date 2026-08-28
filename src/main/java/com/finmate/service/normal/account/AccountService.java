@@ -19,6 +19,7 @@ import com.finmate.domain.normal.transfer.DailyTransferUsage;
 import com.finmate.domain.normal.transfer.Transfer;
 import com.finmate.domain.user.User;
 import com.finmate.domain.investment.CurrencyCode;
+import com.finmate.exception.BusinessRuleException;
 import com.finmate.global.pagination.PaginationInfo;
 import com.finmate.repository.normal.account.AccountRepository;
 import com.finmate.repository.normal.account.transaction.AccountTransactionRepository;
@@ -83,7 +84,7 @@ public class AccountService {
     public Long openAccount(OpenAccount openAccount, User user) {
         long accountCount = accountRepository.countByUser_Id(user.getId());
         if (accountCount >= MAX_ACCOUNT_COUNT) {
-            throw new RuntimeException("계좌는 최대 10개까지만 개설할 수 있습니다.");
+            throw new BusinessRuleException("계좌는 최대 10개까지만 개설할 수 있습니다.");
         }
 
         // Registry에 새로운 계좌번호를 등록한 후 계좌를 개설한다.
@@ -110,7 +111,7 @@ public class AccountService {
         Account newPrimary = accounts.stream()
                 .filter(account -> account.getId().equals(accountId))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("현재 사용자의 계좌가 아닙니다."));
+                .orElseThrow(() -> new BusinessRuleException("현재 사용자의 계좌가 아닙니다."));
 
         if (newPrimary.isPrimary()) {
             return accountId;
@@ -210,7 +211,7 @@ public class AccountService {
 
     private Account findOwnedAccount(Long userId, String accountNumber, BankCode bankCode) {
         return accountRepository.findByUser_IdAndAccountNumberAndBankCode(userId, accountNumber, bankCode)
-                .orElseThrow(() -> new RuntimeException("현재 사용자의 계좌가 아닙니다."));
+                .orElseThrow(() -> new BusinessRuleException("현재 사용자의 계좌가 아닙니다."));
     }
 
     // 특정 사용자 또는 특정 계좌의 거래내역정보를 담은 dto 리턴
@@ -390,7 +391,7 @@ public class AccountService {
 
     private Long findAccountId(String accountNumber, BankCode bankCode, String errorMessage) {
         return accountRepository.findIdByAccountNumberAndBankCode(accountNumber, bankCode)
-                .orElseThrow(() -> new RuntimeException(errorMessage));
+                .orElseThrow(() -> new BusinessRuleException(errorMessage));
     }
 
     // 계좌이체처럼 "조회 -> 검증 -> 변경"이 하나의 논리적 작업인 경우,
@@ -413,7 +414,7 @@ public class AccountService {
                 "입금 계좌를 찾을 수 없습니다.");
 
         if(fromAccountId.equals(toAccountId))
-            throw new RuntimeException("같은 계좌로는 이체할 수 없습니다.");
+            throw new BusinessRuleException("같은 계좌로는 이체할 수 없습니다.");
 
         // 계좌이체의 경우 입금 계좌와 출금 계좌 모두에 대해서 lock을 획득해야 한다.
         // 이때 lock을 획득하는 순서를 지정하지 않으면 deadlock이 발생할 수 있기 때문에 AccountId가 작은 순서대로 lock을 획득하도록 강제한다.
@@ -423,7 +424,7 @@ public class AccountService {
         Account toAccount = lockedAccounts.toAccount();
 
         if(!fromAccount.getUser().getId().equals(user.getId()))
-            throw new RuntimeException("출금 계좌가 현재 사용자의 계좌가 아닙니다.");
+            throw new BusinessRuleException("출금 계좌가 현재 사용자의 계좌가 아닙니다.");
 
         validateSameCurrency(fromAccount, toAccount); // 입금 계좌와 출금 계좌의 통화가 동일해야 한다.
         transferLimitUsageService.use(fromAccount, transferAmount); // 일일 or 일회 이체한도 초과여부 검사
@@ -487,7 +488,7 @@ public class AccountService {
     // 현재는 통화가 일치하지 않으면 예외를 발생시키지만, 추후에는 통화가 일치하지 않는 경우, 환전 기능을 추가
     private void validateSameCurrency(Account fromAccount, Account toAccount) {
         if (fromAccount.getCurrencyCode() != toAccount.getCurrencyCode()) {
-            throw new RuntimeException("서로 다른 통화 계좌 간 이체는 환전 기능이 필요합니다.");
+            throw new BusinessRuleException("서로 다른 통화 계좌 간 이체는 환전 기능이 필요합니다.");
         }
     }
 
@@ -497,9 +498,9 @@ public class AccountService {
         Long secondLockId = Math.max(fromAccountId, toAccountId);
 
         Account firstLockedAccount = accountRepository.findByIdForUpdate(firstLockId)
-                .orElseThrow(() -> new RuntimeException("계좌를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessRuleException("계좌를 찾을 수 없습니다."));
         Account secondLockedAccount = accountRepository.findByIdForUpdate(secondLockId)
-                .orElseThrow(() -> new RuntimeException("계좌를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessRuleException("계좌를 찾을 수 없습니다."));
 
         Account fromAccount = firstLockedAccount.getId().equals(fromAccountId)
                 ? firstLockedAccount

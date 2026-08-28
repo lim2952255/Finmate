@@ -4,6 +4,8 @@ import com.finmate.domain.normal.account.dto.AccountHomeInfo;
 import com.finmate.domain.normal.account.dto.AccountOverviewResponse;
 import com.finmate.global.security.FinMateAuthenticatedPrincipal;
 import com.finmate.service.normal.account.AccountService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,7 +30,7 @@ public class AccountOverviewController {
 
     @PostMapping("/primary")
     public AccountOverviewResponse setPrimary(
-            @RequestBody PrimaryAccountRequest request,
+            @Valid @RequestBody PrimaryAccountRequest request,
             @AuthenticationPrincipal FinMateAuthenticatedPrincipal sessionUser) {
         accountService.setPrimary(request.accountId(), sessionUser.getId());
         return getOverview(sessionUser.getId());
@@ -39,6 +41,6 @@ public class AccountOverviewController {
         return AccountOverviewResponse.from(homeInfo);
     }
 
-    public record PrimaryAccountRequest(Long accountId) {
+    public record PrimaryAccountRequest(@NotNull(message = "대표계좌는 필수입니다.") Long accountId) {
     }
 }

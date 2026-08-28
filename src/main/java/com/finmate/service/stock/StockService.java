@@ -7,6 +7,7 @@ import com.finmate.domain.stock.dto.favorite.FavoriteStockPageInfo;
 import com.finmate.domain.stock.dto.search.StockSearchPageInfo;
 import com.finmate.domain.stock.dto.search.StockSearchType;
 import com.finmate.domain.user.User;
+import com.finmate.exception.BusinessRuleException;
 import com.finmate.global.pagination.PaginationInfo;
 import com.finmate.repository.stock.FavoriteStockRepository;
 import com.finmate.repository.stock.StockRepository;
@@ -116,9 +117,9 @@ public class StockService {
 
     private FavoriteStock createFavoriteStock(Long userId, Long stockId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessRuleException("사용자를 찾을 수 없습니다."));
         Stock stock = stockRepository.findById(stockId)
-                .orElseThrow(() -> new RuntimeException("종목을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessRuleException("종목을 찾을 수 없습니다."));
 
         return FavoriteStock.create(user, stock);
     }

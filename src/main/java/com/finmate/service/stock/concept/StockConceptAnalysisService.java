@@ -22,7 +22,9 @@ import com.finmate.repository.stock.StockRepository;
 import com.finmate.service.stock.DomesticStockDetailQueryService;
 import com.finmate.service.stock.DomesticStockDetailRefreshService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -52,7 +54,9 @@ public class StockConceptAnalysisService {
         }
 
         Stock stock = stockRepository.findById(stockId)
-                .orElseThrow(() -> new IllegalArgumentException("종목을 찾을 수 없습니다: " + stockId));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "종목을 찾을 수 없습니다: " + stockId));
 
         // 카드에 표시할 개념카드 제목 생성
         String heading = stock.getNameKo() + " 실제 데이터로 보기";

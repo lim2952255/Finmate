@@ -5,7 +5,9 @@ import com.finmate.domain.stock.concept.StockConceptCode;
 import com.finmate.domain.stock.dto.concept.StockConceptResponse;
 import com.finmate.repository.stock.concept.StockConceptCardRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -18,7 +20,7 @@ public class StockConceptQueryService {
     public StockConceptResponse getConcept(Long stockId, StockConceptCode conceptCode) {
         StockConceptCard conceptCard = conceptCardRepository
                 .findByConceptCodeAndActiveTrue(conceptCode)
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "개념정보를 찾을 수 없습니다: " + conceptCode
                 ));
 
@@ -30,7 +32,7 @@ public class StockConceptQueryService {
     public StockConceptResponse getConcept(StockConceptCode conceptCode) {
         StockConceptCard conceptCard = conceptCardRepository
                 .findByConceptCodeAndActiveTrue(conceptCode)
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "개념정보를 찾을 수 없습니다: " + conceptCode
                 ));
 

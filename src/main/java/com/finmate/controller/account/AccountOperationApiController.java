@@ -19,6 +19,9 @@ import com.finmate.service.investment.InvestmentService;
 import com.finmate.service.normal.account.AccountService;
 import com.finmate.service.user.UserService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -59,7 +62,7 @@ public class AccountOperationApiController {
     }
 
     @PostMapping("/transfer-limit")
-    public ResponseEntity<Void> updateLimit(@RequestBody LimitRequest request,
+    public ResponseEntity<Void> updateLimit(@Valid @RequestBody LimitRequest request,
                                             @AuthenticationPrincipal FinMateAuthenticatedPrincipal principal) {
         accountService.updateTransferLimit(principal.getId(), request.accountNumber(), request.bankCode(), request.dailyTransferLimit(), request.singleTransferLimit());
         return ResponseEntity.noContent().build();
@@ -112,6 +115,10 @@ public class AccountOperationApiController {
     }
     public record BalanceInfo(String currency, String amount) {}
     public record TransferLimitData(List<AccountInfo> accounts, Long selectedAccountId, String dailyLimit, String singleLimit, String todayUsed) {}
-    public record LimitRequest(String accountNumber, BankCode bankCode, BigDecimal dailyTransferLimit, BigDecimal singleTransferLimit) {}
+    public record LimitRequest(
+            @NotBlank(message = "계좌번호는 필수입니다.") String accountNumber,
+            @NotNull(message = "은행은 필수입니다.") BankCode bankCode,
+            @NotNull(message = "일일 이체한도는 필수입니다.") @Positive(message = "일일 이체한도는 0보다 커야 합니다.") BigDecimal dailyTransferLimit,
+            @NotNull(message = "1회 이체한도는 필수입니다.") @Positive(message = "1회 이체한도는 0보다 커야 합니다.") BigDecimal singleTransferLimit) {}
     public record ExchangeData(List<InvestmentInfo> investments, List<Option> currencies, String usdKrwExchangeRate) {}
 }

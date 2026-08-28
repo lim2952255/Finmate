@@ -1,5 +1,6 @@
 package com.finmate.domain.normal.account;
 
+import com.finmate.exception.BusinessRuleException;
 import com.finmate.domain.investment.CurrencyCode;
 
 import java.math.BigDecimal;
@@ -7,7 +8,7 @@ import java.math.BigDecimal;
 public final class AccountBalancePolicy {
     public static BigDecimal initialBalanceOf(CurrencyCode currencyCode) {
         if (currencyCode == null) {
-            throw new RuntimeException("통화는 필수입니다.");
+            throw new BusinessRuleException("통화는 필수입니다.");
         }
 
         // 원화가 아니라 다른 통화를 사용하는 경우에는 원화 계좌를 개설한 후 환전을 이용한다.

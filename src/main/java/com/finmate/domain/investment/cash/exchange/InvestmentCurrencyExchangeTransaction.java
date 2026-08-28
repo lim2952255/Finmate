@@ -1,5 +1,6 @@
 package com.finmate.domain.investment.cash.exchange;
 
+import com.finmate.exception.BusinessRuleException;
 import com.finmate.domain.investment.CurrencyCode;
 import com.finmate.domain.investment.Investment;
 import jakarta.persistence.*;
@@ -112,7 +113,7 @@ public class InvestmentCurrencyExchangeTransaction {
 
     private static void validateDifferentCurrency(CurrencyCode fromCurrencyCode, CurrencyCode toCurrencyCode) {
         if (fromCurrencyCode == toCurrencyCode) {
-            throw new RuntimeException("같은 통화로는 환전할 수 없습니다.");
+            throw new BusinessRuleException("같은 통화로는 환전할 수 없습니다.");
         }
     }
 
@@ -131,7 +132,7 @@ public class InvestmentCurrencyExchangeTransaction {
                                                 BigDecimal balanceAfter,
                                                 String errorMessage) {
         if (balanceBefore.subtract(amount).compareTo(balanceAfter) != 0) {
-            throw new RuntimeException(errorMessage);
+            throw new BusinessRuleException(errorMessage);
         }
     }
 }

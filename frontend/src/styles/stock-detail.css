@@ -370,6 +370,12 @@
             font-weight: 700;
         }
 
+        .market-session-badges {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
         .market-session-badge.open {
             background: #ecfdf5;
             color: #047857;

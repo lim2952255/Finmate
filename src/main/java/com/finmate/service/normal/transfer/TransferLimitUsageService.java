@@ -1,5 +1,6 @@
 package com.finmate.service.normal.transfer;
 
+import com.finmate.exception.BusinessRuleException;
 import com.finmate.domain.normal.account.Account;
 import com.finmate.domain.normal.transfer.DailyTransferUsage;
 import com.finmate.repository.normal.transfer.DailyTransferUsageRepository;
@@ -21,7 +22,7 @@ public class TransferLimitUsageService {
     // 일일 or 일회 이체한도 초과여부 검사
     public void use(Account fromAccount, BigDecimal transferAmount) {
         if (transferAmount.compareTo(fromAccount.getSingleTransferLimit()) > 0) {
-            throw new RuntimeException("일회 이체한도를 초과했습니다.");
+            throw new BusinessRuleException("일회 이체한도를 초과했습니다.");
         }
 
         LocalDate today = LocalDate.now(SERVICE_ZONE);

@@ -1,5 +1,6 @@
 package com.finmate.domain.investment;
 
+import com.finmate.exception.BusinessRuleException;
 import com.finmate.domain.user.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -96,7 +97,7 @@ public class Investment {
         boolean exists = this.cashBalances.stream()
                 .anyMatch(cashBalance -> cashBalance.getCurrencyCode() == currencyCode);
         if (exists) {
-            throw new RuntimeException("이미 등록된 예수금 통화입니다.");
+            throw new BusinessRuleException("이미 등록된 예수금 통화입니다.");
         }
 
         // 예수금 통화 생성 후 연관관계 설정

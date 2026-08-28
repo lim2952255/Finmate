@@ -7,6 +7,7 @@ import com.finmate.domain.market.MarketIndicatorType;
 import com.finmate.domain.market.dto.MarketDataChartPeriod;
 import com.finmate.domain.market.dto.MarketIndicatorPageInfo;
 import com.finmate.domain.stock.Stock;
+import com.finmate.domain.stock.StockMarketType;
 import com.finmate.domain.stock.concept.StockConceptCode;
 import com.finmate.domain.stock.dto.detail.StockChartCandleData;
 import com.finmate.domain.stock.dto.detail.DomesticStockDetailInfo;
@@ -16,6 +17,7 @@ import com.finmate.domain.stock.dto.detail.StockDetailPageInfo;
 import com.finmate.domain.stock.dto.detail.StockMetadataDisplayInfo;
 import com.finmate.domain.stock.dto.trading.StockPortfolioPageInfo;
 import com.finmate.domain.stock.dto.trading.StockPortfolioIndustryAllocation;
+import com.finmate.domain.stock.market.StockMarketSchedules;
 import com.finmate.domain.stock.trading.StockHolding;
 import com.finmate.global.security.FinMateAuthenticatedPrincipal;
 import com.finmate.service.market.MarketDataService;
@@ -30,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.time.ZonedDateTime;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -99,6 +102,7 @@ public class InvestmentReadApiController {
                         .map(value -> new Option(value.name(), conceptLabel(value)))
                         .toList(),
                 info.getChartCandles(), info.getMetadataDisplayInfo(), info.getDomesticDetailInfo(),
+                marketSessions(stock),
                 info.isStockTradingAvailable(), info.getStockTradingTimeDescription());
     }
 
@@ -169,7 +173,9 @@ public class InvestmentReadApiController {
                                       List<Option> concepts, List<StockChartCandleData> candles,
                                       StockMetadataDisplayInfo metadataDisplayInfo,
                                       DomesticStockDetailInfo domesticDetailInfo,
+                                      List<MarketSessionResponse> marketSessions,
                                       boolean tradingAvailable, String tradingTimeDescription) {}
+    public record MarketSessionResponse(String market, boolean open, String status) {}
     public record MarketResponse(String indicator, String displayName, String nameKo, String description,
                                  String unit, int fractionDigits, String realtimeMode, int savedDailyPriceCount,
                                  List<Option> indicators, String period, List<Option> periods,
@@ -188,6 +194,30 @@ public class InvestmentReadApiController {
             log.warn("포트폴리오 환산용 USD/KRW 환율을 조회하지 못했습니다.", exception);
             return null;
         }
+    }
+
+    private List<MarketSessionResponse> marketSessions(Stock stock) {
+        ZonedDateTime now = ZonedDateTime.now();
+        if (stock.getMarketType() == StockMarketType.NASDAQ) {
+            boolean open = StockMarketSchedules.isMarketTradingTime(stock.getMarketType(), now);
+            return List.of(new MarketSessionResponse("NASDAQ", open, open ? "장중" : "마감"));
+        }
+
+        boolean krxOpen = StockMarketSchedules.isMarketTradingTime(stock.getMarketType(), now);
+        Integer nxtPermissionCode = stock.getNxtTradingPermissionCode();
+        MarketSessionResponse nxtStatus;
+        if (nxtPermissionCode == null) {
+            nxtStatus = new MarketSessionResponse("NXT", false, "비대상");
+        } else if (nxtPermissionCode == 0) {
+            nxtStatus = new MarketSessionResponse("NXT", false, "거래 제한");
+        } else {
+            boolean nxtOpen = StockMarketSchedules.isNxtTradingTime(stock, now);
+            nxtStatus = new MarketSessionResponse("NXT", nxtOpen, nxtOpen ? "장중" : "마감");
+        }
+
+        return List.of(
+                new MarketSessionResponse("KRX", krxOpen, krxOpen ? "장중" : "마감"),
+                nxtStatus);
     }
 
     private static String conceptLabel(StockConceptCode code) {

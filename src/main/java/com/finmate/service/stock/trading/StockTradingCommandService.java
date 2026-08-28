@@ -15,6 +15,7 @@ import com.finmate.domain.stock.trading.event.StockOrderActivatedEvent;
 import com.finmate.domain.stock.trading.event.StockOrderClosedEvent;
 import com.finmate.domain.stock.trading.event.StockReservationActivatedEvent;
 import com.finmate.domain.stock.trading.event.StockReservationClosedEvent;
+import com.finmate.exception.BusinessRuleException;
 import com.finmate.repository.stock.trading.StockOrderRepository;
 import com.finmate.repository.stock.trading.StockOrderReservationRepository;
 import lombok.RequiredArgsConstructor;
@@ -142,12 +143,12 @@ public class StockTradingCommandService {
     @Transactional
     public void cancelOrder(Long userId, Long orderId) {
         StockOrder order = stockOrderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessRuleException("주문을 찾을 수 없습니다."));
         lookupService.validateOwnedInvestment(userId, order.getInvestment());
         order = stockOrderRepository.findByIdForUpdate(orderId)
-                .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessRuleException("주문을 찾을 수 없습니다."));
         if (!ACTIVE_ORDER_STATUSES.contains(order.getStatus())) { // 활성 상태의 주문만 취소 가능
-            throw new RuntimeException("활성 상태의 주문만 취소가 가능합니다.");
+            throw new BusinessRuleException("활성 상태의 주문만 취소가 가능합니다.");
         }
 
         assetService.releaseOrderAsset(order); // 일반 주문에 걸려있는 예수금 또는 종목 수량에 대한 lock을 해제한다.
@@ -160,12 +161,12 @@ public class StockTradingCommandService {
     @Transactional
     public void cancelReservation(Long userId, Long reservationId) {
         StockOrderReservation reservation = stockOrderReservationRepository.findById(reservationId)
-                .orElseThrow(() -> new RuntimeException("예약 주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessRuleException("예약 주문을 찾을 수 없습니다."));
         lookupService.validateOwnedInvestment(userId, reservation.getInvestment());
         reservation = stockOrderReservationRepository.findByIdForUpdate(reservationId)
-                .orElseThrow(() -> new RuntimeException("예약 주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessRuleException("예약 주문을 찾을 수 없습니다."));
         if (reservation.getStatus() != StockOrderReservationStatus.ACTIVE) {
-            throw new RuntimeException("활성 상태의 예약 주문만 취소할 수 있습니다.");
+            throw new BusinessRuleException("활성 상태의 예약 주문만 취소할 수 있습니다.");
         }
 
         assetService.releaseReservationAsset(reservation); // 예약 주문에 걸려있는 예수금 또는 종목 수량에 대한 lock을 해제한다.

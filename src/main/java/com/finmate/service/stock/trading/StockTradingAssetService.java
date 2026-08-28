@@ -10,6 +10,7 @@ import com.finmate.domain.stock.trading.StockOrderReservation;
 import com.finmate.domain.stock.trading.StockOrderSide;
 import com.finmate.domain.stock.trading.StockOrderType;
 import com.finmate.domain.stock.trading.StockTradingFeePolicy;
+import com.finmate.exception.BusinessRuleException;
 import com.finmate.repository.investment.InvestmentCashBalanceRepository;
 import com.finmate.repository.stock.trading.StockHoldingRepository;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +44,7 @@ public class StockTradingAssetService {
             // 매도의 경우 사실 논리상으로는 주문 접수 시점에  금액에 lock을 걸 필요가 없지만, 데드락 방지를 위해 lock순서를 맞추기 위해 lock을 획득한다.
             findCashBalanceForUpdate(investment.getId(), currencyCode); // 매수주문과 매도주문에서 lock순서가 꼬이는 것을 방지하기 위해 항상 금액 먼저 lock을 걸고 그다음에 보유 수량에 lock을 건다.
             StockHolding holding = stockHoldingRepository.findByInvestmentIdAndStockIdForUpdate(investment.getId(), stock.getId())
-                    .orElseThrow(() -> new RuntimeException("보유 종목이 없습니다."));
+                    .orElseThrow(() -> new BusinessRuleException("보유 종목이 없습니다."));
             holding.lockQuantity(quantity); // 해당 수량 만큼의 종목을 잠근다.
             return new ReservedAsset(BigDecimal.ZERO.setScale(currencyCode.getFractionDigits()), quantity); // lock 정보를 리턴한다.
         }
@@ -96,7 +97,7 @@ public class StockTradingAssetService {
     // InvestmentCashBalance에서 특정 증권계좌의 특정 통화 잔고를 리턴하는 메서드
     InvestmentCashBalance findCashBalanceForUpdate(Long investmentId, CurrencyCode currencyCode) {
         return investmentCashBalanceRepository.findByInvestmentIdAndCurrencyCodeForUpdate(investmentId, currencyCode)
-                .orElseThrow(() -> new RuntimeException(currencyCode.name() + " 예수금 잔고가 없습니다."));
+                .orElseThrow(() -> new BusinessRuleException(currencyCode.name() + " 예수금 잔고가 없습니다."));
     }
     // StockHolding에서 특정 증권 계좌가 특정 종목을 얼마나 가지고 있는지를 리턴하는 메서드
     StockHolding findOrCreateHoldingForUpdate(Investment investment, Stock stock, CurrencyCode currencyCode) {

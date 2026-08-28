@@ -12,6 +12,7 @@ const accountMenus = [
   { href: "/accounts/open", icon: "＋", title: "계좌 개설", description: "은행과 통화를 선택해 새 계좌를 만듭니다." },
   { href: "/accounts/list", icon: "▤", title: "보유계좌 목록", description: "잔액과 대표계좌 설정을 한곳에서 관리합니다.", reactRoute: true },
   { href: "/accounts/transfer", icon: "↗", title: "계좌 이체", description: "등록된 계좌에서 안전하게 송금합니다." },
+  { href: "/accounts/transfer-investment", icon: "₩", title: "투자금 입금", description: "일반 계좌에서 증권계좌 예수금으로 자금을 옮깁니다." },
   { href: "/accounts/transactions", icon: "↕", title: "거래내역", description: "기간별 입출금과 잔액 흐름을 확인합니다." }
 ];
 

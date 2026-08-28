@@ -5,10 +5,12 @@ import com.finmate.domain.stock.dto.concept.StockConceptResponse;
 import com.finmate.service.learning.InvestmentLearningCatalog;
 import com.finmate.service.stock.concept.StockConceptQueryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 // 실제 카드 세부내용을 불러오는 RestController
 @RestController
@@ -24,7 +26,9 @@ public class InvestmentLearningConceptController {
     @GetMapping("/{conceptCode}")
     public StockConceptResponse getConcept(@PathVariable StockConceptCode conceptCode) {
         if (!learningCatalog.supports(conceptCode)) {
-            throw new IllegalArgumentException("지원하지 않는 투자 학습 개념 코드입니다: " + conceptCode);
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "지원하지 않는 투자 학습 개념 코드입니다: " + conceptCode);
         }
         return conceptQueryService.getConcept(conceptCode);
     }
