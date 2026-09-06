@@ -1183,14 +1183,22 @@
 
         .stock-news-keyword-area {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
+            justify-content: space-between;
             gap: 14px;
             padding: 14px 16px;
             border-radius: 14px;
             background: #eff6ff;
         }
 
-        .stock-news-keyword-area > span {
+        .stock-news-keyword-group {
+            display: flex;
+            min-width: 0;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        .stock-news-keyword-title {
             flex: 0 0 auto;
             padding-top: 4px;
             color: #2563eb;
@@ -1212,6 +1220,43 @@
             color: #526078;
             font-size: 10px;
             font-weight: 700;
+        }
+
+        .stock-news-sentiment-summary {
+            display: flex;
+            flex: 0 0 auto;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stock-news-summary-item {
+            padding: 8px 12px;
+            border: 1px solid transparent;
+            border-radius: 999px;
+            background: #ffffff;
+            font-size: 12px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .stock-news-summary-item strong {
+            font-size: 14px;
+            font-weight: 950;
+        }
+
+        .stock-news-summary-item--positive {
+            border-color: #fecdd3;
+            color: #e11d48;
+        }
+
+        .stock-news-summary-item--neutral {
+            border-color: #cbd5e1;
+            color: #475569;
+        }
+
+        .stock-news-summary-item--negative {
+            border-color: #bfdbfe;
+            color: #2563eb;
         }
 
         .stock-news-list {
@@ -1281,6 +1326,42 @@
             color: #2563eb;
             font-size: 11px;
             font-weight: 900;
+        }
+
+        .stock-news-labels {
+            display: flex;
+            flex: 0 0 auto;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .stock-news-sentiment {
+            min-width: 54px;
+            padding: 8px 13px;
+            border: 1px solid transparent;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 950;
+            line-height: 1;
+            text-align: center;
+        }
+
+        .stock-news-sentiment--positive {
+            border-color: #fecdd3;
+            background: #fff1f2;
+            color: #e11d48;
+        }
+
+        .stock-news-sentiment--neutral {
+            border-color: #cbd5e1;
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .stock-news-sentiment--negative {
+            border-color: #bfdbfe;
+            background: #eff6ff;
+            color: #2563eb;
         }
 
         .stock-news-item h3 {
@@ -3114,7 +3195,17 @@
 
             .stock-news-keyword-area {
                 flex-direction: column;
+                align-items: stretch;
                 gap: 8px;
+            }
+
+            .stock-news-keyword-group {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .stock-news-sentiment-summary {
+                flex-wrap: wrap;
             }
 
             .stock-news-list {

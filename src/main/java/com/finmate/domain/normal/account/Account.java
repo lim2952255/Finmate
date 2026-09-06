@@ -80,7 +80,8 @@ public class Account {
         account.accountNumber = accountNumber;
         account.bankCode = bankCode;
         account.currencyCode = accountCurrencyCode;
-        account.balance = AccountBalancePolicy.initialBalanceOf(accountCurrencyCode);
+        // 계좌마다 자금이 생기지 않도록 0원으로 생성한다. 최초 지급 여부는 서비스가 사용자 기준으로 판단한다.
+        account.balance = BigDecimal.ZERO;
         TransferLimitPolicy policy = TransferLimitPolicy.from(accountCurrencyCode); // 통화 종류에 따른 이체한도 설정
         account.dailyTransferLimit = policy.getDailyTransferLimit();
         account.singleTransferLimit = policy.getSingleTransferLimit();

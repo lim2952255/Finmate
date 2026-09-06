@@ -1,6 +1,7 @@
 package com.finmate.repository.normal.account;
 
 import com.finmate.domain.normal.account.Account;
+import com.finmate.domain.investment.CurrencyCode;
 import com.finmate.domain.normal.account.BankCode;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -36,4 +37,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     List<Account> findByUser_Id(Long userId);
 
     long countByUser_Id(Long userId);
+
+    // 지급 이력 필드가 없던 시기의 원화 계좌 보유 여부를 확인해 기존 사용자에게 재지급하지 않는다.
+    boolean existsByUser_IdAndCurrencyCode(Long userId, CurrencyCode currencyCode);
 }

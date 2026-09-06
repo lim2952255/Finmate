@@ -33,17 +33,23 @@ function AuthBrand({ signup = false }) {
   );
 }
 
-function SocialLoginList({ options }) {
+function SocialLoginList({ options, redirect }) {
   const enabled = options && (options.google || options.kakao || options.naver);
   if (!enabled) return null;
+
+  // 로컬에서 Google 버튼을 누르면 브라우저는 8080이 아니라 현재 React origin으로 요청한다.
+  // 예: http://localhost:5173/api/auth/oauth2/google?redirect=/investments/portfolio
+  // Vite/Nginx가 /api 요청만 내부적으로 Spring 8080에 전달하므로 브라우저는 backend 주소를 알 필요가 없다.
+  // redirect는 React가 기억한 원래 화면이며, OAuth 성공 후 그 화면으로 돌아가기 위해 Spring에 명시적으로 전달한다.
+  const oauthUrl = (provider) => `/api/auth/oauth2/${provider}?redirect=${encodeURIComponent(redirect)}`;
 
   return (
     <>
       <div className="auth-divider"><span>또는 간편 로그인</span></div>
       <div className="social-login-list">
-        {options.google && <a className="social-login social-google" href="/oauth2/authorization/google"><span className="social-mark social-mark-google" aria-hidden="true">G</span><span>Google로 계속하기</span></a>}
-        {options.kakao && <a className="social-login social-kakao" href="/oauth2/authorization/kakao"><span className="social-mark social-mark-kakao" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4C6.8 4 3 7.1 3 10.8c0 2.4 1.6 4.5 4.1 5.7L6.4 20l4.1-2.4c.5.1 1 .1 1.5.1 5.2 0 9-3.1 9-6.9S17.2 4 12 4Z" /></svg></span><span>Kakao로 계속하기</span></a>}
-        {options.naver && <a className="social-login social-naver" href="/oauth2/authorization/naver"><span className="social-mark social-mark-naver" aria-hidden="true">N</span><span>Naver로 계속하기</span></a>}
+        {options.google && <a className="social-login social-google" href={oauthUrl("google")}><span className="social-mark social-mark-google" aria-hidden="true">G</span><span>Google로 계속하기</span></a>}
+        {options.kakao && <a className="social-login social-kakao" href={oauthUrl("kakao")}><span className="social-mark social-mark-kakao" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4C6.8 4 3 7.1 3 10.8c0 2.4 1.6 4.5 4.1 5.7L6.4 20l4.1-2.4c.5.1 1 .1 1.5.1 5.2 0 9-3.1 9-6.9S17.2 4 12 4Z" /></svg></span><span>Kakao로 계속하기</span></a>}
+        {options.naver && <a className="social-login social-naver" href={oauthUrl("naver")}><span className="social-mark social-mark-naver" aria-hidden="true">N</span><span>Naver로 계속하기</span></a>}
       </div>
     </>
   );
@@ -101,7 +107,7 @@ export function LoginPage() {
               <div className="field-group"><label htmlFor="login-password">비밀번호</label><input id="login-password" name="password" type="password" autoComplete="current-password" placeholder="비밀번호를 입력하세요" required /></div>
               <button className="auth-submit" type="submit" disabled={!csrf}>로그인</button>
             </form>
-            <SocialLoginList options={options} />
+            <SocialLoginList options={options} redirect={redirect} />
             <p className="auth-signup">아직 계정이 없나요? <Link to="/signup">회원가입</Link></p>
           </div>
         </section>

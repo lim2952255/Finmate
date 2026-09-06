@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 import static com.finmate.global.validation.RequiredValidator.validateRequired;
 
 // 네이버 뉴스 API를 호출할때 필요한 설정값들 한 군데에 모아두는 설정 클래스
+// 운영환경에서는 스프링 부트가 application properties에서 필요한 설정정보들을 읽어서 값을 바인딩해준다.
+// 평가환경에서는 스프링 부트를 사용하지 않으므로 application properties를 활용할 수 없으므로, 직접 환경변수에서 해당 변수값들을 읽어 바인딩해줘야 한다.
 @Getter
 @Setter
 @Component

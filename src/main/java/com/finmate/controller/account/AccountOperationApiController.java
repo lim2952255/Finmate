@@ -107,11 +107,12 @@ public class AccountOperationApiController {
 
     public record OperationData(List<AccountInfo> accounts, List<InvestmentInfo> investments, List<Option> banks, List<Option> currencies) {}
     public record Option(String value, String label) {}
-    public record AccountInfo(Long id, String accountNumber, String companyCode, String companyName, String currency, String balance) {
-        static AccountInfo from(Account value) { return new AccountInfo(value.getId(), value.getAccountNumber(), value.getBankCode().name(), value.getBankCode().getDisplayName(), value.getCurrencyCode().name(), value.getBalance().toPlainString()); }
+    // 입금 화면에서 대표계좌를 기본 선택할 수 있도록 계좌별 대표 여부를 함께 전달한다.
+    public record AccountInfo(Long id, String accountNumber, String companyCode, String companyName, String currency, String balance, boolean primary) {
+        static AccountInfo from(Account value) { return new AccountInfo(value.getId(), value.getAccountNumber(), value.getBankCode().name(), value.getBankCode().getDisplayName(), value.getCurrencyCode().name(), value.getBalance().toPlainString(), value.isPrimary()); }
     }
-    public record InvestmentInfo(Long id, String accountNumber, String companyCode, String companyName, List<BalanceInfo> balances) {
-        static InvestmentInfo from(Investment value) { return new InvestmentInfo(value.getId(), value.getAccountNumber(), value.getSecuritiesCompanyCode().name(), value.getSecuritiesCompanyCode().getDisplayName(), value.getCashBalances().stream().map(balance -> new BalanceInfo(balance.getCurrencyCode().name(), balance.getAvailableBalance().toPlainString())).toList()); }
+    public record InvestmentInfo(Long id, String accountNumber, String companyCode, String companyName, List<BalanceInfo> balances, boolean primary) {
+        static InvestmentInfo from(Investment value) { return new InvestmentInfo(value.getId(), value.getAccountNumber(), value.getSecuritiesCompanyCode().name(), value.getSecuritiesCompanyCode().getDisplayName(), value.getCashBalances().stream().map(balance -> new BalanceInfo(balance.getCurrencyCode().name(), balance.getAvailableBalance().toPlainString())).toList(), value.isPrimary()); }
     }
     public record BalanceInfo(String currency, String amount) {}
     public record TransferLimitData(List<AccountInfo> accounts, Long selectedAccountId, String dailyLimit, String singleLimit, String todayUsed) {}

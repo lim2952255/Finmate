@@ -17,8 +17,9 @@ class AccountTest {
     @Test
     @DisplayName("ACC-003: 잔액과 정확히 같은 금액을 출금하면 잔액이 0이 된다")
     void withdrawsEntireBalance() {
-        // 처음 계좌 개설시에 KRW 계좌의 경우 기본적으로 3000000원을 제공한다..
+        // 출금 검증에 사용할 잔액을 명시적으로 입금한다.
         Account account = Account.create("100-001", BankCode.KB_KOOKMIN, CurrencyCode.KRW);
+        account.deposit(new BigDecimal("3000000"));
 
         account.withdraw(new BigDecimal("3000000"));
 
@@ -29,6 +30,7 @@ class AccountTest {
     @DisplayName("ACC-003: 잔액을 초과한 출금은 잔액을 변경하지 않는다")
     void rejectsWithdrawalBeyondBalanceWithoutChangingBalance() {
         Account account = Account.create("100-001", BankCode.KB_KOOKMIN, CurrencyCode.KRW);
+        account.deposit(new BigDecimal("3000000"));
 
         // 잔액을 초과한 출금의 경우 예외가 발생해야 하며, 잔액이 변경되면 안된다.
         assertThatThrownBy(() -> account.withdraw(new BigDecimal("3000001")))
@@ -40,6 +42,7 @@ class AccountTest {
     @DisplayName("ACC-003: 0원 입금은 잔액을 변경하지 않고 거부한다")
     void rejectsZeroDepositWithoutChangingBalance() {
         Account account = Account.create("100-001", BankCode.KB_KOOKMIN, CurrencyCode.KRW);
+        account.deposit(new BigDecimal("3000000"));
 
         // 입금금액의 최소단위 검증
         assertThatThrownBy(() -> account.deposit(BigDecimal.ZERO))
@@ -51,6 +54,7 @@ class AccountTest {
     @DisplayName("ACC-003: 계좌 통화의 입력 scale을 초과한 입금을 거부한다")
     void rejectsDepositBeyondCurrencyScale() {
         Account account = Account.create("100-001", BankCode.KB_KOOKMIN, CurrencyCode.KRW);
+        account.deposit(new BigDecimal("3000000"));
 
         // 계좌 통화(CurrencyCode)의 통화규칙을 어긴 금액에 대해서는 예외가 발생해야 하며, 잔액이 변경되면 안된다.
         assertThatThrownBy(() -> account.deposit(new BigDecimal("1.01")))

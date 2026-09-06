@@ -215,6 +215,17 @@
     white-space: nowrap;
 }
 
+.order-quote-unavailable {
+    margin: 0;
+    padding: 12px 14px;
+    color: #64748b;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 750;
+}
+
 .order-quote-card.current {
     background: linear-gradient(135deg, #eff6ff, #ffffff);
     border-color: #bfdbfe;

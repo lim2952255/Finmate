@@ -42,7 +42,7 @@
 
 ## Components
 - Existing components to reuse: `.header`, `.content`, `.metric-card`, `.records-table`, `.badge`, `.menu-item`, `.table-action-link`
-- New/changed components: 브랜드 로고 마크, 홈 히어로, 전체 클릭 메뉴 카드, 인증 분할 패널, 소셜 로그인 버튼, 알림 배너
+- New/changed components: 브랜드 로고 마크, 홈 히어로, 전체 클릭 메뉴 카드, 인증 분할 패널, 소셜 로그인 버튼, 알림 배너, 포트폴리오 국내·해외 테마 비중 토글과 도넛 차트
 - Variants and states: primary/secondary action, positive/negative/neutral metric, hover/focus/disabled
 - Token/component ownership: 공통 토큰과 범용 컴포넌트는 `common.css`, 포트폴리오 전용 실시간 상태는 `portfolio.html`
 
@@ -64,6 +64,7 @@
 - Error: 연한 레드 배경의 알림 배너와 구체적인 메시지
 - Success: 연한 그린 배경의 알림 배너
 - Disabled: 채도를 낮추고 커서와 대비로 비활성 상태 표현
+- Portfolio allocation: 기본은 국내 업종을 세분화하고 해외 보유분을 하나로 묶는다. 해외 보기에서는 반대로 표시하며, 현금은 주문 예약금을 포함한 총 예수금으로 별도 표시한다.
 - Offline/slow network, if applicable: 실시간 데이터가 없을 때 최근 종가 등 서버가 제공하는 fallback 출처 표시
 
 ## Content voice

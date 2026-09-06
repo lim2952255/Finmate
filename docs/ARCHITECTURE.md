@@ -88,6 +88,8 @@ Google·Kakao의 `sub`와 Naver의 프로필 `id`는 각 공급자 내에서 사
 
 ### View
 
+투자 홈의 대표 증권계좌 카드에서 `예수금 입금`을 누르면 기존 `/accounts/transfer-investment` 화면으로 이동하며 `investmentNumber`로 입금 대상을 전달한다. 입금 화면은 출금 계좌를 명시된 `from` → 대표 일반계좌 → 첫 일반계좌 순으로, 입금 계좌를 명시된 `investmentNumber` → 대표 증권계좌 → 첫 증권계좌 순으로 선택한다. 사용자는 두 계좌 모두 변경할 수 있다. `/api/account-operations`는 기본 선택을 위해 계좌별 `primary`를 제공하며, 실제 입금은 기존 API와 자금 이동 로직을 사용한다.
+
 `frontend/`의 React 애플리케이션이 전체 사용자 화면과 공통 헤더를 렌더링한다. 로컬에서는 Vite 개발 서버가
 소스 모듈을 변환해 제공하고, 운영에서는 Vite production build의 `dist`를 Nginx 같은 정적 웹 서버가
 제공한다. Spring JAR은 React 파일을 포함하지 않는다. React는 `/api/session`과 업무별 JSON API를 조회하며,
@@ -128,12 +130,12 @@ WebSocket 메시지가 도착하면 현재 봉의 고가·저가·종가와 당�
   같은 표현 계산은 브라우저 차트 렌더러가 담당한다.
 - `StockPeriodPriceSyncService`: 국내 주·월·연봉과 해외 주·월봉을 KIS에서 받아 `stock_period_price`에
   저장한다. 해외 개별 종목 연봉은 KIS 월봉을 연 단위로 집계한다.
-- `StockNewsService`: `{종목명} 시장정보`로 조회한 NAVER 뉴스 후보를 한국 날짜, 제목의 투자 핵심 키워드 수,
-  발행일시 순으로 정렬하고, 상위 10건을 종목별 MySQL 캐시에 저장해 `updatedAt`이 기본 6시간을 넘었을 때만 갱신한다.
-- `MarketReportService`: KOSPI·KOSDAQ·NASDAQ·S&P 500·금리·환율 주제별 NAVER 뉴스 후보를 한국 날짜,
-  각 주제의 제목 키워드 수, 발행일시 순으로 정렬하고, 상위 10건을 주제별 MySQL 공유 캐시에 저장한다.
-- `NewsRankingService`: 종목 뉴스와 시장 리포트가 함께 사용하는 제목 키워드 동일 가중치 점수화와
-  한국 날짜·점수·발행일시·NAVER 원본 순서 정렬을 담당한다.
+- `StockNewsService`: `{종목명} 시장정보`로 NAVER 뉴스 후보를 한 번 조회하고 설정으로 선택한 랭킹 전략
+  하나의 Top 10을 종목별 MySQL 캐시에 저장한다.
+- `MarketReportService`: KOSPI·KOSDAQ·NASDAQ·S&P 500·금리·환율 주제별 NAVER 뉴스 후보에 설정된
+  랭킹 전략을 적용하고, 상위 10건을 주제별 MySQL 공유 캐시에 저장한다.
+- `NewsRankingStrategy`: 종목 뉴스와 시장 리포트가 함께 사용하는 뉴스 정렬·선별 규약이다. 운영 서비스는
+  `ConfiguredNewsRankingStrategy`가 설정으로 선택한 한 구현만 실행한다.
 
 ### Repository
 
@@ -211,17 +213,46 @@ Redis 금일 스냅샷을 합쳐 화면 DTO를 만든다.
 ### NAVER 뉴스 검색
 
 `NaverNewsClient`는 JDK `HttpClient`로 NAVER API HUB의 `/search/v1/news`를 호출한다. 검색어는
-`{Stock.nameKo} 시장정보`이며 `display=40`, `start=1`, `sort=sim`, `format=json`으로 고정한다.
+`{Stock.nameKo} 시장정보`이며 `display=80`, `start=1`, `sort=sim`, `format=json`으로 고정한다.
 인증에는 NAVER OAuth와 별개인 `X-NCP-APIGW-API-KEY-ID`, `X-NCP-APIGW-API-KEY` 값을 사용한다.
 
-`StockNewsService`는 관련도순 후보 40건의 제목에서 `실적`, `매출`, `영업이익`, `순이익`, `주가`,
-`투자`, `애널리스트`, `컨센서스`, 수급·사업·주주환원·등락 관련 핵심 키워드의 포함 여부를 각각 같은 1점으로 계산한다.
-같은 키워드가 제목에 반복되어도 한 번만 계산하며, 한국 날짜 내림차순, 같은 날짜의 점수 내림차순,
-발행일시 내림차순, NAVER 원본 순서로
-정렬한 상위 10건만 종목별 `stock_news_cache` 한 행에 검색어와 뉴스 목록 JSON으로 저장한다. 저장 행의
-정렬 정책 버전과 검색어가 동일하고 `updatedAt + 6시간`이 현재 시각보다 뒤이면 DB 값을 반환하고, 만료됐거나 검색어가
-바뀌었으면 NAVER API를 다시 호출해 같은 행을 갱신한다. 종목 상세 HTML 렌더링과 외부 뉴스 호출은 분리하며,
+`StockNewsService`는 관련도순 후보 80건의 제목과 요약문에서 `실적`, `매출`, `영업이익`, `순이익`, `주가`,
+`투자`, `애널리스트`, `컨센서스`, 수급·사업·주주환원·등락 관련 핵심 키워드의 포함 여부를 계산한다.
+제목에서 발견한 키워드는 2점, 제목에는 없고 요약문에만 있는 키워드는 1점으로 반영한다. 같은 키워드가
+제목과 요약문에 반복되어도 한 번만 계산하며, 한국 날짜 내림차순, 같은 날짜의 점수 내림차순,
+발행일시 내림차순, NAVER 원본 순서로 기준 순서를 만든다. 같은 후보 80건에 설정으로 선택한 전략 하나를 실행하고
+종목별 `stock_news_cache` 한 행에 뉴스 목록 JSON과 `rankingType`을 함께 저장한다. 저장 행의 검색어가 동일하고
+`updatedAt + 6시간`이 현재 시각보다 뒤이면 DB 값을 반환하고, 만료됐거나 검색어가 바뀌었으면 NAVER API를 다시
+호출해 같은 행을 갱신한다. 종목 상세 HTML 렌더링과 외부 뉴스 호출은 분리하며,
 뉴스 탭을 처음 선택할 때 브라우저가 `/api/stocks/{stockId}/news`를 비동기 호출한다.
+
+`NewsRankingStrategy`는 랭킹 알고리즘을 교체하는 공통 규약이다. `ConfiguredNewsRankingStrategy`는 종목 뉴스와
+시장 리포트가 사용할 한 구현을 `finmate.news.ranking-strategy` 설정으로 선택하며 기본값은 오프라인 평가에서
+선택한 `KOREAN_TF_IDF`다.
+`KeywordNewsRankingStrategy`는 기존 날짜·키워드 순서를 사용한다.
+`TfIdfNewsRankingStrategy`는 그 순서의 1등을 먼저 선택한 뒤 나머지 후보를 순차적으로 검사하고, 제목·요약문
+TF-IDF cosine 유사도가 이미 선택된 모든 기사와 기본 `0.30` 미만인 후보만 최대 10개까지 반환한다.
+`KoreanTfIdfNewsRankingStrategy`는 같은 TF-IDF 계산에 Lucene Nori 형태소 분석을 적용해 조사·어미를 제거하고
+복합어를 분해한 토큰으로 유사도를 계산하며 기본 임계값은 오프라인 평가에서 선택한 `0.20`이다.
+`EmbeddingNewsRankingStrategy`는 같은 기준 순서의 후보 전체를 `multilingual-e5-small`로 한 번 임베딩하고,
+선택된 기사들과의 최대 cosine 유사도가 오프라인 평가에서 선택한 고정 임계값 `0.92`보다 낮은 후보만 최대 10개까지 반환한다. 대칭 유사도 작업에 맞춰
+정리한 제목과 요약문 앞에 `query: `를 붙이고, ONNX 출력은 attention mask average pooling과 L2 정규화를 거친다.
+세 novelty 전략 모두 중복이 많으면 10개보다 적은 결과를 반환하며 최소 개수는 보장하지 않는다.
+
+`StockNewsService`와 `MarketReportService`는 선택된 랭킹 전략이 반환한 최종 기사에만
+`FinBertNewsSentimentAnalyzer`를 적용한다.
+분석기는 제목과 네이버 요약문을 정규화해 한 배치로 KR-FinBert-SC ONNX 모델에 전달하고, 모델의 세 라벨을
+`POSITIVE`, `NEUTRAL`, `NEGATIVE`로 저장한다. 방향성 예측 확률이 기본 `0.65` 미만이면 `NEUTRAL`로 낮춰
+근거가 약한 호재·악재 표시를 줄인다. 모델과 토크나이저 및 ONNX 세션은 최초 갱신 때 지연 로딩한 뒤 재사용한다.
+감성 결과는 기사 JSON 안에 함께 캐시되므로 캐시 적중 요청에서는 모델 추론을 반복하지 않는다.
+
+네 전략의 비교와 metric 계산은 운영 요청에서 분리된 Gradle `evaluation` source set이 담당한다. 관련 Gradle
+설정은 `gradle/evaluation.gradle`에 있으며 `-PwithEvaluation`을 지정한 실행에서만 로드된다. 평가 수집기는
+KOSPI, KOSDAQ, NASDAQ, S&P 500, 금리, 환율, 삼성전자, SK하이닉스, NAVER, 카카오, KB금융, 현대차의 후보를
+고정 JSON으로 저장한다. 평가 실행기는 같은 후보에 네 전략을
+적용하고 Top 10 합집합을 OpenAI Responses API의 Structured Outputs judge에 전달한다. judge가 반환한 관련도와
+사건 그룹으로 nDCG@10, 중복률, 투자 관련 고유 사건 수, Yield@10과 처리 시간을 계산한다. 평가 클래스와
+데이터는 Spring Boot 요청, DB 캐시와 분리되며 평가 클래스는 운영 `bootJar`에 포함되지 않는다.
 
 시장 리포트는 `MarketReportTopic`에 주제 코드, 화면명, 검색어와 제목 키워드를 정의한다. 검색어는 각각
 `코스피 시장정보`, `코스닥 시장정보`, `나스닥 시장정보`, `S&P 500 시장정보`, `금리 시장정보`,
@@ -314,6 +345,10 @@ React 투자 학습 화면은 `/investment-learning`에서 계좌·거래, 위�
 - 활성 주문·예약 목록과 예수금·보유 수량은 비관적 쓰기 락 조회를 사용한다.
 - 구독 활성·종료 이벤트는 DB 커밋 뒤 `@TransactionalEventListener(AFTER_COMMIT)`에서 처리된다.
 - KIS payload 이벤트 리스너는 비동기 설정이 없으므로 발행 스레드에서 동기 실행된다.
+
+### 계좌 개설
+
+일반·증권계좌 개설은 `User` 행을 먼저 비관적 잠금으로 조회한 뒤 각각 최대 3개인지 확인하고 계좌번호와 계좌를 저장한다. 일반계좌 개설은 사용자 지급 이력을 함께 검사해 첫 KRW 계좌에만 모의자금 1억원을 입금한다. 계좌와 계좌번호, 지급 이력, 입금 원장은 같은 트랜잭션에서 처리한다. 계좌 엔티티 자체는 0원으로 생성된다.
 
 ### 락 순서의 확인된 범위
 

@@ -79,8 +79,8 @@ public class Stock {
     @Column(nullable = false)
     private boolean active;
 
-    // 현재 주문 가능한 종목인지 여부다. 상장 상태, 거래정지, 증권사 주문 제한 등을 종합한 거래 가능 플래그다.
-    // tradable은 모든 정보를 종합해서, 최종적으로 현재 우리 서비스에서 주식 거래가가능한지 여부를 결정한다.
+    // 종목 자체가 주문 대상이 될 수 있는지 나타낸다. 상장 상태, 거래정지, 증권사 주문 제한 등을 종합하되 장 운영 시간은 포함하지 않는다.
+    // 실제 현재 주문 가능 여부는 이 값과 StockMarketSchedules의 시장 운영 시간을 함께 검사한다.
     @Column(nullable = false)
     private boolean tradable;
 

@@ -10,8 +10,10 @@ import com.finmate.domain.news.dto.NewsItem;
 import com.finmate.infra.naver.news.NaverNewsClient;
 import com.finmate.infra.naver.news.NaverNewsProperties;
 import com.finmate.repository.market.news.MarketReportCacheRepository;
-import com.finmate.service.news.NewsRankingService;
+import com.finmate.service.news.FinBertNewsSentimentAnalyzer;
+import com.finmate.service.news.NewsRankingStrategy;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -33,7 +35,9 @@ public class MarketReportService {
 
     private final MarketReportCacheRepository cacheRepository;
     private final NaverNewsClient naverNewsClient;
-    private final NewsRankingService newsRankingService; // 각 뉴스 기사별로 score를 부여하는 서비스
+    private final NewsRankingStrategy newsRankingStrategy; // 후보 뉴스의 순위를 산정하여 Top N을 선별하는 전략
+    // 감성 모델은 실제 시장 리포트 갱신이 필요할 때만 지연 로딩한다.
+    private final ObjectProvider<FinBertNewsSentimentAnalyzer> sentimentAnalyzerProvider;
     private final NaverNewsProperties newsProperties;
     private final ObjectMapper objectMapper;
     // 동일한 주제에 대해서 다른 사용자와 동시에 뉴스 API를 호출하지 않도록 동시성을 제어하는 위한 Map
@@ -87,11 +91,14 @@ public class MarketReportService {
             return recheckedResponse;
         }
 
-        // 캐시가 유효하지 않다면 네이버 뉴스 API를 호출하여 뉴스기사데이터를 받고, score를 부여하여 최종적으로 10개의 뉴스기사를 선별한다.
-        List<NewsItem> items = newsRankingService.rankByTitleKeywords(
+        // 캐시가 유효하지 않으면 API 후보를 주입된 랭킹 전략으로 선별한다.
+        // 구체 전략을 참조하지 않아 시장 뉴스와 종목 뉴스가 동일한 전략 교체 규칙을 사용한다.
+        List<NewsItem> items = newsRankingStrategy.rank(
                 naverNewsClient.searchRelevantCandidates(topic.getQuery()),
                 topic.getTitleKeywords(),
                 DISPLAY_NEWS_LIMIT);
+        // 주제별 랭킹이 끝난 최대 10건만 한 배치로 분석해 호재·보통·악재 결과를 붙인다.
+        items = sentimentAnalyzerProvider.getObject().analyze(items);
         String responseJson = serialize(items);
         // 만약 캐시가 아예 비어있었다면 엔티티를 새로 생성한다.
         MarketReportCache cacheToSave = recheckedCache == null
@@ -99,7 +106,7 @@ public class MarketReportService {
                         topic,
                         topic.getQuery(),
                         responseJson,
-                        newsRankingService.policyVersion(),
+                        newsRankingStrategy.type(),
                         refreshedAt)
                 : recheckedCache;
         if (recheckedCache != null) {
@@ -107,7 +114,7 @@ public class MarketReportService {
             cacheToSave.refresh(
                     topic.getQuery(),
                     responseJson,
-                    newsRankingService.policyVersion(),
+                    newsRankingStrategy.type(),
                     refreshedAt);
         }
         cacheRepository.save(cacheToSave);
@@ -122,8 +129,8 @@ public class MarketReportService {
         // 캐싱되어있는 데이터가 없거나, TTL이 만료된 경우 null을 리턴하여 캐싱된 데이터가 유효하지 않음을 나타낸다.
         if (cache == null
                 || !Objects.equals(cache.getQuery(), topic.getQuery())
-				// 기사 정렬 버전을 검사한다.
-                || !Objects.equals(cache.getRankingPolicyVersion(), newsRankingService.policyVersion())
+                // 현재 선택된 전략으로 생성한 캐시만 재사용한다.
+                || cache.getRankingType() != newsRankingStrategy.type()
                 || cache.getUpdatedAt() == null
                 || !cache.getUpdatedAt().plus(cacheTtl()).isAfter(now)) {
             return null;
@@ -132,6 +139,10 @@ public class MarketReportService {
         try {
             // 캐싱된 데이터가 유효하다면 이를 객체로 변환하고, 프론트에 전달하기 위한 DTO에 담아서 리턴한다.
             List<NewsItem> items = objectMapper.readValue(cache.getResponseJson(), NEWS_ITEMS_TYPE);
+            // 감성 필드가 없던 기존 시장 리포트 캐시는 즉시 새 형식으로 갱신한다.
+            if (items.stream().anyMatch(item -> item.sentiment() == null)) {
+                return null;
+            }
             return response(topic, cache.getUpdatedAt(), items);
         } catch (JsonProcessingException e) {
             return null;

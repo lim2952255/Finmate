@@ -29,6 +29,8 @@ public class StockOrderPageInfo {
     private final BigDecimal buyExecutablePrice;
     private final BigDecimal sellExecutablePrice;
     private final BigDecimal tradePrice;
+    // 주문에 필요한 현재가와 양방향 체결 기준가가 모두 수신되었는지 나타낸다.
+    private final boolean realtimePriceAvailable;
     // 현재 종목 거래가 가능한지
     private final boolean stockTradingAvailable;
     // 종목 거래시간에 대한 설명
@@ -72,6 +74,9 @@ public class StockOrderPageInfo {
         this.buyExecutablePrice = buyExecutablePrice;
         this.sellExecutablePrice = sellExecutablePrice;
         this.tradePrice = tradePrice;
+        this.realtimePriceAvailable = tradePrice != null
+                && buyExecutablePrice != null
+                && sellExecutablePrice != null;
         this.stockTradingAvailable = stockTradingAvailable;
         this.stockTradingTimeDescription = stockTradingTimeDescription;
     }

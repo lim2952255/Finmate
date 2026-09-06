@@ -2,6 +2,7 @@ package com.finmate.domain.stock.dto.trading;
 
 import com.finmate.domain.investment.CurrencyCode;
 import com.finmate.domain.investment.Investment;
+import com.finmate.domain.investment.InvestmentCashBalance;
 import com.finmate.domain.stock.dto.industry.StockIndustryClassification;
 import com.finmate.domain.stock.Stock;
 import com.finmate.domain.stock.StockMarketType;
@@ -32,6 +33,7 @@ public class StockPortfolioPageInfo {
     private final boolean allAccounts;
     private final List<CurrencyCode> currencies;
     private final Map<CurrencyCode, BigDecimal> totalPurchaseAmountsByCurrency;
+    private final Map<CurrencyCode, BigDecimal> totalCashBalancesByCurrency;
     private final Map<Long, StockIndustryClassification> industryClassificationsByStockId;
     private final Map<Long, StockPortfolioPriceSnapshot> priceSnapshotsByStockId;
     private final List<StockPortfolioIndustryAllocation> industryAllocations;
@@ -73,6 +75,19 @@ public class StockPortfolioPageInfo {
                         Collectors.reducing(
                                 BigDecimal.ZERO,
                                 holding -> holding.getAveragePurchasePrice().multiply(holding.getQuantity()),
+                                BigDecimal::add
+                        )
+                ));
+        List<Investment> portfolioInvestments = allAccounts
+                ? investments
+                : selectedInvestment == null ? List.of() : List.of(selectedInvestment);
+        this.totalCashBalancesByCurrency = portfolioInvestments.stream()
+                .flatMap(investment -> investment.getCashBalances().stream())
+                .collect(Collectors.groupingBy(
+                        InvestmentCashBalance::getCurrencyCode,
+                        Collectors.reducing(
+                                BigDecimal.ZERO,
+                                InvestmentCashBalance::getTotalBalance,
                                 BigDecimal::add
                         )
                 ));

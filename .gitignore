@@ -1,9 +1,16 @@
 HELP.md
 .gradle
 .env
+.env.*
 build/
 frontend/node_modules/
 frontend/dist/
+# 로컬 추론 모델은 크기가 크므로 저장소가 아니라 실행 환경에서 별도로 관리한다.
+/models/
+# 평가 실행 코드는 커밋하지만 API에서 수집한 원본, LLM 라벨, 생성 보고서는 로컬 산출물로 관리한다.
+/evaluation/news-ranking/datasets/raw/
+/evaluation/news-ranking/labels/generated/
+/evaluation/news-ranking/results/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
@@ -57,6 +64,7 @@ out/
 !docs/DESIGN.md
 !docs/
 !docs/**/*.md
+!evaluation/news-ranking/README.md
 .claude/
 .claude.json*
 claude*.json

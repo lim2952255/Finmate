@@ -43,7 +43,8 @@ public class TradingApiController {
         StockOrderPageInfo info = queryService.getOrderPageInfo(principal.getId(), stockId, investmentId);
         return new OrderPageResponse(info.getStock().getId(), info.getStock().getNameKo(), info.getStock().getSymbol(), info.getCurrencyCode().name(), info.getCurrencyCode().getFractionDigits(), info.getCurrencyCode().getInputStep().toPlainString(), info.getDefaultInvestmentId(),
                 info.getInvestments().stream().map(AccountInfo::from).toList(), info.getAccountSummaries(), info.getTradePrice() == null ? null : info.getTradePrice().toPlainString(), info.getBuyExecutablePrice() == null ? null : info.getBuyExecutablePrice().toPlainString(), info.getSellExecutablePrice() == null ? null : info.getSellExecutablePrice().toPlainString(),
-                List.of(info.getSides()), List.of(info.getOrderTypes()), List.of(info.getTriggerConditions()), info.isStockTradingAvailable(), info.getStockTradingTimeDescription());
+                List.of(info.getSides()), List.of(info.getOrderTypes()), List.of(info.getTriggerConditions()), info.isStockTradingAvailable(),
+                info.isRealtimePriceAvailable(), info.getStockTradingTimeDescription());
     }
 
     @PostMapping("/orders") public ResponseEntity<Void> order(@Valid @RequestBody StockOrderRequest request, @AuthenticationPrincipal FinMateAuthenticatedPrincipal principal) { commandService.submitOrder(principal.getId(), request); return ResponseEntity.noContent().build(); }
@@ -90,5 +91,5 @@ public class TradingApiController {
                     value.getCurrencyCode().name(), value.getExecutedAt().toString(), value.getInvestment().getId());
         }
     }
-    public record OrderPageResponse(Long stockId, String stockName, String symbol, String currency, int fractionDigits, String inputStep, Long defaultInvestmentId, List<AccountInfo> accounts, List<StockOrderAccountSummary> summaries, String tradePrice, String buyExecutablePrice, String sellExecutablePrice, List<StockOrderSide> sides, List<StockOrderType> orderTypes, List<StockOrderTriggerCondition> triggerConditions, boolean tradingAvailable, String tradingTimeDescription) {}
+    public record OrderPageResponse(Long stockId, String stockName, String symbol, String currency, int fractionDigits, String inputStep, Long defaultInvestmentId, List<AccountInfo> accounts, List<StockOrderAccountSummary> summaries, String tradePrice, String buyExecutablePrice, String sellExecutablePrice, List<StockOrderSide> sides, List<StockOrderType> orderTypes, List<StockOrderTriggerCondition> triggerConditions, boolean tradingAvailable, boolean realtimePriceAvailable, String tradingTimeDescription) {}
 }

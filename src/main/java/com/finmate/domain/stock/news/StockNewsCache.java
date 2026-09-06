@@ -1,8 +1,11 @@
 package com.finmate.domain.stock.news;
 
 import com.finmate.domain.stock.Stock;
+import com.finmate.service.news.NewsRankingType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -46,10 +49,12 @@ public class StockNewsCache {
 
     @Lob
     @Column(name = "response_json", nullable = false, columnDefinition = "LONGTEXT")
-    private String responseJson; // 네이버 뉴스 API의 응답 JSON문자열을 그대로 저장한다.(임시 캐시이기 때문에)
+    private String responseJson; // 선택된 단일 전략의 Top 10 뉴스 목록을 JSON으로 저장한다.
 
-    @Column(name = "ranking_policy_version", length = 30)
-    private String rankingPolicyVersion; // 랭킹 산정 방식을 저장할 버전
+    // 전략을 변경했을 때 이전 전략으로 만든 캐시가 자동으로 무효화되도록 타입을 함께 저장한다.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "ranking_type", length = 30)
+    private NewsRankingType rankingType;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -60,12 +65,12 @@ public class StockNewsCache {
     public static StockNewsCache create(Stock stock,
                                         String query,
                                         String responseJson,
-                                        String rankingPolicyVersion,
+                                        NewsRankingType rankingType,
                                         LocalDateTime refreshedAt) {
         validateRequired(stock, "종목 정보는 필수입니다.");
         StockNewsCache cache = new StockNewsCache();
         cache.stock = stock;
-        cache.refresh(query, responseJson, rankingPolicyVersion, refreshedAt);
+        cache.refresh(query, responseJson, rankingType, refreshedAt);
         cache.createdAt = refreshedAt;
         return cache;
     }
@@ -73,15 +78,15 @@ public class StockNewsCache {
     // 종목 기사정보를 update한다.
     public void refresh(String query,
                         String responseJson,
-                        String rankingPolicyVersion,
+                        NewsRankingType rankingType,
                         LocalDateTime refreshedAt) {
         validateRequired(query, "뉴스 검색어는 필수입니다.");
         validateRequired(responseJson, "뉴스 검색 결과는 필수입니다.");
-        validateRequired(rankingPolicyVersion, "뉴스 정렬 정책 버전은 필수입니다.");
+        validateRequired(rankingType, "뉴스 랭킹 전략은 필수입니다.");
         validateRequired(refreshedAt, "뉴스 갱신 시각은 필수입니다.");
         this.query = query;
         this.responseJson = responseJson;
-        this.rankingPolicyVersion = rankingPolicyVersion;
+        this.rankingType = rankingType;
         this.updatedAt = refreshedAt;
     }
 

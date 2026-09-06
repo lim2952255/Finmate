@@ -1,59 +1,94 @@
-# github Action을 기반으로 한 CI 설정
+# FinMate의 테스트와 운영 배포를 자동으로 수행하는 GitHub Actions workflow다.
+# GitHub는 .github/workflows 안의 YAML 파일을 읽어 자동화 작업으로 등록한다.
+#
+# 전체 실행 흐름과 실행 주체:
+#
+#   개발자 push/PR
+#        │
+#        ▼
+#   GitHub Actions Runner ── Frontend 검사 + Backend 테스트
+#        │                    (PR은 여기서 종료)
+#        ▼
+#   GitHub OIDC token ── AWS STS ── GitHub 배포 Role의 임시 자격증명
+#        │
+#        ├─ Docker image build ── ECR push
+#        │
+#        └─ SSM SendCommand ── EC2의 SSM Agent ── deploy-server.sh 실행
+#                                                    │
+#                                                    └─ EC2 Instance Role로 ECR pull
+#
+# 중요한 점은 GitHub와 EC2가 서로 다른 IAM Role을 사용한다는 것이다.
+# GitHub Role은 ECR push와 SSM 명령 전송에 사용하고,
+# EC2 Instance Role은 EC2 안에서 ECR image를 내려받는 데 사용한다.
 
-# github Actions의 workflow 이름
-# workflow는 Github가 자동으로 수행할 전체 작업 절차를 의미한다.
-# github는 .github/workflows 내의 yml파일을 읽어서 자동화 규칙으로 등록한다.
+# Actions 화면에 표시되는 workflow 이름이다.
 name: FinMate CI/CD
 
-# main 브랜치에 push하거나 PR시에 Github Actions가 workflow를 시작한다.
-# on은 workflow를 언제 시작할지 정하는 조건이다.
+# `on`은 이 workflow를 언제 실행할지 정한다.
 on:
+  # main 브랜치에 commit이 push되면 테스트 후 운영 배포까지 실행한다.
   push:
     branches:
       - main
+
+  # main 브랜치로 합치기 위한 PR에서는 테스트만 실행한다.
   pull_request:
     branches:
       - main
-  workflow_dispatch: # 수동 실행 설
 
-# github Actions의 workflow가 저장소에 대해기 읽기권한만 가지도록 설정한다.
+  # GitHub Actions 화면의 `Run workflow` 버튼으로 직접 실행할 수 있게 한다.
+  workflow_dispatch:
+
+# workflow 전체에 적용되는 기본 GitHub 권한이다.
+# 저장소 코드를 내려받을 수 있도록 contents 읽기만 허용하고 쓰기 권한은 주지 않는다.
 permissions:
   contents: read
 
-# PR의 이전 CI는 취소한다. main 배포는 SSM 명령이 Runner 취소 후에도 계속될 수 있으므로 순서대로 실행한다.
+# 같은 PR이나 branch에서 workflow가 여러 번 겹쳐 실행되는 상황을 제어한다.
+# group 값이 같은 실행들은 하나의 실행 그룹으로 취급된다.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+
+  # PR에 새 commit이 push되면 이전 테스트는 취소하고 최신 코드만 테스트한다.
+  # main 배포는 GitHub Runner가 취소돼도 이미 보낸 SSM 명령이 EC2에서 계속될 수 있으므로
+  # 실행 중인 배포를 취소하지 않고 순서대로 처리한다.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# github Actions의 workflow가 수행할 job을 지정
-# actions는 다른사람이 만들어 둔 재사용가능한 자동화 프로그램이다.
+# `jobs` 아래에는 서로 구분되는 작업 단위를 작성한다.
+# 이 workflow는 검증을 담당하는 test job과 실제 배포를 담당하는 deploy job으로 나뉜다.
 jobs:
+  # CI: 코드가 정상적으로 설치·검사·빌드·테스트되는지 확인한다.
   test:
-    # runner는 workflow 명령을 실제로 수행하는 컴퓨터를 의미한다.
-    # 즉 runner가 지정된 job들을 순차적으로 실행하는 방식이다.
-    # 1. Github가 Ubuntu Runner 준비, 2. Workflow의 Step 순차 실행, 3. 결과로그를 Github에 전달
     name: Test
-    runs-on: ubuntu-latest # job을 실행할 서버 설정
-    timeout-minutes: 15 # Test job이 최대 15분동안 실행될 수 있도록 설정한다.
 
-    # Test job에서 실행되는 작업들을 순차적으로 설정
+    # Runner는 job의 명령을 실행하는 임시 컴퓨터다.
+    # GitHub가 Ubuntu Runner를 준비하고 아래 steps를 위에서부터 순서대로 실행한 뒤 폐기한다.
+    runs-on: ubuntu-latest
+
+    # 문제가 생겨 작업이 멈춰 있어도 15분이 지나면 자동으로 실패 처리한다.
+    timeout-minutes: 15
+
+    # 하나의 job 안에서 step은 위에서 아래로 순서대로 실행된다.
     steps:
-      # 저장소 코드 내려받기 (Runner disk에 Finmate 코드를 내려받는다)
-      - name: Check out repository # GitHub의 임시 Ubuntu 서버에 Finmate 저장소 코드를 내려받는 단계야.
+      # 빈 Runner에는 프로젝트 파일이 없으므로 현재 commit의 저장소 코드를 내려받는다.
+      # `uses`는 공개된 재사용 Action을 실행한다는 뜻이다.
+      - name: Check out repository
         uses: actions/checkout@v6
 
-      # Java 17 설정
+      # Backend를 compile하고 test할 수 있도록 Temurin JDK 17을 설치한다.
       - name: Set up Java 17
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
 
-      # Gradle 설정
-      # Gradle은 Java 프로그램을 컴파일하고, 테스트하고, 패키징하는 과정을 관리하는 빌드 자동화 도구 (컴파일, 테스트, 패키징 관리)
-      - name: Set up Gradle # Gradle 실행 환경과 캐시를 설정
+      # Gradle은 Backend compile, test, JAR 생성을 담당한다.
+      # 이 Action은 Gradle 실행 환경을 준비하고 내려받은 dependency를 cache해 다음 실행을 빠르게 한다.
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      # Frontend dependency 설치와 build에 사용할 Node.js 22를 준비한다.
+      # package-lock.json을 기준으로 npm dependency cache도 사용한다.
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
@@ -61,6 +96,9 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
+      # 명령을 frontend 디렉터리에서 실행한다.
+      # npm ci는 package-lock.json에 고정된 버전을 설치하고,
+      # lint는 코드 규칙을 검사하며 build는 운영용 React 정적 파일을 생성한다.
       - name: Verify frontend
         working-directory: frontend
         run: |
@@ -68,51 +106,106 @@ jobs:
           npm run lint
           npm run build
 
-      # Runner에서 테스트 실행
-      - name: Run tests # 실제 테스트 코드들을 실행한다. (이 테스트 코드 내부에서 TestContainer 도커 컨테이너 생성 및 테스트 DB작업을 준비한다.) -> 우분투 서버에서 TestContianer를 도커에 연결한다.
+      # Gradle Wrapper로 Backend 전체 테스트를 실행한다.
+      # MySQL 통합 테스트는 Testcontainers가 Runner의 Docker를 이용해 임시 MySQL을 실행한다.
+      - name: Run tests
         run: ./gradlew test --no-daemon --console=plain
 
-      # 테스트 실패시 테스트 리포트를 작성
+      # 앞 단계가 실패한 경우에만 테스트 결과 파일을 GitHub artifact로 올린다.
+      # Actions 실행 화면에서 내려받아 어떤 테스트가 실패했는지 확인할 수 있다.
       - name: Upload test reports
-        if: failure() # 테스트가 실패한 경우에만 테스트 리포트를 작성한다.
-        uses: actions/upload-artifact@v6 # runner 안에 생성된 파일을 GitHub에 artifact로 보관하는 action
+        if: failure()
+        uses: actions/upload-artifact@v6
         with:
+          # 실행 번호를 붙여 다른 workflow 실행의 report와 이름이 겹치지 않게 한다.
           name: test-reports-${{ github.run_number }}
-          # 테스트 레포트를 업로드할 경로
+
+          # Runner에서 GitHub artifact로 업로드할 테스트 report 경로다.
           path: |
             build/test-results/test/
             build/reports/tests/test/
             build/reports/problems/
+          # 일부 report가 생성되지 않았더라도 artifact 단계 자체는 실패시키지 않는다.
           if-no-files-found: warn
-          retention-days: 14 # 레포트 보관기간
 
-  # CD
+          # 업로드한 report를 14일 동안 보관한다.
+          retention-days: 14
+
+  # CD: CI를 통과한 main 코드를 Docker image로 만들고 EC2 운영 서버에 배포한다.
   deploy:
     name: Build images and deploy
+
+    # pull_request 이벤트는 제외하고 main branch에서 실행된 경우만 배포한다.
+    # 따라서 PR을 열거나 수정했을 때는 test job만 실행되고 운영 서버는 바뀌지 않는다.
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    # test가 성공한 경우에만 CD를 수행한다.
+
+    # deploy는 test job에 의존한다. test가 실패하면 deploy는 시작되지 않는다.
     needs: test
+
+    # Docker build, ECR push와 AWS CLI 명령은 별도의 임시 Ubuntu Runner에서 실행한다.
     runs-on: ubuntu-latest
+
+    # 이미지 build나 EC2 배포가 비정상적으로 오래 걸리면 30분 뒤 실패 처리한다.
     timeout-minutes: 30
-    # github의 production에 설정되어 있는 환경변수들을 사용한다.
+
+    # GitHub의 production Environment에 등록한 Variables와 보호 규칙을 적용한다.
+    # 이 job이 Environment를 참조하면 OIDC token의 `sub` claim도 Environment 형식이 된다.
+    # 따라서 AWS Role 신뢰 정책은 예를 들어
+    # `repo:lim2952255/Finmate:environment:production`을 허용해야 한다.
+    # production Environment에 승인 규칙을 설정했다면 승인 전에는 이 job이 시작되지 않는다.
     environment: production
+
+    # deploy job에만 OIDC token 발급 요청 권한을 추가한다.
+    # contents: read는 checkout에, id-token: write는 GitHub OIDC token 발급에 필요하다.
+    # 이 권한 자체가 AWS 권한은 아니다. 발급된 token을 AWS STS에 제출하고,
+    # AWS Role의 신뢰 정책 검사를 통과해야 비로소 AWS 임시 자격증명을 받는다.
+    #
+    # OIDC 인증 흐름:
+    # 1. GitHub가 이 job에 짧게 유효한 서명된 OIDC token을 발급한다.
+    # 2. token에는 발급자(iss), 사용 대상(aud), 저장소/Environment 주체(sub) 등이 담긴다.
+    # 3. configure-aws-credentials Action이 token을 AWS STS에 제출한다.
+    # 4. STS가 IAM Role 신뢰 정책의 iss/aud/sub 조건과 token을 검증한다.
+    # 5. 성공하면 Access Key, Secret Key, Session Token으로 이루어진 임시 자격증명을 준다.
+    # 6. 이후 이 job의 AWS CLI와 ECR Action은 그 임시 자격증명을 자동으로 사용한다.
+    #
+    # 따라서 장기 Access Key를 GitHub Secret에 저장할 필요가 없다. 보안 경계는
+    # `id-token: write`의 job 범위, GitHub Environment 보호 규칙, AWS 신뢰 정책의
+    # 정확한 aud/sub 조건, 그리고 Role 권한 정책의 최소 권한으로 함께 만든다.
 
     permissions:
       contents: read
+      # GitHub OIDC token을 발급해 달라고 요청할 수 있는 권한이다.
       id-token: write
 
+    # `${{ vars.NAME }}`은 GitHub의 production Environment → Variables에 등록한 값을 읽는 문법이다.
+    # 이 값들은 비밀번호가 아니라 배포 대상 AWS 계정과 resource를 알려주는 식별 정보다.
     env:
+      # AWS 계정이 잘못 선택되는 것을 막기 위한 12자리 계정 ID다.
       AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+
+      # ECR repository와 EC2가 있는 AWS region이다.
       AWS_REGION: ${{ vars.AWS_REGION }}
+
+      # GitHub OIDC로 빌릴 FinMateGitHubCicdRole의 ARN이다.
       AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+
+      # SSM 명령을 실행할 운영 EC2의 instance ID다.
       EC2_INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+
+      # Backend image를 push할 ECR repository 이름이다.
       ECR_BACKEND_REPOSITORY: ${{ vars.ECR_BACKEND_REPOSITORY }}
+
+      # React+Nginx image를 push할 ECR repository 이름이다. 현재 값은 finmate-nginx를 사용한다.
       ECR_FRONTEND_REPOSITORY: ${{ vars.ECR_FRONTEND_REPOSITORY }}
 
     steps:
+      # Docker image build와 SSM 전송에 필요한 현재 commit의 파일을 Runner로 내려받는다.
       - name: Check out repository
         uses: actions/checkout@v6
 
+      # AWS 인증을 시도하기 전에 production Variable이 모두 입력됐는지 검사한다.
+      # `${!name}`은 name 변수 안에 적힌 이름의 환경변수 값을 다시 읽는 Bash 문법이다.
+      # 예를 들어 name이 AWS_REGION이면 `${!name}`은 실제 AWS_REGION 값을 반환한다.
       - name: Validate deployment variables
         shell: bash
         run: |
@@ -126,73 +219,158 @@ jobs:
             ECR_FRONTEND_REPOSITORY
           do
             if [ -z "${!name:-}" ]; then
+              # 하나라도 비어 있으면 어떤 설정이 빠졌는지 출력하고 즉시 중단한다.
               echo "GitHub production environment variable is missing: ${name}" >&2
               exit 1
             fi
           done
 
+      # configure-aws-credentials가 OIDC token 발급 요청, STS Role 교환,
+      # 반환된 임시 자격증명의 환경변수 설정까지 처리한다.
+      # Role의 신뢰 정책은 "누가 이 Role을 빌릴 수 있는가"를 정하고,
+      # Role의 권한 정책은 "빌린 뒤 어떤 AWS API를 호출할 수 있는가"를 정한다.
       - name: Configure AWS credentials with GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6.2.3
         with:
+          # GitHub가 빌릴 AWS IAM Role이다.
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          # 이후 AWS CLI가 요청을 보낼 기본 region이다.
           aws-region: ${{ env.AWS_REGION }}
+          # 다른 AWS 계정의 Role이 실수로 선택되면 인증을 실패시킨다.
           allowed-account-ids: ${{ env.AWS_ACCOUNT_ID }}
+          # CloudTrail 등에서 이번 GitHub Actions 실행을 구분할 session 이름이다.
           role-session-name: finmate-${{ github.run_id }}
 
+      # AWS가 인식한 account와 Role 정보를 출력해 OIDC 인증 결과를 확인한다.
+      # 호출자 account ID와 assumed-role ARN을 보여 주며 비밀키는 출력하지 않는다.
       - name: Verify assumed AWS identity
         shell: bash
         run: aws sts get-caller-identity
 
+      # 임시 AWS 자격증명으로 Docker를 private ECR registry에 로그인시킨다.
+      # 이 단계가 반환하는 registry 주소를 다음 image build 단계에서 사용한다.
       - name: Log in to Amazon ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2.1.6
 
+      # Backend와 React+Nginx image를 현재 commit의 source로 각각 build하고 ECR에 push한다.
+      # image tag에는 움직이는 `latest` 대신 `sha-<Git commit ID>`를 사용한다.
+      # `github.sha`는 현재 workflow가 검사한 Git commit을 식별하는 해시값이다.
+      # 이 값으로 image가 어느 commit에서 만들어졌는지 추적할 수 있다.
+      #
+      # 주의: Git commit SHA 태그와 Docker image digest(sha256:...)는 서로 다르다.
+      # - tag: 사람이 붙이는 image 이름이며 이 workflow에서는 source commit을 나타낸다.
+      # - digest: registry가 image 내용으로 계산하는 불변 content hash다.
+      # ECR repository의 tag immutability 설정이 꺼져 있으면 같은 tag를 다시 push할 수도
+      # 있으므로, 이름 그대로의 불변성을 강제하려면 ECR에서도 tag immutability가 필요하다.
       - name: Build and push immutable images
+        id: images
         shell: bash
         env:
+          # 바로 앞 ECR login Action이 알려준 registry 주소다.
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          # github.sha는 workflow를 실행한 commit의 전체 SHA 값이다.
           IMAGE_TAG: sha-${{ github.sha }}
         run: |
+          # 명령 실패, 미정의 변수와 pipe 중간 실패를 무시하지 않고 즉시 종료한다.
           set -euo pipefail
 
+          # ECR registry/repository:tag 형태의 전체 image URI를 만든다.
           backend_image="${ECR_REGISTRY}/${ECR_BACKEND_REPOSITORY}:${IMAGE_TAG}"
           frontend_image="${ECR_REGISTRY}/${ECR_FRONTEND_REPOSITORY}:${IMAGE_TAG}"
 
+          # Backend는 루트 Dockerfile.server, Frontend는 frontend/Dockerfile.server로 build한다.
           docker build --file Dockerfile.server --tag "${backend_image}" .
           docker build --file frontend/Dockerfile.server --tag "${frontend_image}" frontend
 
+          # 완성된 image를 각각의 private ECR repository에 업로드한다.
           docker push "${backend_image}"
           docker push "${frontend_image}"
 
+          # `$GITHUB_OUTPUT`에 기록하면 현재 step의 output이 된다.
+          # 다음 SSM step은 `steps.images.outputs.*` 문법으로 두 URI를 전달받는다.
           echo "backend_image=${backend_image}" >> "$GITHUB_OUTPUT"
           echo "frontend_image=${frontend_image}" >> "$GITHUB_OUTPUT"
-        id: images
 
+      # GitHub Runner는 SSH key를 사용해 EC2에 직접 접속하지 않는다.
+      # 대신 GitHub IAM Role로 AWS SSM에 명령을 보내고, EC2의 SSM Agent가 명령을 받아 실행한다.
+      # EC2가 ECR에서 image를 pull할 때는 GitHub Role이 아니라 EC2 Instance Role을 사용한다.
+      # Systems Manager는 EC2마다 새로 생기는 서비스가 아니라 AWS의 관리형 서비스다.
+      # Run Command 실행 기록과 managed node 상태는 계정·region 범위에서 다뤄지고,
+      # 각 EC2에는 중앙 서비스와 통신하는 SSM Agent가 하나씩 실행된다.
+      # 즉 이 단계는 선택한 EC2 instance ID를 대상으로 명령을 등록하고,
+      # 해당 EC2의 Agent가 명령을 받아 로컬 shell에서 실행하게 한다.
       - name: Deploy through AWS Systems Manager
         shell: bash
         env:
+          # 앞 image build step이 ECR에 push한 정확한 SHA image URI다.
           BACKEND_IMAGE: ${{ steps.images.outputs.backend_image }}
           FRONTEND_IMAGE: ${{ steps.images.outputs.frontend_image }}
         run: |
+          # 원격 명령 생성이나 AWS CLI 호출 중 하나라도 실패하면 배포 step을 즉시 중단한다.
           set -euo pipefail
 
+          # EC2는 Git 저장소를 clone하지 않는다.
+          # Runner에 있는 Compose 파일과 배포 script 내용을 base64 문자열로 바꿔 SSM 명령에 담는다.
+          # base64는 암호화가 아니라 파일 내용을 한 줄 문자열로 안전하게 전달하기 위한 변환이다.
           compose_base64="$(base64 -w 0 docker-compose.server.yml)"
           deploy_base64="$(base64 -w 0 scripts/deploy-server.sh)"
 
+          # 아래 문자열 전체가 SSM Agent를 통해 EC2에서 실행된다.
+          # 처리 순서:
+          # 1. /opt/finmate 배포 디렉터리를 준비한다.
+          # 2. base64 문자열을 원래 Compose와 shell script 파일로 되돌린다.
+          # 3. `.next` 임시 파일이 완성된 뒤 실제 파일 위치에 설치한다.
+          # 4. 임시 파일을 지우고 새 ECR image URI를 전달해 배포 script를 실행한다.
+          #
+          # 기존 /opt/finmate/.env는 GitHub에서 전송하거나 통째로 덮어쓰지 않는다.
+          # deploy-server.sh가 기존 값을 보존하면서 ECR image URI 두 개만 추가하거나 교체한다.
+          # remote_command에는 아래 heredoc 전체가 여러 줄 문자열로 저장된다.
+          # 아직 GitHub Runner에서 실행되는 것이 아니라 SSM으로 보낼 payload를 만드는 단계다.
           remote_command="$(cat <<EOF
           set -euo pipefail
+
+          # 디렉터리가 없으면 만들고, 이미 있으면 그대로 사용한다.
           install -d -m 0755 /opt/finmate
+
+          # GitHub에서 전달한 문자열을 원래 파일 내용으로 복원한다.
           printf '%s' '${compose_base64}' | base64 -d > /opt/finmate/docker-compose.server.yml.next
           printf '%s' '${deploy_base64}' | base64 -d > /opt/finmate/deploy-server.sh.next
+
+          # 완성된 임시 파일을 실제 경로에 설치한다.
+          # Compose는 일반 읽기 파일(0644), 배포 script는 실행 가능 파일(0755)로 설정한다.
           install -m 0644 /opt/finmate/docker-compose.server.yml.next /opt/finmate/docker-compose.server.yml
           install -m 0755 /opt/finmate/deploy-server.sh.next /opt/finmate/deploy-server.sh
+
+          # 설치가 끝난 임시 파일은 더 이상 필요하지 않으므로 삭제한다.
           rm -f /opt/finmate/docker-compose.server.yml.next /opt/finmate/deploy-server.sh.next
+
+          # EC2 배포 script에 region과 새 Backend/Frontend image URI를 전달한다.
           /opt/finmate/deploy-server.sh '${AWS_REGION}' '${BACKEND_IMAGE}' '${FRONTEND_IMAGE}'
           EOF
           )"
 
+          # remote_command에는 줄바꿈과 따옴표가 있으므로 직접 JSON 문자열을 조립하지 않는다.
+          # jq가 JSON escape를 처리해 AWS-RunShellScript가 요구하는 다음 구조로 만든다.
+          #   {"commands": ["EC2에서 실행할 여러 줄 shell 명령"]}
+          #
+          # `>`는 jq의 출력을 Runner의 ssm-parameters.json에 저장한다는 뜻이다.
+          # 이 파일은 repository나 EC2에 미리 존재하는 파일이 아니다. 이 job의 임시
+          # Runner에서 실행 중에만 생성되며 job이 끝나 Runner가 폐기되면 함께 사라진다.
           jq -n --arg command "${remote_command}" '{commands: [$command]}' > ssm-parameters.json
 
+          # AWS-RunShellScript는 Linux 서버에서 shell 명령을 실행하는 AWS 제공 SSM 문서다.
+          # send-command는 명령 실행이 끝날 때까지 기다리지 않고 접수된 Command ID를 즉시 반환한다.
+          # `file://`은 AWS CLI에게 로컬 파일 내용을 parameters 값으로 읽으라는 표기다.
+          # SSM에 같은 이름의 파일을 영구 저장하거나 EC2가 그 파일을 직접 읽는다는 뜻이 아니다.
+          #
+          # 각 option의 의미:
+          # - document-name: commands 배열을 Linux shell에서 실행하는 AWS 제공 실행 절차
+          # - instance-ids: 계정·region 안의 managed node 중 실제 실행할 EC2 선택
+          # - comment: AWS 콘솔/실행 기록에서 배포 commit을 알아보기 위한 설명
+          # - timeout-seconds: EC2에서 command 실행을 허용하는 최대 시간
+          # - parameters: 방금 Runner에서 만든 JSON을 요청 payload로 읽음
+          # - query/output: 전체 응답 중 추후 상태 조회에 필요한 Command ID만 추출
           command_id="$(aws ssm send-command \
             --document-name AWS-RunShellScript \
             --instance-ids "${EC2_INSTANCE_ID}" \
@@ -202,6 +380,9 @@ jobs:
             --query 'Command.CommandId' \
             --output text)"
 
+          # 방금 받은 Command ID로 EC2의 실제 실행 상태를 10초마다 확인한다.
+          # Pending/InProgress라면 계속 기다리고 최종 상태가 되면 반복을 끝낸다.
+          # 최대 120회이므로 GitHub Runner는 약 20분까지 SSM 실행 결과를 기다린다.
           status=Pending
           for _ in $(seq 1 120); do
             status="$(aws ssm get-command-invocation \
@@ -210,6 +391,7 @@ jobs:
               --query 'Status' \
               --output text 2>/dev/null || true)"
 
+            # 아래 값들은 더 기다려도 실행 중 상태로 돌아가지 않는 최종 상태다.
             case "${status}" in
               Success|Cancelled|Failed|TimedOut|Cancelling)
                 break
@@ -219,11 +401,15 @@ jobs:
             sleep 10
           done
 
+          # EC2의 application log에는 운영 설정이나 외부 API 응답이 포함될 수 있다.
+          # 민감한 내용이 GitHub Actions log에 노출되지 않도록 SSM의 최종 상태만 출력한다.
           aws ssm get-command-invocation \
             --command-id "${command_id}" \
             --instance-id "${EC2_INSTANCE_ID}" \
-            --query '{Status:Status,StandardOutput:StandardOutputContent,StandardError:StandardErrorContent}'
+            --query '{Status:Status}'
 
+          # 최종 상태가 Success가 아니라면 exit 1로 GitHub Actions의 deploy job도 실패 처리한다.
+          # 상세 원인은 AWS Systems Manager의 Run Command 실행 기록에서 확인한다.
           if [ "${status}" != Success ]; then
             echo "SSM deployment did not succeed: ${status}" >&2
             exit 1

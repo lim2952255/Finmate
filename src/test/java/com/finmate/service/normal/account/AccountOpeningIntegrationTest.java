@@ -34,35 +34,37 @@ class AccountOpeningIntegrationTest extends FinancialIntegrationTestSupport {
     private AccountNumberRegistryRepository registryRepository;
 
     @Test
-    @DisplayName("ACC-001: 일반계좌는 사용자당 열 번째까지 개설할 수 있다")
-    void acc001_tenthAccountIsAllowed() {
+    @DisplayName("ACC-001: 일반계좌는 사용자당 세 번째까지 개설할 수 있다")
+    void acc001_thirdAccountIsAllowed() {
         User user = persistUser("account-owner");
-        // 일반 계좌 9개 개설
-        for (int i = 0; i < 9; i++) {
-            persistAccount(user, accountNumber(i), BankCode.KB_KOOKMIN, CurrencyCode.KRW);
-        }
+        // 실제 개설 경로를 통해 첫 계좌의 대표 지정과 추가 개설 시 대표 유지도 확인한다.
+        Long firstId = accountService.openAccount(openAccount(), user);
+        assertThat(accountRepository.findById(firstId).orElseThrow().isPrimary()).isTrue();
+        Long secondId = accountService.openAccount(openAccount(), user);
 
-        // 10번째 계좌 개설 (사용자당 총 10개의 일반계좌만 개설할 수 있다)
-        accountService.openAccount(openAccount(), user);
+        // 3번째 계좌 개설 (사용자당 총 3개의 일반계좌만 개설할 수 있다)
+        Long thirdId = accountService.openAccount(openAccount(), user);
 
-        assertThat(accountRepository.countByUser_Id(user.getId())).isEqualTo(10);
-        // persistAccount는 RegistryRepository에 게좌번호를 등록하지 않기 때문에 마지막 계좌 1개의 계좌번호만 등록된다.
-        assertThat(registryRepository.count()).isEqualTo(1);
+        assertThat(accountRepository.countByUser_Id(user.getId())).isEqualTo(3);
+        assertThat(accountRepository.findById(firstId).orElseThrow().isPrimary()).isTrue();
+        assertThat(accountRepository.findById(secondId).orElseThrow().isPrimary()).isFalse();
+        assertThat(accountRepository.findById(thirdId).orElseThrow().isPrimary()).isFalse();
+        assertThat(registryRepository.count()).isEqualTo(3);
     }
 
     @Test
-    @DisplayName("ACC-001: 열한 번째 일반계좌는 계좌번호를 발급하지 않고 거부한다")
-    void acc001_eleventhAccountIsRejectedWithoutIssuingNumber() {
+    @DisplayName("ACC-001: 네 번째 일반계좌는 계좌번호를 발급하지 않고 거부한다")
+    void acc001_fourthAccountIsRejectedWithoutIssuingNumber() {
         User user = persistUser("account-owner");
-        // 총 10개의 일반 계좌 개설
-        for (int i = 0; i < 10; i++) {
+        // 총 3개의 일반 계좌 개설
+        for (int i = 0; i < 3; i++) {
             persistAccount(user, accountNumber(i), BankCode.KB_KOOKMIN, CurrencyCode.KRW);
         }
-        // 각 사용자는 총 10개의 일반계좌만 개설할 수 있기때문에, 11번째 계좌를 개설하려고 하면 예외가 발생한다.
+        // 각 사용자는 총 3개의 일반계좌만 개설할 수 있기때문에, 4번째 계좌를 개설하려고 하면 예외가 발생한다.
         assertThatThrownBy(() -> accountService.openAccount(openAccount(), user))
-                .hasMessage("계좌는 최대 10개까지만 개설할 수 있습니다.");
+                .hasMessage("계좌는 최대 3개까지만 개설할 수 있습니다.");
 
-        assertThat(accountRepository.countByUser_Id(user.getId())).isEqualTo(10);
+        assertThat(accountRepository.countByUser_Id(user.getId())).isEqualTo(3);
         assertThat(registryRepository.count()).isZero();
     }
 

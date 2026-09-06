@@ -24,6 +24,7 @@ import com.finmate.service.market.MarketDataService;
 import com.finmate.service.market.MarketRealtimeQuoteService;
 import com.finmate.service.stock.StockDetailService;
 import com.finmate.service.stock.trading.StockTradingQueryService;
+import com.finmate.service.stock.trading.StockTradingRealtimePriceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -41,6 +42,7 @@ import java.time.ZonedDateTime;
 public class InvestmentReadApiController {
     private final StockTradingQueryService tradingQueryService;
     private final StockDetailService stockDetailService;
+    private final StockTradingRealtimePriceService stockTradingRealtimePriceService;
     private final MarketDataService marketDataService;
     private final MarketRealtimeQuoteService marketRealtimeQuoteService;
 
@@ -74,6 +76,12 @@ public class InvestmentReadApiController {
                 info.getSelectedInvestment() == null ? null : info.getSelectedInvestment().getId(), info.isAllAccounts(),
                 info.getCurrencies().stream().map(CurrencyResponse::from).toList(),
                 info.getIndustryAllocations().stream().map(IndustryAllocationResponse::from).toList(),
+                Arrays.stream(CurrencyCode.values())
+                        .filter(currency -> info.getTotalCashBalancesByCurrency()
+                                .getOrDefault(currency, java.math.BigDecimal.ZERO).signum() > 0)
+                        .map(currency -> new CashBalanceResponse(currency.name(),
+                                info.getTotalCashBalancesByCurrency().get(currency).toPlainString()))
+                        .toList(),
                 exchangeRate,
                 info.getHoldings().stream().map(holding -> HoldingResponse.from(holding, info)).toList());
     }
@@ -103,7 +111,10 @@ public class InvestmentReadApiController {
                         .toList(),
                 info.getChartCandles(), info.getMetadataDisplayInfo(), info.getDomesticDetailInfo(),
                 marketSessions(stock),
-                info.isStockTradingAvailable(), info.getStockTradingTimeDescription());
+                info.isStockTradingAvailable(),
+                // 실시간 체결가를 아직 받지 못한 화면에서는 주문 진입을 막을 수 있도록 별도 상태를 전달한다.
+                stockTradingRealtimePriceService.findCurrentTradePrice(stock).isPresent(),
+                info.getStockTradingTimeDescription());
     }
 
     @GetMapping("/market")
@@ -127,6 +138,7 @@ public class InvestmentReadApiController {
     public record PortfolioResponse(List<AccountResponse> accounts, Long selectedInvestmentId, boolean allAccounts,
                                     List<CurrencyResponse> currencies,
                                     List<IndustryAllocationResponse> industryAllocations,
+                                    List<CashBalanceResponse> cashBalances,
                                     ExchangeRateResponse usdKrwExchangeRate,
                                     List<HoldingResponse> holdings) {}
     public record CurrencyResponse(String code, String displayName, int fractionDigits) {
@@ -141,6 +153,7 @@ public class InvestmentReadApiController {
                     value.purchaseAmount().toPlainString(), value.percentage().toPlainString());
         }
     }
+    public record CashBalanceResponse(String currency, String totalBalance) {}
     public record ExchangeRateResponse(String price, String receivedAt) {}
     public record HoldingResponse(Long id, Long investmentId, String securitiesCompany, String accountNumber,
                                   Long stockId, String stockName, String symbol, String market, String currency,
@@ -174,7 +187,8 @@ public class InvestmentReadApiController {
                                       StockMetadataDisplayInfo metadataDisplayInfo,
                                       DomesticStockDetailInfo domesticDetailInfo,
                                       List<MarketSessionResponse> marketSessions,
-                                      boolean tradingAvailable, String tradingTimeDescription) {}
+                                      boolean tradingAvailable, boolean realtimePriceAvailable,
+                                      String tradingTimeDescription) {}
     public record MarketSessionResponse(String market, boolean open, String status) {}
     public record MarketResponse(String indicator, String displayName, String nameKo, String description,
                                  String unit, int fractionDigits, String realtimeMode, int savedDailyPriceCount,

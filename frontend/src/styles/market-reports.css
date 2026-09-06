@@ -295,7 +295,8 @@
 
 .market-keyword-area {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
+    justify-content: space-between;
     gap: 14px;
     margin-top: 23px;
     padding: 14px 16px;
@@ -303,7 +304,14 @@
     background: var(--topic-soft);
 }
 
-.market-keyword-area > span {
+.market-keyword-group {
+    display: flex;
+    min-width: 0;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.market-keyword-title {
     flex: 0 0 auto;
     padding-top: 4px;
     color: var(--topic-accent);
@@ -325,6 +333,43 @@
     color: #526078;
     font-size: 10px;
     font-weight: 700;
+}
+
+.market-sentiment-summary {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 8px;
+}
+
+.market-sentiment-count {
+    padding: 8px 12px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: #ffffff;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.market-sentiment-count strong {
+    font-size: 14px;
+    font-weight: 950;
+}
+
+.market-sentiment-count--positive {
+    border-color: #fecdd3;
+    color: #e11d48;
+}
+
+.market-sentiment-count--neutral {
+    border-color: #cbd5e1;
+    color: #475569;
+}
+
+.market-sentiment-count--negative {
+    border-color: #bfdbfe;
+    color: #2563eb;
 }
 
 /* API 요청의 로딩, 오류, 빈 목록 상태에서 사용할 공통 안내 화면을 설정한다. */
@@ -451,6 +496,42 @@
     font-weight: 900;
 }
 
+.market-report-card-labels {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 7px;
+}
+
+.market-report-sentiment {
+    min-width: 54px;
+    padding: 8px 13px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 950;
+    line-height: 1;
+    text-align: center;
+}
+
+.market-report-sentiment--positive {
+    border-color: #fecdd3;
+    background: #fff1f2;
+    color: #e11d48;
+}
+
+.market-report-sentiment--neutral {
+    border-color: #cbd5e1;
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.market-report-sentiment--negative {
+    border-color: #bfdbfe;
+    background: #eff6ff;
+    color: #2563eb;
+}
+
 .market-report-card h3 {
     display: -webkit-box;
     overflow: hidden;
@@ -574,7 +655,17 @@
 
     .market-keyword-area {
         flex-direction: column;
+        align-items: stretch;
         gap: 8px;
+    }
+
+    .market-keyword-group {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .market-sentiment-summary {
+        flex-wrap: wrap;
     }
 
     .market-report-news {
