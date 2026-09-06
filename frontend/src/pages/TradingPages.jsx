@@ -15,6 +15,10 @@ const formatDecimal = (value, maximumFractionDigits = 6) => value == null ? "-" 
 const formatOrderPrice = (value, currency) => value == null || value === ""
   ? "-"
   : `${formatDecimal(value, 2)}${currency ? ` ${currency}` : ""}`;
+const positiveRealtimePrice = (value) => {
+  const price = Number(value);
+  return Number.isFinite(price) && price > 0 ? String(value) : null;
+};
 
 export function TradingHistoryPage() {
   useDocumentTitle("주문·체결 내역 | FinMate");
@@ -109,6 +113,51 @@ export function OrderPage() {
     return () => controller.abort();
   }, [selectedId, stockId]);
 
+  useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const socket = new WebSocket(`${protocol}://${window.location.host}/ws/stocks`);
+    socket.addEventListener("open", () => socket.send(JSON.stringify({ type: "SUBSCRIBE_ORDER_STOCK", stockId: Number(stockId) })));
+    socket.addEventListener("message", (event) => {
+      const message = JSON.parse(event.data);
+      if (Number(message.stockId) !== Number(stockId)) return;
+
+      if (message.type === "STOCK_TRADE") {
+        setData((current) => {
+          if (!current) return current;
+          const tradePrice = positiveRealtimePrice(message.currentPrice) ?? current.tradePrice;
+          const buyExecutablePrice = positiveRealtimePrice(message.bestAskPrice) ?? current.buyExecutablePrice ?? tradePrice;
+          const sellExecutablePrice = positiveRealtimePrice(message.bestBidPrice) ?? current.sellExecutablePrice ?? tradePrice;
+          return {
+            ...current,
+            tradePrice,
+            buyExecutablePrice,
+            sellExecutablePrice,
+            // 체결가와 양방향 주문 기준가가 모두 준비되면 주문 버튼을 즉시 활성화한다.
+            realtimePriceAvailable: Boolean(tradePrice && buyExecutablePrice && sellExecutablePrice)
+          };
+        });
+      }
+
+      if (message.type === "STOCK_ORDERBOOK") {
+        setData((current) => {
+          if (!current) return current;
+          const buyExecutablePrice = positiveRealtimePrice(message.askLevels?.[0]?.price) ?? current.buyExecutablePrice;
+          const sellExecutablePrice = positiveRealtimePrice(message.bidLevels?.[0]?.price) ?? current.sellExecutablePrice;
+          return {
+            ...current,
+            buyExecutablePrice,
+            sellExecutablePrice,
+            realtimePriceAvailable: Boolean(current.tradePrice && buyExecutablePrice && sellExecutablePrice)
+          };
+        });
+      }
+    });
+    return () => {
+      if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: "UNSUBSCRIBE_ORDER_STOCK", stockId: Number(stockId) }));
+      socket.close();
+    };
+  }, [stockId]);
+
   const submit = async (event, reservation) => {
     event.preventDefault();
     const form = Object.fromEntries(new FormData(event.currentTarget));
@@ -128,6 +177,9 @@ export function OrderPage() {
     }
   };
 
+  // 일반 주문은 거래 시간과 실시간 시세가 모두 준비된 경우에만 접수할 수 있다.
+  const orderSubmissionAvailable = Boolean(data?.tradingAvailable && data?.realtimePriceAvailable);
+
   return (
     <div className="page">
       <Header />
@@ -140,16 +192,17 @@ export function OrderPage() {
               <span className="eyebrow">STOCK ORDER</span>
               <div className="order-title-row">
                 <div><h1>{data.stockName} 주문</h1><p className="order-symbol">{data.symbol}{data.currency ? ` · ${data.currency}` : ""}</p></div>
-                <span className={`order-market-status ${data.tradingAvailable ? "open" : "closed"}`}>{data.tradingAvailable ? "거래 가능" : "거래 시간 아님"}</span>
+                <span className={`order-market-status ${orderSubmissionAvailable ? "open" : "closed"}`}>{!data.tradingAvailable ? "예약 주문 가능" : data.realtimePriceAvailable ? "거래 가능" : "시세 수신 대기"}</span>
               </div>
               <div className="order-quote-grid" aria-label="주문 기준 시세">
                 <div className="order-quote-card current"><span>현재가</span><strong>{formatOrderPrice(data.tradePrice, data.currency)}</strong></div>
                 <div className="order-quote-card buy"><span>매수 기준가</span><strong>{formatOrderPrice(data.buyExecutablePrice, data.currency)}</strong></div>
                 <div className="order-quote-card sell"><span>매도 기준가</span><strong>{formatOrderPrice(data.sellExecutablePrice, data.currency)}</strong></div>
               </div>
+              {!data.realtimePriceAvailable && <p className="order-quote-unavailable" role="status">실시간 주가정보가 수신되지 않아 일반 주문은 사용할 수 없습니다. 예약 주문은 등록할 수 있습니다.</p>}
               <TradingHours description={data.tradingTimeDescription} />
             </div>
-            <div className="order-form-grid"><OrderForm data={data} onSubmit={(event) => submit(event, false)} /><OrderForm data={data} reservation onSubmit={(event) => submit(event, true)} /></div>
+            <div className="order-form-grid"><OrderForm data={data} submissionAvailable={orderSubmissionAvailable} onSubmit={(event) => submit(event, false)} /><OrderForm data={data} reservation submissionAvailable onSubmit={(event) => submit(event, true)} /></div>
           </>}
         </section>
       </main>
@@ -175,7 +228,7 @@ function TradingHours({ description }) {
   );
 }
 
-function OrderForm({ data, reservation, onSubmit }) {
+function OrderForm({ data, reservation, submissionAvailable, onSubmit }) {
   const [investmentId, setInvestmentId] = useState(String(data.defaultInvestmentId ?? data.accounts?.[0]?.id ?? ""));
   const [side, setSide] = useState(data.sides?.[0] || "BUY");
   const [orderType, setOrderType] = useState(data.orderTypes?.[0] || "MARKET");
@@ -211,7 +264,7 @@ function OrderForm({ data, reservation, onSubmit }) {
       </label>
       {reservation && <><label>실행조건<select name="triggerCondition">{(data.triggerConditions || ["PRICE_AT_OR_BELOW", "PRICE_AT_OR_ABOVE"]).map((value) => <option key={value} value={value}>{conditionLabels[value] || value}</option>)}</select></label><label>조건가격<input name="triggerPrice" type="number" min="0" step={data.inputStep || "0.01"} required /></label></>}
       <label>만료시각<input name="expiresAt" type="datetime-local" disabled={!reservation && marketOrder} required={reservation || !marketOrder} /></label>
-      <button disabled={!data.tradingAvailable && !reservation}>{reservation ? "예약 등록" : "주문 접수"}</button>
+      <button disabled={!submissionAvailable}>{reservation ? "예약 등록" : "주문 접수"}</button>
     </form>
   );
 }

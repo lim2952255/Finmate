@@ -21,6 +21,17 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // 지급 이력을 계좌와 분리해 보관하여 계좌 삭제·재개설로 시작 자금을 다시 받지 못하게 한다.
+    // 일반 setter를 막고 지급 완료로만 변경한다. 기존 사용자의 과거 지급 여부는 개설 서비스에서 보완한다.
+    @Setter(lombok.AccessLevel.NONE)
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean simulationFundingGranted;
+
+    // 실제 지급 또는 기존 원화 계좌의 과거 지급 확인 후 호출한다.
+    public void markSimulationFundingGranted() {
+        this.simulationFundingGranted = true;
+    }
+
     // 사용자정보가 사라진다고 계좌가 사라지면 안되기 때문에 Cascade + OrphanRemoval 설정 x
     // 또한 성능 + N+1 문제 방지를 위해 연관관계는 항상 지연로딩으로 설정하고, 꼭 필요한 경우에만 fetch join을 통해 즉시 로딩해야 한다.
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)

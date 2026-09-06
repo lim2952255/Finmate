@@ -27,6 +27,9 @@ SPRING_DATASOURCE_PASSWORD=change-me
 
 REDIS_PASSWORD=change-me
 
+# OAuth 로그인 성공·실패 후 복귀할 React 주소
+FINMATE_FRONTEND_BASE_URL=http://localhost:5173
+
 KIS_BASE_URL=https://openapi.koreainvestment.com:9443
 KIS_APP_KEY=change-me
 KIS_APP_SECRET=change-me
@@ -54,6 +57,18 @@ NAVER_CLIENT_SECRET=change-me
 NAVER_API_HUB_CLIENT_ID=change-me
 NAVER_API_HUB_CLIENT_SECRET=change-me
 NAVER_NEWS_CACHE_TTL_HOURS=6
+
+# 종목 뉴스와 시장 리포트에서 KEYWORD, TF_IDF, KOREAN_TF_IDF, EMBEDDING 중 사용할 전략
+NEWS_RANKING_STRATEGY=KOREAN_TF_IDF
+# EMBEDDING 전략에서 사용할 로컬 모델 경로
+NEWS_EMBEDDING_MODEL_PATH=models/multilingual-e5-small/model.onnx
+NEWS_EMBEDDING_TOKENIZER_PATH=models/multilingual-e5-small/tokenizer.json
+
+# 최종 종목 뉴스의 호재·보통·악재 판정 모델
+NEWS_SENTIMENT_MODEL_PATH=models/kr-finbert-sentiment/model.onnx
+NEWS_SENTIMENT_TOKENIZER_PATH=models/kr-finbert-sentiment/tokenizer.json
+NEWS_SENTIMENT_MAX_TOKEN_LENGTH=256
+NEWS_SENTIMENT_DIRECTIONAL_THRESHOLD=0.65
 ```
 
 현재 `.env`에 추가 KIS 운영·모의 계좌 관련 이름이 존재할 수 있으나 `application.properties`와 `KisProperties`가 직접 읽는 것은 위 공통 키들이다. `KIS_ACCESS_TOKEN`도 현재 코드에서 직접 주입하지 않는다.
@@ -63,6 +78,12 @@ Google 로그인을 사용하지 않으면 `GOOGLE_OAUTH_ENABLED`를 생략하�
 ```text
 http://localhost:5173/login/oauth2/code/google
 ```
+
+OAuth 성공·실패 후 이동 주소는 `FINMATE_FRONTEND_BASE_URL`에서 결정한다. 운영에서는
+이 값을 실제 HTTPS 서비스 base URL로 설정해야 한다.
+React 로그인 화면은 OAuth를 시작하기 전에 사용자가 보던 내부 경로를 HTTP session에 저장한다.
+인증 성공 후에는 이 경로를 한 번 사용해 복귀하고 세션에서 제거한다. `/`로 시작하지 않거나
+`//`로 시작하는 외부 주소 형식은 저장하지 않고 `/home`으로 대체한다.
 
 배포 환경에서는 `{서비스 base URL}/login/oauth2/code/google`을 별도로 등록한다. Client ID와 Client Secret은 `.env` 또는 운영 비밀 저장소로만 주입하고 저장소에 커밋하지 않는다.
 
@@ -86,12 +107,92 @@ http://localhost:5173/login/oauth2/code/naver
 Client Secret을 각각 `NAVER_API_HUB_CLIENT_ID`, `NAVER_API_HUB_CLIENT_SECRET`에 설정한다. 이 값은
 네이버 로그인용 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`과 다른 자격증명이다. 뉴스 검색 결과는 종목별로
 MySQL에 저장되고 `NAVER_NEWS_CACHE_TTL_HOURS`가 지난 뒤 다음 조회에서 갱신되며 기본값은 6시간이다.
-검색어는 `{종목명} 시장정보`이고, 관련도순 후보 40건을 제목의 투자 핵심 키워드 수와 발행일시로 정렬한
-상위 10건만 저장한다.
+검색어는 `{종목명} 시장정보`이고, 관련도순 후보 80건을 한 번 조회해 `NEWS_RANKING_STRATEGY`로 선택한
+전략 하나의 Top 10만 계산해 종목 캐시에 저장한다. 개선된 TF-IDF는 Lucene Nori로 한국어 조사와 어미의
+영향을 줄이고 복합어를 분해한 토큰을 사용한다.
+
+`NEWS_RANKING_STRATEGY`는 종목 뉴스와 시장 리포트에서 `KEYWORD`, `TF_IDF`, `KOREAN_TF_IDF`,
+`EMBEDDING` 중 하나를 선택하는 설정이며 기본값은 `KOREAN_TF_IDF`다. 임베딩 전략을 사용하려면 다음 스크립트로
+저장소에 고정된 E5-small 리비전의 ONNX 모델과
+토크나이저 파일을 내려받는다. `models/`는 Git에서 제외된다.
+
+```bash
+./scripts/download-e5-small-model.sh
+```
+
+`EMBEDDING`을 선택하면 모델과 토크나이저를 한 번 로딩하고 이후 뉴스 캐시 갱신에서 재사용한다.
+운영 cosine 유사도 임계값은 오프라인 평가로 확정한 `0.92`이며, 후보는 기존 키워드 순서대로 검사하고 선택된 모든 기사와의 최대
+유사도가 이 값보다 낮을 때만 최대 10건까지 포함한다. Docker에서 사용할 때는 다운로드한 모델 디렉터리를
+컨테이너에 마운트하고 두 모델 경로를 컨테이너 내부 절대 경로로 지정해야 한다.
+
+선택된 랭킹 전략과 관계없이 종목 뉴스와 시장 리포트 Top 10에는 `snunlp/KR-FinBert-SC` 기반 감성 분석을 적용한다.
+다음 스크립트는 모델의 고정 리비전을 ONNX로 내보내고 CPU 추론용 INT8 동적 양자화를 수행한다.
+
+```bash
+./scripts/download-kr-finbert-sentiment-model.sh
+```
+
+스크립트 실행에는 Python 3과 venv가 필요하며 변환용 패키지는 임시 디렉터리에만 설치된다. 애플리케이션은
+제목과 네이버 요약문을 결합해 최종 기사들을 한 배치로 분석한다. 모델의 `positive`, `neutral`, `negative`는
+각각 화면의 `호재`, `보통`, `악재`로 표시한다. 긍정 또는 부정 예측의 최대 확률이
+`NEWS_SENTIMENT_DIRECTIONAL_THRESHOLD`보다 낮으면 보수적으로 `보통`으로 처리한다.
+기존 캐시에 감성 결과가 없으면 TTL과 관계없이 해당 종목 또는 시장 주제 뉴스를 한 번 다시 조회해 새 형식으로 저장한다.
+
+이 모델 저장소에는 명시적인 라이선스가 없으므로 공개 또는 상업 운영에 배포하기 전 모델 제작자에게 사용 조건을
+확인해야 한다. Docker 로컬 구성은 `models/kr-finbert-sentiment`를 자동 마운트한다. EC2에서는 다음처럼 운영
+마운트 경로에 모델을 한 번 준비한다.
+
+```bash
+./scripts/download-kr-finbert-sentiment-model.sh /opt/finmate/models/kr-finbert-sentiment
+```
 
 같은 인증정보는 `/investments/reports`의 시장 리포트에도 사용한다. KOSPI, KOSDAQ, NASDAQ, S&P 500, 금리, 환율
-각 주제는 후보 40건 중 제목 키워드 점수와 발행일시로 정렬한 상위 10건만 주제별 MySQL 캐시에 저장한다.
+각 주제는 후보 80건 중 제목 2점·요약문 보조 1점의 키워드 점수와 발행일시로 정렬한 상위 10건만
+주제별 MySQL 캐시에 저장한다. 같은 키워드가 제목과 요약문에 모두 있어도 한 번만 점수화한다.
 이 캐시는 사용자별 데이터가 아니며 모든 사용자가 `NAVER_NEWS_CACHE_TTL_HOURS` 동안 공유한다.
+
+### 뉴스 랭킹 오프라인 평가
+
+평가 코드는 `src/evaluation/java` source set에 있으며 운영 `bootJar`에 포함되지 않는다. 평가용 Gradle 설정은
+`gradle/evaluation.gradle`에 분리되어 있고 `-PwithEvaluation`을 지정할 때만 로드된다. KOSPI, KOSDAQ,
+NASDAQ, S&P 500, 금리, 환율과 삼성전자, SK하이닉스, NAVER, 카카오, KB금융, 현대차 후보를
+네이버 API에서 JSON으로 고정하려면 다음 명령을 실행한다.
+
+평가 Gradle task는 프로젝트 루트의 기존 `.env`를 자동으로 읽는다. 현재 셸이나 CI에 같은 환경변수가
+이미 설정돼 있으면 외부 값을 우선하므로 로컬 `.env`가 배포 설정을 덮어쓰지 않는다.
+기존 로컬 설정의 네이버 헤더 이름인 `X-NCP-APIGW-API-KEY-ID:`와 `X-NCP-APIGW-API-KEY:`도 각각
+`NAVER_API_HUB_CLIENT_ID`, `NAVER_API_HUB_CLIENT_SECRET`으로 변환해 평가 프로세스에 전달한다.
+
+```bash
+./gradlew -PwithEvaluation collectNewsEvaluationDataset
+```
+
+평가 실행에는 E5 모델과 프로젝트 루트 `.env`의 다음 설정이 필요하다.
+
+```env
+OPENAI_API_KEY=...
+NEWS_EVALUATION_JUDGE_MODEL=사용할-고정-모델-ID
+```
+
+별도로 `source .env`를 실행하지 않고 바로 평가할 수 있다.
+
+평가기는 기본적으로 TF-IDF와 한국어 TF-IDF의 `0.20,0.30,0.40,0.50`, 임베딩의
+`0.90,0.92,0.94,0.96`을 모두 실행한다. 다른 범위를 비교하려면 루트 `.env`에서 다음 목록을 변경한다.
+
+```env
+NEWS_EVALUATION_TF_IDF_THRESHOLDS=0.20,0.30,0.40,0.50
+NEWS_EVALUATION_KOREAN_TF_IDF_THRESHOLDS=0.20,0.30,0.40,0.50
+NEWS_EVALUATION_EMBEDDING_THRESHOLDS=0.90,0.92,0.94,0.96
+```
+
+```bash
+./gradlew -PwithEvaluation evaluateNewsRanking
+```
+
+평가기는 동일 후보에 네 전략을 실행하고 Top 10 합집합을 OpenAI Responses API의 Structured Outputs로
+판정한다. 생성된 관련도·사건 라벨로 nDCG@10, 중복률, 투자 관련 고유 사건 수, Yield@10과 처리 시간을
+계산한다. 원본 데이터·생성 라벨·결과 CSV는 `evaluation/news-ranking` 아래 로컬 산출물이며 Git에서 제외한다.
+자세한 실행 방법은 `evaluation/news-ranking/README.md`를 참고한다.
 
 스케줄 조정용 선택 환경변수:
 
@@ -291,6 +392,21 @@ cd ..
 ## 7. DB 스키마
 
 `spring.jpa.hibernate.ddl-auto=update`이므로 애플리케이션 시작 시 엔티티 변경이 DB에 반영된다. Flyway/Liquibase 마이그레이션은 **현재 구현되지 않음**. 운영 또는 협업 환경에서 재현 가능한 스키마 변경 절차는 **확인 필요**.
+
+### 시작 자금 정책 변경
+
+`User.simulationFundingGranted`는 `boolean default false`, `nullable=false` 열로 추가된다. 신규 사용자는 첫 KRW 일반계좌 개설 시 1억원을 받고, 지급 이력과 `DEPOSIT` 원장을 함께 저장한다. 계좌 개설 한도는 일반·증권 각각 3개이며, 기존 계좌나 잔액을 소급 변경하지 않는다.
+
+기존 KRW 일반계좌를 가진 사용자는 개설 서비스에서 이미 지급받은 것으로 처리한다. 지급 이력을 배포 시 미리 채우려면 스키마 반영 후 아래 쿼리를 별도 배포 변경으로 적용할 수 있다. 신규 지급을 위한 쿼리가 아니며 잔액은 변경하지 않는다.
+
+```sql
+UPDATE `user` u
+SET u.simulation_funding_granted = TRUE
+WHERE u.simulation_funding_granted = FALSE
+  AND EXISTS (SELECT 1 FROM account a WHERE a.user_id = u.id AND a.currency_code = 'KRW');
+```
+
+기존 계좌가 이미 삭제되어 기록이 없다면 이 쿼리나 개설 서비스로 과거 지급을 판별할 수 없다. 현재 서비스에 계좌 삭제 API는 없으며, 향후 삭제 기능을 추가할 때도 사용자 지급 이력을 초기화하지 않아야 한다.
 
 ## 8. 자주 발생할 수 있는 실행 오류
 

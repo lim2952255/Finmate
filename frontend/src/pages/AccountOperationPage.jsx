@@ -29,6 +29,7 @@ export default function AccountOperationPage({ type }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [selectedId, setSelectedId] = useState("");
+  const [depositInvestmentId, setDepositInvestmentId] = useState("");
   const [fromCurrency, setFromCurrency] = useState("KRW");
   const [toCurrency, setToCurrency] = useState("USD");
 
@@ -40,8 +41,18 @@ export default function AccountOperationPage({ type }) {
         const requestedAccount = query.get("from");
         const requestedInvestment = query.get("investmentNumber");
         const choices = type === "withdraw" || type === "exchange" ? response.investments : response.accounts;
-        const selected = choices.find((item) => item.accountNumber === (requestedInvestment || requestedAccount)) || choices[0];
+        // 예수금 입금의 investmentNumber는 입금 대상이다. 출금 계좌는 명시한 계좌, 대표 일반계좌 순으로 선택한다.
+        const requestedSource = type === "deposit" ? requestedAccount : (requestedInvestment || requestedAccount);
+        const selected = choices.find((item) => item.accountNumber === requestedSource)
+          || (type === "deposit" && choices.find((item) => item.primary))
+          || choices[0];
         setSelectedId(selected ? String(selected.id) : "");
+        if (type === "deposit") {
+          const target = response.investments.find((item) => item.accountNumber === requestedInvestment)
+            || response.investments.find((item) => item.primary)
+            || response.investments[0];
+          setDepositInvestmentId(target ? String(target.id) : "");
+        }
       })
       .catch((requestError) => {
         if (requestError.name !== "AbortError") setError(requestError);
@@ -128,12 +139,12 @@ export default function AccountOperationPage({ type }) {
                   <FieldError error={error} names={type === "transfer" ? ["fromAccountNumber", "fromBankCode"] : type === "deposit" ? ["fromAccountId", "fromBankCode"] : type === "withdraw" ? ["fromInvestmentId", "fromSecuritiesCompanyCode"] : ["investmentId", "securitiesCompanyCode"]} />
 
                   {type === "transfer" && <><label>입금 은행<select name="toBankCode" required>{data.banks.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><FieldError error={error} names="toBankCode" /></label><label>입금 계좌번호<input name="toAccountNumber" required placeholder="000000-00-000000" /><FieldError error={error} names="toAccountNumber" /></label></>}
-                  {type === "deposit" && <label>입금 증권계좌<select name="to" required>{data.investments.map((item) => <option key={item.id} value={item.id}>{item.companyName} {item.accountNumber} · {item.balances.map((balance) => amountText(balance.amount, balance.currency)).join(" / ")}</option>)}</select><FieldError error={error} names={["toInvestmentId", "toSecuritiesCompanyCode"]} /></label>}
+                  {type === "deposit" && <label>입금 증권계좌<select name="to" required value={depositInvestmentId} onChange={(event) => setDepositInvestmentId(event.target.value)}>{data.investments.map((item) => <option key={item.id} value={item.id}>{item.companyName} {item.accountNumber} · {item.balances.map((balance) => amountText(balance.amount, balance.currency)).join(" / ")}</option>)}</select><FieldError error={error} names={["toInvestmentId", "toSecuritiesCompanyCode"]} /></label>}
                   {type === "withdraw" && <label>입금 일반계좌<select name="to" required>{data.accounts.map((item) => <option key={item.id} value={item.id}>{item.companyName} {item.accountNumber} · {amountText(item.balance, item.currency)}</option>)}</select><FieldError error={error} names={["toAccountId", "toBankCode"]} /></label>}
                   {type === "exchange" && <div className="exchange-fields"><label>환전 전 통화<select value={fromCurrency} onChange={(event) => { const next = event.target.value; setFromCurrency(next); setToCurrency(next === "KRW" ? "USD" : "KRW"); }}>{data.currencies.map((item) => <option key={item.value} value={item.value}>{item.label} ({item.value})</option>)}</select><FieldError error={error} names="fromCurrencyCode" /></label><label>환전 후 통화<select value={toCurrency} onChange={(event) => setToCurrency(event.target.value)}>{data.currencies.filter((item) => item.value !== fromCurrency).map((item) => <option key={item.value} value={item.value}>{item.label} ({item.value})</option>)}</select><FieldError error={error} names="toCurrencyCode" /></label><div className="selected-balance-card"><span>사용 가능 잔액</span><strong>{selectedBalance ? amountText(selectedBalance.amount, selectedBalance.currency) : `0 ${fromCurrency}`}</strong></div></div>}
                   <label>{type === "exchange" ? "환전 금액" : "이체 금액"}<input name="amount" type="number" min={type === "exchange" && fromCurrency === "USD" ? "0.01" : "1"} step={type === "exchange" && fromCurrency === "USD" ? "0.01" : "1"} required placeholder={type === "exchange" ? "환전 전 통화 기준 금액" : "금액 입력"} onInput={(event) => { const output = event.currentTarget.form.querySelector("[data-estimate]"); if (output) output.textContent = estimatedExchangeAmount(event.currentTarget.value); }} /><FieldError error={error} names={type === "exchange" ? "fromAmount" : "amount"} /></label>
                   {type === "exchange" && <p className="exchange-estimate">예상 환전 금액 <strong data-estimate>-</strong></p>}
-                  <button type="submit" disabled={!selectedId || (type === "exchange" && !data.usdKrwExchangeRate)}>{type === "exchange" ? "환전하기" : "이체하기"}</button>
+                  <button type="submit" disabled={!selectedId || (type === "deposit" && !depositInvestmentId) || (type === "exchange" && !data.usdKrwExchangeRate)}>{type === "exchange" ? "환전하기" : "이체하기"}</button>
                 </form>
               )}
             </section>

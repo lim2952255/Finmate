@@ -1,0 +1,94 @@
+// 운영 구현을 그대로 비교하되 평가 코드는 별도 source set으로 컴파일한다.
+sourceSets {
+	evaluation {
+		java.srcDir 'src/evaluation/java'
+		resources.srcDir 'src/evaluation/resources'
+		compileClasspath += sourceSets.main.output + configurations.runtimeClasspath
+		runtimeClasspath += output + compileClasspath
+	}
+}
+
+// 평가 코드가 운영 구현과 운영 라이브러리를 재사용하게 한다.
+configurations {
+	evaluationImplementation.extendsFrom implementation
+	evaluationRuntimeOnly.extendsFrom runtimeOnly
+}
+
+// 평가 task는 Docker Compose를 거치지 않으므로 루트 .env를 자식 JVM에 직접 전달한다.
+// 셸이나 CI에 export된 값이 있으면 그 값을 우선한다.
+def loadEvaluationDotEnv = {
+	def envFile = file('.env')
+	if (!envFile.isFile()) {
+		return [:]
+	}
+
+	def keyAliases = [
+		'X-NCP-APIGW-API-KEY-ID': 'NAVER_API_HUB_CLIENT_ID',
+		'X-NCP-APIGW-API-KEY'   : 'NAVER_API_HUB_CLIENT_SECRET'
+	]
+	def loaded = [:]
+	envFile.eachLine('UTF-8') { rawLine ->
+		def line = rawLine.trim()
+		if (!line || line.startsWith('#')) {
+			return
+		}
+		if (line.startsWith('export ')) {
+			line = line.substring('export '.length()).trim()
+		}
+
+		int equalsIndex = line.indexOf('=')
+		int colonIndex = line.indexOf(':')
+		int separatorIndex = equalsIndex > 0 ? equalsIndex : colonIndex
+		if (separatorIndex <= 0) {
+			return
+		}
+
+		def rawKey = line.substring(0, separatorIndex).trim()
+		def key = keyAliases.getOrDefault(rawKey, rawKey)
+		if (!(key ==~ /[A-Za-z_][A-Za-z0-9_]*/)) {
+			return
+		}
+
+		def value = line.substring(separatorIndex + 1).trim()
+		if (value.length() >= 2
+				&& ((value.startsWith('"') && value.endsWith('"'))
+				|| (value.startsWith("'") && value.endsWith("'")))) {
+			value = value.substring(1, value.length() - 1)
+		}
+
+		if (!System.getenv().containsKey(key)) {
+			loaded[key] = value
+		}
+	}
+	return loaded
+}
+
+// ./gradlew -PwithEvaluation collectNewsEvaluationDataset와 같은 명령을 통해 evaluation에 필요한 데이터를 수집하는 명령을 등록한다.
+tasks.register('collectNewsEvaluationDataset', JavaExec) {
+	group = 'evaluation'
+	description = 'Collects fixed NAVER news datasets for offline ranking evaluation.'
+	classpath = sourceSets.evaluation.runtimeClasspath
+	mainClass = 'com.finmate.evaluation.news.NewsEvaluationDatasetCollector'
+	if (project.hasProperty('outputDir')) {
+		args project.property('outputDir')
+	}
+	// 비밀값은 task가 실제 실행될 때만 읽고 수집 JVM에만 전달한다.
+	doFirst {
+		environment loadEvaluationDotEnv()
+	}
+}
+
+// ./gradlew -PwithEvaluation evaluateNewsRanking와 같은 명령을 통해 evaluation을 실제로 수행하는 명령을 등록한다.
+tasks.register('evaluateNewsRanking', JavaExec) {
+	group = 'evaluation'
+	description = 'Evaluates all news ranking strategies with an offline LLM judge.'
+	classpath = sourceSets.evaluation.runtimeClasspath
+	mainClass = 'com.finmate.evaluation.news.NewsRankingEvaluationRunner'
+	if (project.hasProperty('dataset')) {
+		args project.property('dataset')
+	}
+	// OpenAI 설정과 모델 경로도 task 실행 직전에 같은 우선순위로 전달한다.
+	doFirst {
+		environment loadEvaluationDotEnv()
+	}
+}

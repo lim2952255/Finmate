@@ -4,6 +4,10 @@
 
 FinMate는 일반 은행 계좌와 모의 증권 계좌를 연결해 **투자 학습 → 시장 관찰 → 종목 분석 → 모의 주문 → 포트폴리오 복기**를 하나의 경험으로 제공합니다.
 
+> **배포 서비스:** [https://finmate-project.com](https://finmate-project.com)
+>
+> AWS 운영 환경에 배포되어 있으며 `finmate-project.com` 도메인을 통해 외부에서 HTTPS로 접속할 수 있습니다.
+
 한국투자증권(KIS) Open API의 REST·WebSocket 시세, NAVER 뉴스 검색, Google·Kakao·Naver 소셜 로그인을 연동했으며, 금융 데이터는 `BigDecimal`, 트랜잭션, 비관적 락과 동시성 테스트를 중심으로 다룹니다.
 
 > KIS는 시세·종목·시장 데이터의 출처로 사용합니다. 주문과 체결은 실제 증권사로 전송하지 않고 FinMate DB 안에서 처리되는 **모의 거래**입니다.
@@ -250,6 +254,25 @@ NAVER News API
 
 백엔드는 `controller → service → repository → domain` 계층을 따르며, 외부 연동은 `infra.kis`, `infra.naver` 경계에 둡니다. 잔액·원장·주문 상태 변경은 서비스 트랜잭션 안에서 처리하고, 외부 API 호출 결과를 실제 금융기관의 주문 체결로 표현하지 않습니다.
 
+### AWS 운영 아키텍처
+
+```text
+사용자
+  → https://finmate-project.com
+  → DNS
+  → AWS EC2 : 80 / 443
+  → Nginx 컨테이너
+      ├─ HTTP → HTTPS redirect
+      ├─ Let's Encrypt 인증서로 TLS 종료
+      ├─ React 정적 파일 제공
+      └─ API·OAuth·WebSocket reverse proxy
+          → Spring Boot 컨테이너 : 8080 (외부 비공개)
+              ├─ MySQL 8.4 컨테이너 + 영구 볼륨
+              └─ Redis 7.2 컨테이너 + 영구 볼륨
+```
+
+운영 서버는 Docker Compose로 Nginx, Spring Boot, MySQL, Redis를 함께 실행합니다. 외부에는 Nginx의 80·443 포트만 열고 백엔드 포트는 Compose 내부 네트워크에만 둡니다. `finmate-project.com`으로 들어온 HTTP 요청은 HTTPS로 전환되며, React Router 경로는 Nginx가 정적 애플리케이션으로 처리하고 `/api`, OAuth, 로그인과 `/ws` 요청은 Spring Boot로 전달합니다.
+
 ## 기술 스택
 
 | 구분 | 기술 |
@@ -262,7 +285,8 @@ NAVER News API
 | Realtime | Spring WebSocket, JDK `HttpClient` WebSocket |
 | External API | 한국투자증권(KIS) Open API, NAVER API HUB News API |
 | Build & Test | Gradle Wrapper, npm, JUnit 5, Spring Boot Test, Testcontainers |
-| Infrastructure | Docker Compose, GitHub Actions CI |
+| Cloud & Deployment | AWS EC2, Amazon ECR, AWS Systems Manager, IAM, STS, GitHub OIDC |
+| Infrastructure | Docker, Docker Compose, Nginx, Let's Encrypt, GitHub Actions CI/CD |
 
 ## 주요 경로
 
@@ -303,7 +327,226 @@ npm run dev
 
 브라우저는 `http://localhost:5173`으로 접속합니다. Vite가 React 화면과 정적 자산을 제공하고 `/api`, 인증 경로와 WebSocket 요청만 `http://localhost:8080`의 Spring 서버로 프록시합니다. Gradle은 프런트엔드를 빌드하거나 실행 JAR에 포함하지 않습니다.
 
-## 테스트와 CI
+## AWS 배포 및 CI/CD
+
+FinMate는 GitHub Actions와 AWS를 연결해 코드 검증, 컨테이너 이미지 생성, private registry 저장, EC2 배포와 애플리케이션 상태 확인까지 자동화했습니다. 운영 서비스는 [https://finmate-project.com](https://finmate-project.com)에서 제공하며, EC2의 Nginx가 HTTPS 종료와 React 정적 파일 제공, Spring Boot reverse proxy를 담당합니다.
+
+### 전체 배포 구조
+
+```text
+개발자
+  ├─ main 대상 Pull Request
+  │    └─ GitHub Actions CI
+  │         ├─ Frontend: npm ci → lint → production build
+  │         └─ Backend: Gradle 전체 테스트 → 실패 리포트 보관
+  │
+  └─ main push / workflow_dispatch
+       └─ CI 성공
+            └─ GitHub Actions CD (`production` Environment)
+                 ├─ GitHub OIDC token 발급
+                 ├─ AWS STS가 배포 Role의 임시 자격증명 발급
+                 ├─ Backend / Frontend-Nginx image build
+                 ├─ Amazon ECR에 `sha-<commit SHA>` tag로 push
+                 └─ AWS Systems Manager Run Command
+                      └─ 대상 EC2의 SSM Agent
+                           ├─ Compose·배포 스크립트 설치
+                           ├─ EC2 Instance Role로 ECR login·pull
+                           ├─ Docker Compose stack 갱신
+                           └─ `/api/session` health check
+
+사용자
+  → DNS: finmate-project.com
+  → EC2 Security Group: 80 / 443
+  → Nginx: HTTP→HTTPS, TLS, React, reverse proxy
+  → Spring Boot: API / OAuth / WebSocket
+  → MySQL / Redis
+```
+
+### AWS 구성 요소와 책임
+
+| 구성 요소 | 책임 |
+|---|---|
+| GitHub Actions | CI 실행, Docker image build, ECR push, SSM 명령 전송과 최종 상태 확인 |
+| GitHub OIDC Provider | GitHub workflow의 신원을 AWS가 검증할 수 있는 token 발급 경로 제공 |
+| AWS STS | 검증된 OIDC token을 수명이 짧은 IAM 임시 자격증명으로 교환 |
+| GitHub 배포 IAM Role | 두 ECR repository에 대한 push와 지정 EC2에 대한 SSM Run Command만 허용 |
+| Amazon ECR | Backend와 Frontend-Nginx 운영 이미지를 private repository에 보관 |
+| AWS Systems Manager | SSH 접속 없이 지정 EC2에 배포 명령을 전달하고 실행 상태를 제공 |
+| EC2 Instance Role | SSM managed node 연결과 private ECR image pull 권한 제공 |
+| Amazon EC2 | Nginx, Spring Boot, MySQL, Redis 컨테이너를 Docker Compose로 실행 |
+| Nginx + Let's Encrypt | `finmate-project.com`의 TLS 종료, HTTP→HTTPS 전환, 정적 파일 제공과 reverse proxy |
+
+GitHub에서 AWS로 진입하는 배포 Role과 EC2 안에서 사용하는 Instance Role은 분리되어 있습니다. GitHub Role의 권한을 EC2 런타임이 공유하지 않고, EC2도 ECR push나 다른 인스턴스 배포 권한을 갖지 않도록 각 실행 주체에 필요한 권한만 부여합니다.
+
+### 1. CI 실행 조건과 검증 범위
+
+| 이벤트 | 실행 범위 | 운영 반영 |
+|---|---|---|
+| `main` 대상 pull request | Frontend lint·build, Backend test | 배포하지 않음 |
+| `main` push | CI 전체 성공 후 image build와 EC2 배포 | 자동 배포 |
+| `workflow_dispatch` | CI 전체 성공 후 image build와 EC2 배포 | 수동 배포 |
+
+CI는 임시 Ubuntu Runner에서 Node.js 22와 Temurin JDK 17을 준비한 뒤 다음 검증을 수행합니다.
+
+```bash
+# Frontend
+cd frontend
+npm ci
+npm run lint
+npm run build
+
+# Backend
+cd ..
+./gradlew test --no-daemon --console=plain
+```
+
+Backend 통합 테스트는 GitHub Runner의 Docker에서 Testcontainers MySQL 8.4를 실행합니다. 테스트가 실패하면 JUnit XML, HTML 테스트 결과와 Gradle problems report를 GitHub artifact로 업로드해 14일간 보관합니다. 같은 PR에 새 commit이 올라오면 이전 CI는 취소하지만, `main` 배포는 이미 EC2로 전달된 SSM 명령과 경합하지 않도록 실행 중 작업을 취소하지 않고 순서대로 처리합니다.
+
+### 2. GitHub OIDC 기반 AWS 인증
+
+CD job은 GitHub의 `production` Environment를 사용하고 해당 job에만 `id-token: write` 권한을 부여합니다. AWS access key와 secret key를 GitHub에 장기 저장하지 않으며 다음 순서로 인증합니다.
+
+```text
+GitHub Actions deploy job
+  → GitHub OIDC token 요청
+  → AWS STS AssumeRoleWithWebIdentity
+  → IAM 신뢰 정책에서 issuer·audience·repository·production Environment 검증
+  → 제한된 수명의 AWS 임시 자격증명 발급
+  → ECR push와 SSM SendCommand 수행
+```
+
+AWS IAM 신뢰 정책은 `production` Environment에서 실행되는 이 저장소의 workflow만 Role을 인수할 수 있도록 `sub`와 `aud` 조건을 제한합니다. workflow는 `allowed-account-ids`로 예상한 AWS 계정인지 다시 확인하고, `aws sts get-caller-identity`를 실행해 실제로 인수한 계정과 Role을 검증합니다.
+
+GitHub `production` Environment에는 비밀값이 아닌 다음 리소스 식별자를 Variables로 등록합니다.
+
+| Variable | 용도 |
+|---|---|
+| `AWS_ACCOUNT_ID` | 배포 대상 AWS 계정 검증 |
+| `AWS_REGION` | ECR·EC2·SSM이 위치한 region |
+| `AWS_ROLE_ARN` | GitHub OIDC로 인수할 배포 IAM Role |
+| `EC2_INSTANCE_ID` | SSM 명령을 실행할 운영 EC2 한 대 지정 |
+| `ECR_BACKEND_REPOSITORY` | Spring Boot image repository |
+| `ECR_FRONTEND_REPOSITORY` | React+Nginx image repository |
+
+workflow는 AWS 인증 전에 위 값이 모두 존재하는지 검사하며, 하나라도 비어 있으면 실제 AWS 리소스를 변경하기 전에 배포를 중단합니다.
+
+### 3. Docker 이미지 생성과 ECR 저장
+
+Backend와 Frontend는 서로 다른 multi-stage Docker build로 운영 이미지를 생성합니다.
+
+- Backend는 JDK 17 단계에서 `bootJar`를 생성하고, 최종 JRE 17 이미지에는 실행 JAR만 복사합니다. 애플리케이션은 root가 아닌 `finmate` 사용자로 실행하고 컨테이너 내부의 8080 포트만 사용합니다.
+- Frontend는 Node.js 22 단계에서 `npm ci`와 Vite production build를 수행하고, 최종 Nginx 이미지에는 `dist` 정적 파일과 운영용 HTTPS·proxy 설정만 포함합니다.
+- 완성된 두 이미지는 `latest` 대신 `sha-<40자리 Git commit SHA>` 태그로 ECR에 push합니다. 실행 중인 이미지가 어느 source commit에서 만들어졌는지 추적할 수 있고 이전 commit 이미지도 명시적으로 선택할 수 있습니다.
+- EC2는 source repository를 clone하거나 운영 서버에서 직접 build하지 않습니다. 동일한 CI 산출물을 ECR에서 내려받아 실행하므로 빌드 환경과 운영 환경의 역할을 분리합니다.
+
+```text
+Dockerfile.server
+  JDK 17 build stage → Spring Boot JAR → JRE 17 runtime image
+
+frontend/Dockerfile.server
+  Node.js 22 build stage → React dist → Nginx runtime image
+
+ECR
+  ├─ <backend-repository>:sha-<commit>
+  └─ <frontend-repository>:sha-<commit>
+```
+
+### 4. Systems Manager를 통한 EC2 원격 배포
+
+GitHub Runner는 EC2의 SSH key를 사용하지 않습니다. workflow가 `docker-compose.server.yml`과 `scripts/deploy-server.sh`를 Base64 문자열로 변환해 SSM `AWS-RunShellScript` 명령에 담고, EC2의 SSM Agent가 다음 절차를 실행합니다.
+
+1. `/opt/finmate` 운영 디렉터리를 준비합니다.
+2. 전달받은 Compose 파일과 배포 스크립트를 `.next` 임시 파일로 먼저 복원합니다.
+3. 완성된 파일만 각각 `0644`, `0755` 권한으로 실제 경로에 설치하고 임시 파일을 제거합니다.
+4. AWS region과 새 Backend·Frontend ECR image URI를 배포 스크립트 인자로 전달합니다.
+5. 배포 스크립트가 AWS CLI, Docker와 Docker Compose v2 설치 여부를 먼저 확인합니다.
+6. 두 image URI가 tag를 포함한 private ECR 형식인지 검증합니다.
+7. EC2 Instance Metadata Service가 제공한 Instance Role 임시 자격증명으로 ECR에 로그인합니다.
+8. 현재 `.env`를 `.env.before-deploy`로 백업하고 image URI 두 항목만 원자적으로 갱신합니다.
+9. `docker compose config --quiet`으로 환경변수 치환과 Compose 문법을 검증합니다.
+10. 새 Backend·Frontend 이미지를 pull하고 `docker compose up -d --remove-orphans`로 stack을 갱신합니다.
+11. Nginx 컨테이너에서 Spring Boot의 `/api/session`을 최대 약 5분간 확인합니다.
+12. SSM 명령의 최종 성공·실패 상태를 GitHub Actions job 결과로 전파합니다.
+
+GitHub Runner는 SSM Command ID를 받은 뒤 10초 간격으로 최대 약 20분 동안 실행 상태를 조회합니다. 운영 로그에 환경 설정이나 외부 API 응답이 포함될 수 있으므로 workflow에는 상세 애플리케이션 로그를 출력하지 않고 SSM의 최종 상태만 노출합니다.
+
+### 5. EC2의 Docker Compose 런타임
+
+| 서비스 | 외부 공개 | 역할 | 데이터 유지 |
+|---|---|---|---|
+| `nginx` | EC2 80·443 | React 제공, TLS 종료, HTTP redirect, API·OAuth·WebSocket proxy | 인증서는 EC2 `/etc/letsencrypt`를 read-only mount |
+| `backend` | 공개하지 않음 | Spring Boot API, 인증, 모의투자와 실시간 처리 | 설정은 `/opt/finmate/.env`에서 주입 |
+| `mysql` | 공개하지 않음 | MySQL 8.4 운영 데이터 | `mysql-data` named volume |
+| `redis` | 공개하지 않음 | Redis 7.2 cache·실시간 보조 데이터 | AOF와 `redis-data` named volume |
+
+Backend는 Compose 내부 DNS를 통해 `mysql:3306`, `redis:6379`에 연결합니다. Nginx 역시 외부 IP가 아니라 내부 서비스 이름 `backend:8080`으로 Spring Boot에 접근합니다. MySQL과 Redis의 health check가 통과해야 Backend가 시작되며, 컨테이너를 교체하거나 `docker compose down`을 실행해도 named volume은 유지됩니다. `docker compose down -v`는 운영 데이터를 삭제하므로 사용하지 않습니다.
+
+### 6. 도메인, HTTPS와 요청 라우팅
+
+`finmate-project.com` DNS는 운영 EC2의 public IP를 가리킵니다. EC2 앞에 ALB를 두지 않고 Nginx 컨테이너가 직접 80·443 포트를 받아 TLS를 종료합니다.
+
+```text
+http://finmate-project.com/*
+  → 301 https://finmate-project.com/*
+
+https://finmate-project.com/assets/*
+  → Nginx 정적 asset + 장기 cache
+
+https://finmate-project.com/api/*
+https://finmate-project.com/oauth2/*
+https://finmate-project.com/login/oauth2/*
+https://finmate-project.com/ws/*
+  → Spring Boot reverse proxy
+
+그 외 경로
+  → React Router를 위한 index.html fallback
+```
+
+Let's Encrypt 인증서와 개인키는 EC2 호스트의 `/etc/letsencrypt/live/finmate-project.com/`에 두고 Nginx 컨테이너에 read-only로 mount합니다. Nginx는 TLS 1.2와 1.3을 허용하고 원래 요청의 Host, protocol, client IP를 forwarded header로 Spring에 전달합니다. WebSocket 요청에는 Upgrade header와 긴 proxy timeout을 적용합니다.
+
+### 7. 운영 설정과 비밀값 관리
+
+운영 `.env`는 EC2의 `/opt/finmate/.env`에만 보관하며 repository, Docker image, GitHub Actions payload로 전송하지 않습니다. 이 파일에는 MySQL·Redis 비밀번호, OAuth client 정보, KIS·NAVER API 자격 증명처럼 애플리케이션 실행에 필요한 비밀값이 포함됩니다.
+
+배포 과정은 전체 `.env`를 덮어쓰지 않고 아래 두 값만 새 commit의 ECR URI로 갱신합니다.
+
+```dotenv
+ECR_BACKEND_IMAGE=<account>.dkr.ecr.<region>.amazonaws.com/<repository>:sha-<commit>
+ECR_FRONTEND_IMAGE=<account>.dkr.ecr.<region>.amazonaws.com/<repository>:sha-<commit>
+```
+
+갱신 전 파일은 동일한 권한과 소유권을 유지한 `/opt/finmate/.env.before-deploy`로 백업합니다. 임시 파일을 완성한 뒤 원본 위치로 이동하는 방식으로 수정 도중 `.env`가 일부만 작성되는 상황을 방지합니다.
+
+### 8. 상태 확인과 실패 대응
+
+- Nginx 자체 상태는 컨테이너 내부의 `/nginx-health`로 확인합니다.
+- 실제 배포 성공 여부는 Nginx 컨테이너에서 Compose 내부의 `http://backend:8080/api/session`을 호출해 판단합니다.
+- 첫 요청 실패 후 5초 간격으로 최대 60회 재시도하므로 Spring Boot와 의존 서비스가 준비될 시간을 약 5분까지 허용합니다.
+- 검증에 성공하면 현재 컨테이너 상태를 출력하고 SSM·GitHub Actions를 성공으로 종료합니다.
+- 제한 시간 안에 성공하지 못하면 컨테이너 상태와 이전 image 값의 위치만 안내하고 실패를 상위 workflow까지 전파합니다.
+- 상세 로그는 SSM Session Manager에서 `/opt/finmate`로 이동한 뒤 권한 있는 운영자가 직접 확인합니다.
+
+```bash
+cd /opt/finmate
+sudo docker compose --env-file .env -f docker-compose.server.yml ps
+sudo docker compose --env-file .env -f docker-compose.server.yml logs --tail 100 backend nginx
+```
+
+자동 rollback은 수행하지 않습니다. 현재 JPA 설정이 `ddl-auto=update`이므로 새 애플리케이션이 DB schema를 변경한 뒤 이전 이미지를 기계적으로 다시 실행하면 코드와 schema가 불일치할 수 있습니다. 장애 복구 시 `/opt/finmate/.env.before-deploy`의 이전 SHA image를 확인하고 DB 하위 호환성을 검토한 뒤 명시적으로 되돌립니다.
+
+### 배포 관련 파일
+
+| 파일 | 설명 |
+|---|---|
+| [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | CI, OIDC 인증, ECR push와 SSM 배포 workflow |
+| [`Dockerfile.server`](Dockerfile.server) | Spring Boot JAR 생성과 non-root JRE runtime image |
+| [`frontend/Dockerfile.server`](frontend/Dockerfile.server) | React production build와 Nginx runtime image |
+| [`frontend/nginx.server.conf`](frontend/nginx.server.conf) | `finmate-project.com` HTTPS·정적 파일·reverse proxy 설정 |
+| [`docker-compose.server.yml`](docker-compose.server.yml) | EC2의 Nginx·Backend·MySQL·Redis 운영 stack |
+| [`scripts/deploy-server.sh`](scripts/deploy-server.sh) | ECR pull, Compose 갱신, health check를 수행하는 EC2 배포 절차 |
+| [`docs/CICD.md`](docs/CICD.md) | IAM 정책, GitHub Environment, EC2 최초 준비를 포함한 상세 운영 가이드 |
+
+## 테스트와 검증
 
 ```bash
 # Frontend
@@ -320,7 +563,7 @@ cd ..
 ./gradlew bootJar
 ```
 
-MySQL 통합·동시성 테스트는 Testcontainers의 MySQL 8.4를 사용합니다. GitHub Actions는 `main` 대상 pull request와 push에서 전체 테스트를 실행하고 JUnit 리포트를 artifact로 보관합니다.
+MySQL 통합·동시성 테스트는 Testcontainers의 MySQL 8.4를 사용합니다. 같은 검증 명령은 GitHub Actions CI에서도 실행되며, 검증을 통과한 `main` commit만 운영 배포 단계로 진행합니다.
 
 ## 현재 범위와 한계
 
@@ -341,3 +584,4 @@ MySQL 통합·동시성 테스트는 Testcontainers의 MySQL 8.4를 사용합니
 - [KIS 연동](docs/KIS_INTEGRATION.md)
 - [종목 상세 재무 학습 카드](docs/STOCK_FINANCIAL_DETAIL.md)
 - [개발 가이드](docs/DEVELOPMENT_GUIDE.md)
+- [AWS 배포 및 CI/CD 가이드](docs/CICD.md)

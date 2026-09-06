@@ -14,16 +14,18 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 
-// 네이버 뉴스 API를 호출하여 총 40개의 기사 후보를 조회하는 클라이언트
+// 네이버 뉴스 API를 호출하여 총 80개의 기사 후보를 조회하는 클라이언트
 @Component
 public class NaverNewsClient {
-    private static final int NEWS_CANDIDATE_LIMIT = 40; // 후보 기사 수
+    private static final int NEWS_CANDIDATE_LIMIT = 80; // 네 전략이 비교할 수 있도록 충분한 후보 기사 수를 확보한다.
     private static final String NEWS_PATH = "/search/v1/news";
 
     private final NaverNewsProperties properties; // 네이버 뉴스 API 호출을 위해 필요한 설정을 담은 프로퍼티
     private final ObjectMapper objectMapper; // Json 문자열 <-> 자바 객체 변환
     private final HttpClient httpClient; // http 통신용 client
 
+	// 평가용 환경에서는 스프링부트를 실행하지 않기 떄문에 application properties를 읽어 필요한 변수들을 바로 읽을 수 없다.
+	// 따라서 환경변수에서 직접 필요한 변수들을 읽어 NaverNewsProperties에 담아서 저장한다.
     public NaverNewsClient(NaverNewsProperties properties, ObjectMapper objectMapper) {
         this.properties = properties;
         this.objectMapper = objectMapper;
@@ -57,7 +59,7 @@ public class NaverNewsClient {
                 return List.of();
             }
 
-            // 40개의 후보 뉴스 기사만 NewsItem DTO로 변환하여 리턴한다.
+            // API 응답 중 최대 80개의 후보 뉴스 기사만 NewsItem DTO로 변환하여 반환한다.
             return responseBody.items().stream()
                     .limit(NEWS_CANDIDATE_LIMIT)
                     .map(item -> new NewsItem(

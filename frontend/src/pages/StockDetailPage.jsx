@@ -7,6 +7,7 @@ import CandlestickChart from "../components/stock/CandlestickChart.jsx";
 import StockConceptDrawer from "../components/stock/StockConceptDrawer.jsx";
 import { FinancialPanel, InvestorPanel, QuotePanel } from "../components/stock/StockDetailPanels.jsx";
 import useDocumentTitle from "../hooks/useDocumentTitle.js";
+import { countNewsSentiments, NEWS_SENTIMENT_LABELS } from "../utils/newsSentiment.js";
 import "../styles/stock-detail.css";
 
 const tabs = [
@@ -73,6 +74,7 @@ function NewsPanel({ stockId }) {
 
   useEffect(() => {
     const controller = new AbortController();
+    // 운영 API는 설정으로 선택된 개선된 TF-IDF 전략의 뉴스 목록만 반환한다.
     getJson(`/api/stocks/${stockId}/news`, { signal: controller.signal })
       .then((data) => setState({ loading: false, data, error: null }))
       .catch((error) => {
@@ -83,7 +85,10 @@ function NewsPanel({ stockId }) {
 
   if (state.loading) return <PageLoading message="최신 뉴스를 불러오고 있습니다." />;
   if (state.error) return <p className="overview-error">{state.error.message}</p>;
-  if (!state.data?.items?.length) return <div className="empty-state"><strong>표시할 뉴스가 없습니다.</strong></div>;
+  if (!state.data?.items) return <div className="empty-state"><strong>표시할 뉴스가 없습니다.</strong></div>;
+
+  const newsItems = state.data.items;
+  const sentimentCounts = countNewsSentiments(newsItems);
 
   return (
     <div className="stock-news-panel">
@@ -92,7 +97,7 @@ function NewsPanel({ stockId }) {
           <span className="stock-news-heading-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5h16v14H4z" /><path d="M8 9h8M8 13h5M8 17h3" /></svg>
           </span>
-          <div><span className="stock-news-kicker">STOCK BRIEFING</span><h2>관련 뉴스</h2><p>관련도순 후보를 투자 핵심 키워드와 최신순으로 정리한 뉴스 10개입니다.</p></div>
+          <div><span className="stock-news-kicker">STOCK BRIEFING</span><h2>관련 뉴스</h2><p>관련도와 새로운 정보를 고려해 선별한 뉴스입니다.</p></div>
         </div>
         <div className="stock-news-cache-info">
           <div className="detail-updated-at">업데이트 {formatPublishedAt(state.data.updatedAt)}</div>
@@ -100,21 +105,39 @@ function NewsPanel({ stockId }) {
         </div>
       </div>
       <div className="stock-news-keyword-area">
-        <span>선별 키워드</span>
-        <div className="stock-news-keywords">{state.data.keywords?.map((keyword) => <span key={keyword}>{keyword}</span>)}</div>
+        <div className="stock-news-keyword-group">
+          <span className="stock-news-keyword-title">선별 키워드</span>
+          <div className="stock-news-keywords">{state.data.keywords?.map((keyword) => <span key={keyword}>{keyword}</span>)}</div>
+        </div>
+        <div className="stock-news-sentiment-summary" aria-label="뉴스 감성 분석 요약">
+          <span className="stock-news-summary-item stock-news-summary-item--positive">호재: <strong>{sentimentCounts.POSITIVE}개</strong></span>
+          <span className="stock-news-summary-item stock-news-summary-item--neutral">보통: <strong>{sentimentCounts.NEUTRAL}개</strong></span>
+          <span className="stock-news-summary-item stock-news-summary-item--negative">악재: <strong>{sentimentCounts.NEGATIVE}개</strong></span>
+        </div>
       </div>
       <div className="stock-news-list">
-        {state.data.items.map((item, index) => {
+        {newsItems.map((item, index) => {
           const url = articleUrl(item);
           const source = url ? new URL(url).hostname.replace(/^www\./, "") : "NAVER 뉴스 검색";
+          const sentimentLabel = NEWS_SENTIMENT_LABELS[item.sentiment] || "보통";
           return <article className="stock-news-item" key={url || index}>
-            <div className="stock-news-item-top"><span className="stock-news-source">{source}</span><span className="stock-news-rank">{String(index + 1).padStart(2, "0")}</span></div>
+            <div className="stock-news-item-top">
+              <span className="stock-news-source">{source}</span>
+              <div className="stock-news-labels">
+                {/* API 감성 enum을 사용해 각 뉴스에 호재·보통·악재 배지를 표시한다. */}
+                <span className={`stock-news-sentiment stock-news-sentiment--${item.sentiment?.toLowerCase() || "neutral"}`}>
+                  {sentimentLabel}
+                </span>
+                <span className="stock-news-rank">{String(index + 1).padStart(2, "0")}</span>
+              </div>
+            </div>
             <h3>{url ? <a href={url} target="_blank" rel="noreferrer">{normalizeNewsText(item.title)}</a> : normalizeNewsText(item.title)}</h3>
             {item.description && <p className="stock-news-description">{normalizeNewsText(item.description)}</p>}
             <div className="stock-news-meta"><time>{formatPublishedAt(item.publishedAt)}</time>{url && <a href={url} target="_blank" rel="noreferrer">기사 읽기</a>}</div>
           </article>;
         })}
       </div>
+      {!newsItems.length && <div className="empty-state"><strong>선별된 뉴스가 없습니다.</strong></div>}
     </div>
   );
 }
@@ -277,6 +300,8 @@ export default function StockDetailPage() {
             }
             return {
               ...current,
+              // 유효한 실시간 체결가가 도착하면 주문 화면 진입을 즉시 활성화한다.
+              realtimePriceAvailable: Number.isFinite(currentPrice) && currentPrice > 0,
               candles,
               latestTradeDate: minuteBucket.slice(0, 10),
               latestCandleAt: minuteBucket,
@@ -323,6 +348,8 @@ export default function StockDetailPage() {
           else candles.push(realtimeCandle);
           return {
             ...current,
+            // 유효한 실시간 체결가가 도착하면 주문 화면 진입을 즉시 활성화한다.
+            realtimePriceAvailable: Number.isFinite(currentPrice) && currentPrice > 0,
             candles,
             realtimeTradeDate: tradeDate,
             realtimeBaseVolume: baseVolume,
@@ -395,7 +422,7 @@ export default function StockDetailPage() {
                 {tab === "news" && <NewsPanel stockId={stockId} />}
               </div>
               <ChatPanel stockId={stockId} currentUserId={data.currentUserId} stockName={data.nameKo} />
-              <section className="stock-action-section"><div>{data.tradingAvailable ? <Link className="stock-action-button primary" to={`/investments/stocks/order/${stockId}`}>주식 매수 / 매도</Link> : <span className="stock-action-button primary disabled" aria-disabled="true">거래 시간 아님</span>}<p className="stock-action-note">거래 가능 시간: {data.tradingTimeDescription}</p></div><div className="stock-action-links"><Link className="stock-action-button" to="/investments/stocks/search">종목 검색</Link><Link className="stock-action-button" to="/investments/stocks/watchlist">관심 종목</Link><Link className="stock-action-button" to="/investments">투자 홈</Link></div></section>
+              <section className="stock-action-section"><div>{data.tradingAvailable && !data.realtimePriceAvailable ? <span className="stock-action-button primary disabled" aria-disabled="true">실시간 시세 수신 대기</span> : <Link className="stock-action-button primary" to={`/investments/stocks/order/${stockId}`}>{data.tradingAvailable ? "주식 매수 / 매도" : "예약 주문"}</Link>}<p className="stock-action-note">{data.tradingAvailable && !data.realtimePriceAvailable ? "실시간 주가가 수신되면 주문할 수 있습니다." : data.tradingAvailable ? `거래 가능 시간: ${data.tradingTimeDescription}` : "장 마감 후에는 예약 주문을 등록할 수 있습니다."}</p></div><div className="stock-action-links"><Link className="stock-action-button" to="/investments/stocks/search">종목 검색</Link><Link className="stock-action-button" to="/investments/stocks/watchlist">관심 종목</Link><Link className="stock-action-button" to="/investments">투자 홈</Link></div></section>
               <StockConceptDrawer state={drawer} onClose={() => setDrawer((current) => ({ ...current, open: false }))} />
             </>
           )}

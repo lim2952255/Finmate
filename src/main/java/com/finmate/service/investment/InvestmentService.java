@@ -32,6 +32,7 @@ import com.finmate.repository.investment.cash.transaction.SecuritiesCashTransact
 import com.finmate.repository.normal.account.AccountRepository;
 import com.finmate.repository.normal.account.transaction.AccountTransactionRepository;
 import com.finmate.repository.normal.transfer.TransferRepository;
+import com.finmate.repository.user.UserRepository;
 import com.finmate.service.normal.account.AccountNumberRegistryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -50,11 +51,13 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class InvestmentService {
-    private static final int MAX_INVESTMENT_ACCOUNT_COUNT = 10;
+    // 일반계좌 한도와 별도로, 증권사를 합산해 사용자당 최대 3개까지 개설한다.
+    private static final int MAX_INVESTMENT_ACCOUNT_COUNT = 3;
     private static final int TRANSACTION_PAGE_SIZE = 20;
     private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul");
 
     private final InvestmentRepository investmentRepository;
+    private final UserRepository userRepository;
     private final AccountNumberRegistryService accountNumberRegistryService;
     private final AccountRepository accountRepository;
     private final InvestmentCashBalanceRepository investmentCashBalanceRepository;
@@ -304,16 +307,25 @@ public class InvestmentService {
     // 증권 계좌 개설
     @Transactional
     public Long openInvestment(OpenInvestment openInvestment, User user) {
-        long investmentAccountCount = investmentRepository.countByUser_Id(user.getId());
+        // 사용자 행을 먼저 잠가 동시 개설 요청이 모두 개수 검사를 통과하지 못하게 한다.
+        User managedUser = userRepository.findByIdForUpdate(user.getId())
+                .orElseThrow(() -> new BusinessRuleException("사용자를 찾을 수 없습니다."));
+        long investmentAccountCount = investmentRepository.countByUser_Id(managedUser.getId());
         if (investmentAccountCount >= MAX_INVESTMENT_ACCOUNT_COUNT) {
-            throw new BusinessRuleException("증권 계좌는 최대 10개까지만 개설할 수 있습니다.");
+            throw new BusinessRuleException("증권 계좌는 최대 3개까지만 개설할 수 있습니다.");
         }
 
         String accountNumber = accountNumberRegistryService.issueUniqueAccountNumber(AccountType.INVESTMENT);
+        // 현재 트랜잭션의 사용자를 소유자로 연결하며, 증권계좌의 통화별 예수금은 기존처럼 0으로 시작한다.
         Investment investment = Investment.create(
-                user,
+                managedUser,
                 accountNumber,
                 openInvestment.getSecuritiesCompanyCode());
+
+        // 일반계좌와 별개로 첫 증권계좌를 대표로 지정하며, 추가 개설 시에는 대표를 바꾸지 않는다.
+        if (investmentAccountCount == 0) {
+            investment.markAsPrimary();
+        }
 
         Investment savedInvestment = investmentRepository.save(investment);
         return savedInvestment.getId();

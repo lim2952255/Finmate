@@ -25,6 +25,12 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	// 한국어 조사·어미 제거와 복합어 분해를 적용한 TF-IDF 토큰을 생성한다.
+	implementation 'org.apache.lucene:lucene-analysis-nori:9.12.3'
+	// Hugging Face tokenizer 파일을 JVM 안에서 읽어 E5 입력 토큰을 생성한다.
+	implementation 'ai.djl.huggingface:tokenizers:0.36.0'
+	// E5-small ONNX 모델을 CPU에서 실행하는 Java 런타임이다.
+	implementation 'com.microsoft.onnxruntime:onnxruntime:1.29.0'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	annotationProcessor 'org.projectlombok:lombok'
@@ -37,6 +43,14 @@ dependencies {
 	testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
+// test가 JUnit 5 테스트를 실행하도록 설정한다.
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+// 평가 설정은 명시적으로 요청한 실행에서만 로드한다.
+// 따라서 Gradle 명령을 실행할때 withEvaluation이라는 인자를 전달하는 경우에만 evaluation.gradle이 실행되면서 evaluation 관련 설정이 실행된다.
+// ./gradlew bootjar를 통해 애플리케이션 실행용 jar 파일을 생성할때, bootjar는 내부적으로 src/main/java와 src/main/resource만을 보면서 컴파일하기 때문에 src/test나 src/evaluation은 jar파일에서 제외가 된다.
+if (providers.gradleProperty('withEvaluation').isPresent()) {
+	apply from: "$rootDir/gradle/evaluation.gradle"
 }

@@ -32,7 +32,7 @@ WebSocket 체결값을 함께 사용하면 서로 다른 환경의 현재가·�
 | 환율·해외 지수 분봉 | `/uapi/overseas-price/v1/quotations/inquire-time-indexchartprice` | `FHKST03030200` |
 | 국내 지수 일봉 | `/uapi/domestic-stock/v1/quotations/inquire-daily-indexchartprice` | `FHKUP03500100` |
 | 국내 거래량 랭킹 | `/uapi/domestic-stock/v1/quotations/volume-rank` | `FHPST01710000` |
-| 국내 주식현재가 시세 | `/uapi/domestic-stock/v1/quotations/inquire-price` | `FHKST01010100` |
+| 국내 주식현재가 통합 시세(KRX+NXT) | `/uapi/domestic-stock/v1/quotations/inquire-price` | `FHKST01010100` |
 | 국내 재무비율 | `/uapi/domestic-stock/v1/finance/financial-ratio` | `FHKST66430300` |
 | 국내 손익계산서 | `/uapi/domestic-stock/v1/finance/income-statement` | `FHKST66430200` |
 | 국내 대차대조표 | `/uapi/domestic-stock/v1/finance/balance-sheet` | `FHKST66430100` |
@@ -117,6 +117,9 @@ Redis에는 KIS REST로 조회한 1분봉 스냅샷을 저장하고, 캐시가 �
 표시한다.
 
 국내 종목 일봉은 `FID_COND_MRKT_DIV_CODE=UN`으로 조회해 KRX와 NXT를 합친 통합 차트 기준으로 저장한다.
+국내 종목 현재가 주요 시세도 같은 `UN` 시장 구분으로 조회해 현재가·당일 OHLC·누적 거래량·거래대금과
+52주 최고·최저가를 KIS 통합 기준으로 표시한다. 종목별 투자자 매매동향도 `UN`으로 조회하며,
+공매도 및 재무정보 API는 공식 파라미터 명세에 맞춰 `J`를 유지한다.
 통합 일봉의 당일 OHLC·거래량·거래대금은 NXT 애프터마켓이 끝나는 20:00 이후에 확정 대상으로 보므로,
 그 전에는 예상 최신 일봉 거래일을 직전 거래일로 계산하고 WebSocket 당일 캔들만 화면에 덧붙인다.
 종목 상세 화면에서 저장된 일봉이 없으면 최대 3년을 최초 적재하고, 이후에는 마지막 저장 거래일의 다음

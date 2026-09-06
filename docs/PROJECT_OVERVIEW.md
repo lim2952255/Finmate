@@ -23,7 +23,8 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이�
 - 종목 상세 재무 학습 카드의 제품·데이터·표현 계약: [종목 상세 재무 학습 카드](STOCK_FINANCIAL_DETAIL.md)
 - 로컬 실행·설정·검증: [개발 가이드](DEVELOPMENT_GUIDE.md)
 
-> JWT, FDS, OpenAI, Spring Batch, QueryDSL, AWS 배포 등은 현재 `build.gradle`과 `src/main/java`에서 확인되지 않는다. 모든 사용자 화면은 React로 렌더링된다.
+> JWT, FDS, Spring Batch, QueryDSL, AWS 배포 등은 현재 `build.gradle`과 `src/main/java`에서 확인되지 않는다.
+> OpenAI 연동은 운영 코드가 아니라 `src/evaluation`의 뉴스 랭킹 LLM judge에만 존재한다. 모든 사용자 화면은 React로 렌더링된다.
 
 ## 2. 실제 기술 스택
 
@@ -66,9 +67,23 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이�
 
 종목 상세의 실시간 채팅은 별도 `/ws/chat` 연결을 사용한다. 로그인 HTTP 세션에서 사용자를 식별하며, 메시지는 MySQL에 저장해 재접속한 사용자도 과거 기록을 조회할 수 있다. 작성자는 본인 메시지를 수정하거나 소프트 삭제할 수 있고, 다른 메시지를 대상으로 한 답글을 작성할 수 있다.
 
-종목 상세의 뉴스 탭은 탭을 처음 열 때 `/api/stocks/{stockId}/news`를 호출한다. 서버는 `{한글 종목명} 시장정보`를 검색어로 NAVER API HUB 뉴스 검색의 관련도순 후보 40건을 조회한다. 후보를 한국 날짜 최신순으로 먼저 나누고, 같은 날짜 안에서 제목의 투자 핵심 키워드 포함 개수를 동일 가중치로 계산해 점수 내림차순, 발행일시 내림차순, NAVER 원본 순서로 정렬한 상위 10건만 제공한다. 최종 결과, 검색어와 정렬 정책 버전은 종목별 `stock_news_cache` 행에 저장하고, 정책 버전이 같으며 `updatedAt`이 기본 6시간 이내면 외부 API를 다시 호출하지 않는다. 같은 JVM에서 동일 종목의 캐시 갱신 요청이 겹치면 하나의 갱신만 수행한다.
+종목 상세의 뉴스 탭은 탭을 처음 열 때 `/api/stocks/{stockId}/news`를 호출한다. 서버는 `{한글 종목명} 시장정보`를
+검색어로 NAVER API HUB 뉴스 검색의 관련도순 후보 80건을 한 번 조회하고, `NEWS_RANKING_STRATEGY`로 선택한
+전략 하나만 실행한다. 결과 목록과 전략 타입은 종목별 `stock_news_cache` 행에 저장하며 `updatedAt`이 기본
+6시간 이내이고 전략 타입이 현재 설정과 같으면 외부 API와 랭킹 계산을 다시 수행하지 않는다. 같은 JVM에서
+동일 종목의 캐시 갱신 요청이 겹치면 하나의 갱신만 수행한다.
+랭킹 전략이 최종 선별한 종목 뉴스에는 경량 ONNX KR-FinBert-SC 분석을 한 배치로 수행하고 각 기사를
+호재·보통·악재로 표시한다. 분석 결과도 뉴스 JSON에 포함해 캐시하므로 일반 조회에서는 반복 추론하지 않는다.
 
-`/investments/reports`는 KOSPI, KOSDAQ, NASDAQ, S&P 500, 금리, 환율의 6개 시장 뉴스 주제를 탭으로 제공한다. 각 주제는 관련도순 후보 40건을 한국 날짜 최신순으로 먼저 나누고, 같은 날짜 안에서 주제별 제목 키워드 점수와 발행시각을 적용해 상위 10건을 보여준다. 결과는 사용자별로 저장하지 않고 주제별 `market_report_cache` 한 행을 모든 사용자가 공유하며, 기본 6시간이 지난 뒤 첫 조회에서만 갱신한다.
+네 전략의 정량 비교는 운영 애플리케이션과 분리된 Gradle `evaluation` source set에서 수행한다. 평가 설정은
+`gradle/evaluation.gradle`에 있으며 `-PwithEvaluation`을 지정한 실행에서만 로드된다. KOSPI,
+KOSDAQ, NASDAQ, S&P 500, 금리, 환율, 삼성전자, SK하이닉스, NAVER, 카카오, KB금융, 현대차의 고정 후보
+데이터에 네 전략을 적용하고 OpenAI LLM judge가 관련도와 동일
+사건 그룹을 Structured Outputs로 반환한다. 평가기는 이를 이용해 nDCG, 중복률, 고유 사건 수, Yield와
+처리 시간을 CSV로 생성하며 평가 클래스는 운영 JAR에 포함되지 않는다.
+
+`/investments/reports`는 KOSPI, KOSDAQ, NASDAQ, S&P 500, 금리, 환율의 6개 시장 뉴스 주제를 탭으로 제공한다. 각 주제는 관련도순 후보 80건을 조회하고 `NEWS_RANKING_STRATEGY`로 선택한 전략 하나를 적용해 상위 10건을 보여준다. 결과는 사용자별로 저장하지 않고 주제별 `market_report_cache` 한 행을 모든 사용자가 공유하며, 기본 6시간이 지난 뒤 첫 조회에서만 갱신한다.
+시장 리포트의 최종 기사에도 같은 KR-FinBert-SC 감성 분석을 적용하며 주제별 호재·보통·악재 개수와 기사별 결과를 함께 표시한다.
 
 ### 모의 주식 거래
 

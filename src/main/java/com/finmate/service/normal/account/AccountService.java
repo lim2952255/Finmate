@@ -1,6 +1,7 @@
 package com.finmate.service.normal.account;
 
 import com.finmate.domain.normal.account.Account;
+import com.finmate.domain.normal.account.AccountBalancePolicy;
 import com.finmate.domain.normal.account.AccountType;
 import com.finmate.domain.normal.account.BankCode;
 import com.finmate.domain.normal.account.dto.AccountHomeInfo;
@@ -25,6 +26,7 @@ import com.finmate.repository.normal.account.AccountRepository;
 import com.finmate.repository.normal.account.transaction.AccountTransactionRepository;
 import com.finmate.repository.normal.transfer.DailyTransferUsageRepository;
 import com.finmate.repository.normal.transfer.TransferRepository;
+import com.finmate.repository.user.UserRepository;
 import com.finmate.service.normal.transfer.TransferLimitUsageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -45,11 +47,13 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class AccountService {
-    private static final int MAX_ACCOUNT_COUNT = 10;
+    // 은행·통화와 관계없이 사용자당 일반계좌를 합산한 개설 한도다.
+    private static final int MAX_ACCOUNT_COUNT = 3;
     private static final int TRANSACTION_PAGE_SIZE = 20;
     private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul");
 
     private final AccountRepository accountRepository;
+    private final UserRepository userRepository;
     private final AccountNumberRegistryService accountNumberRegistryService;
     private final TransferRepository transferRepository;
     private final AccountTransactionRepository accountTransactionRepository;
@@ -82,9 +86,18 @@ public class AccountService {
     // 계좌 개설
     @Transactional
     public Long openAccount(OpenAccount openAccount, User user) {
-        long accountCount = accountRepository.countByUser_Id(user.getId());
+        // 사용자 잠금을 먼저 획득하고, 개수 확인부터 최초 지급까지 하나의 트랜잭션으로 처리한다.
+        User managedUser = userRepository.findByIdForUpdate(user.getId())
+                .orElseThrow(() -> new BusinessRuleException("사용자를 찾을 수 없습니다."));
+        long accountCount = accountRepository.countByUser_Id(managedUser.getId());
         if (accountCount >= MAX_ACCOUNT_COUNT) {
-            throw new BusinessRuleException("계좌는 최대 10개까지만 개설할 수 있습니다.");
+            throw new BusinessRuleException("계좌는 최대 3개까지만 개설할 수 있습니다.");
+        }
+
+        // 기존 정책에서 원화 계좌를 개설한 사용자에게 시작 자금을 다시 지급하지 않는다.
+        if (!managedUser.isSimulationFundingGranted()
+                && accountRepository.existsByUser_IdAndCurrencyCode(managedUser.getId(), CurrencyCode.KRW)) {
+            managedUser.markSimulationFundingGranted();
         }
 
         // Registry에 새로운 계좌번호를 등록한 후 계좌를 개설한다.
@@ -94,12 +107,26 @@ public class AccountService {
                 openAccount.getBankCode(),
                 openAccount.getCurrencyCode()); // 계좌 개설 시에 해당 계좌의 통화를 설정해야 한다.
 
-        // 이때 user는 준영속상태이다.
-        // 하지만 연관관계의 주인은 Account이기 때문에, user가 준영속상태라고 해도, 양방향 연관관계를 설정한다면,
-        // Account에 user정보가 업데이트되기 때문에 상관없다.
-        user.addAccount(account);
+        // 요청에서 받은 준영속 사용자 대신 현재 트랜잭션에서 잠근 사용자를 계좌 소유자로 연결한다.
+        account.assignUser(managedUser);
+
+        // 일반계좌가 없던 사용자의 첫 계좌만 대표로 지정하고, 이후 개설은 기존 대표 선택을 유지한다.
+        if (accountCount == 0) {
+            account.markAsPrimary();
+        }
 
         Account savedAccount = accountRepository.save(account); // 계좌 개설
+        // 원화에만 시작 자금이 있으므로 USD 계좌를 먼저 개설해도 최초 지급 자격은 유지된다.
+        BigDecimal startingFunds = AccountBalancePolicy.initialBalanceOf(account.getCurrencyCode());
+        if (!managedUser.isSimulationFundingGranted() && startingFunds.signum() > 0) {
+            account.deposit(startingFunds);
+            managedUser.markSimulationFundingGranted();
+            // 자금 지급은 계좌 간 이체가 아니므로 Transfer 없이 입금 원장을 남긴다.
+            // 원장 저장에 실패하면 계좌·계좌번호·잔액·지급 이력도 함께 롤백된다.
+            accountTransactionRepository.save(AccountTransaction.create(
+                    account, null, AccountTransactionType.DEPOSIT, startingFunds,
+                    BigDecimal.ZERO, account.getBalance(), null, null, "FinMate", "모의 시작 자금 지급"));
+        }
         return savedAccount.getId();
     }
 

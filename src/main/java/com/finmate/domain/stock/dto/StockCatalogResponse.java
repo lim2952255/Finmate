@@ -4,6 +4,7 @@ import com.finmate.domain.stock.FavoriteStock;
 import com.finmate.domain.stock.Stock;
 import com.finmate.domain.stock.dto.favorite.FavoriteStockPageInfo;
 import com.finmate.domain.stock.dto.search.StockSearchPageInfo;
+import com.finmate.domain.stock.market.StockMarketSchedules;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -81,6 +82,8 @@ public final class StockCatalogResponse {
             String securityType,
             String currency,
             boolean tradable,
+            boolean tradingAvailable,
+            String tradingTimeDescription,
             boolean favorite,
             LocalDateTime favoriteCreatedAt
     ) {
@@ -89,6 +92,7 @@ public final class StockCatalogResponse {
                 String industryName,
                 boolean favorite,
                 LocalDateTime favoriteCreatedAt) {
+            boolean tradable = stock.isActive() && stock.isTradable() && !stock.isTradingHalted();
             return new StockResponse(
                     stock.getId(),
                     stock.getSymbol(),
@@ -98,7 +102,9 @@ public final class StockCatalogResponse {
                     industryName,
                     stock.getSecurityType().name(),
                     stock.getCurrency(),
-                    stock.isTradable(),
+                    tradable,
+                    tradable && StockMarketSchedules.isTradingTimeNow(stock),
+                    StockMarketSchedules.describeTradingHours(stock),
                     favorite,
                     favoriteCreatedAt);
         }

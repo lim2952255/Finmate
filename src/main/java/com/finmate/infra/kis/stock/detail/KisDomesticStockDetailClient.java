@@ -15,7 +15,8 @@ import static com.finmate.global.validation.RequiredValidator.validateRequired;
 @Component
 @RequiredArgsConstructor
 public class KisDomesticStockDetailClient {
-    private static final String MARKET_CODE = "J";
+    private static final String KRX_MARKET_CODE = "J";
+    private static final String INTEGRATED_MARKET_CODE = "UN";
     private static final DateTimeFormatter REQUEST_DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
 
     private static final String CURRENT_PRICE_PATH =
@@ -50,7 +51,7 @@ public class KisDomesticStockDetailClient {
         validateSymbol(symbol);
 
         Map<String, String> params = new LinkedHashMap<>();
-        params.put("FID_COND_MRKT_DIV_CODE", MARKET_CODE);
+        params.put("FID_COND_MRKT_DIV_CODE", INTEGRATED_MARKET_CODE);
         params.put("FID_INPUT_ISCD", symbol);
 
         return kisRestClient.get(
@@ -99,7 +100,7 @@ public class KisDomesticStockDetailClient {
         validateRequired(baseDate, "투자자 매매동향 조회 기준일자는 필수입니다.");
 
         Map<String, String> params = new LinkedHashMap<>();
-        params.put("FID_COND_MRKT_DIV_CODE", MARKET_CODE);
+        params.put("FID_COND_MRKT_DIV_CODE", INTEGRATED_MARKET_CODE);
         params.put("FID_INPUT_ISCD", symbol);
         params.put("FID_INPUT_DATE_1", baseDate.format(REQUEST_DATE_FORMATTER));
         params.put("FID_ORG_ADJ_PRC", "");
@@ -116,7 +117,7 @@ public class KisDomesticStockDetailClient {
     public KisDailyShortSaleResponse fetchDailyShortSales(String symbol, LocalDate startDate, LocalDate endDate) {
         validateDateRange(symbol, startDate, endDate);
         Map<String, String> params = new LinkedHashMap<>();
-        params.put("FID_COND_MRKT_DIV_CODE", MARKET_CODE);
+        params.put("FID_COND_MRKT_DIV_CODE", KRX_MARKET_CODE);
         params.put("FID_INPUT_ISCD", symbol);
         params.put("FID_INPUT_DATE_1", startDate.format(REQUEST_DATE_FORMATTER));
         params.put("FID_INPUT_DATE_2", endDate.format(REQUEST_DATE_FORMATTER));
@@ -141,7 +142,7 @@ public class KisDomesticStockDetailClient {
     private Map<String, String> financialParams(String symbol, FinancialPeriod period) {
         Map<String, String> params = new LinkedHashMap<>();
         params.put("FID_DIV_CLS_CODE", period.kisCode());
-        params.put("fid_cond_mrkt_div_code", MARKET_CODE);
+        params.put("fid_cond_mrkt_div_code", KRX_MARKET_CODE);
         params.put("fid_input_iscd", symbol);
         return params;
     }

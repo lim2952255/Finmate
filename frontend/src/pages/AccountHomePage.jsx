@@ -92,9 +92,19 @@ export default function AccountHomePage() {
                   </div>
                 ) : (
                   <div className="empty-state">
-                    <strong>대표계좌를 설정해 주세요</strong>
-                    <p>자주 사용하는 계좌를 대표계좌로 지정하면 이체와 거래내역 확인이 더 빨라집니다.</p>
-                    <Link to="/accounts/list">보유계좌 확인</Link>
+                    {data.accountCount === 0 ? (
+                      <>
+                        <strong>첫 계좌를 개설해 보세요</strong>
+                        <p>최초 원화 계좌에는 모의 시작 자금 1억원이 입금되며 대표계좌로 자동 설정됩니다.</p>
+                        <Link to="/accounts/open">계좌 개설하기</Link>
+                      </>
+                    ) : (
+                      <>
+                        <strong>대표계좌를 설정해 주세요</strong>
+                        <p>자주 사용하는 계좌를 대표계좌로 지정하면 이체와 거래내역 확인이 더 빨라집니다.</p>
+                        <Link to="/accounts/list">보유계좌 확인</Link>
+                      </>
+                    )}
                   </div>
                 )}
               </section>

@@ -6,6 +6,7 @@ import { MARKET_REPORT_TOPICS } from "../data/marketReportTopics.js";
 import useDocumentTitle from "../hooks/useDocumentTitle.js";
 import useMarketReport from "../hooks/useMarketReport.js";
 import { formatReportDateTime } from "../utils/reportFormatting.js";
+import { countNewsSentiments } from "../utils/newsSentiment.js";
 import "../styles/market-reports.css";
 
 // 시장 리포트 페이지에서 처음 선택할 주제를 주제 배열의 첫 번째 항목으로 설정한다.
@@ -89,6 +90,7 @@ export default function MarketReportsPage() {
   // 서버 응답의 items와 keywords가 배열일 때만 사용하고, 아니면 빈 배열을 사용한다.
   const items = Array.isArray(report?.items) ? report.items : [];
   const keywords = Array.isArray(report?.keywords) ? report.keywords : [];
+  const sentimentCounts = countNewsSentiments(items);
 
   return (
     <div className="page">
@@ -150,10 +152,17 @@ export default function MarketReportsPage() {
             </header>
 
             <div className="market-keyword-area">
-              <span>선별 키워드</span>
-              <div className="market-keywords" aria-live="polite">
-                {/* 서버가 반환한 키워드마다 span 태그를 하나씩 생성한다. */}
-                {keywords.map((keyword) => <span key={keyword}>{keyword}</span>)}
+              <div className="market-keyword-group">
+                <span className="market-keyword-title">선별 키워드</span>
+                <div className="market-keywords" aria-live="polite">
+                  {/* 서버가 반환한 키워드마다 span 태그를 하나씩 생성한다. */}
+                  {keywords.map((keyword) => <span key={keyword}>{keyword}</span>)}
+                </div>
+              </div>
+              <div className="market-sentiment-summary" aria-label="시장 뉴스 감성 분석 요약">
+                <span className="market-sentiment-count market-sentiment-count--positive">호재: <strong>{sentimentCounts.POSITIVE}개</strong></span>
+                <span className="market-sentiment-count market-sentiment-count--neutral">보통: <strong>{sentimentCounts.NEUTRAL}개</strong></span>
+                <span className="market-sentiment-count market-sentiment-count--negative">악재: <strong>{sentimentCounts.NEGATIVE}개</strong></span>
               </div>
             </div>
 

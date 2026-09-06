@@ -1,8 +1,8 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import useSession from "../../hooks/useSession.js";
 
-// Vite나 운영 정적 웹 서버는 모든 화면에 공통 index.html을 제공하므로,
-// 보호 화면을 렌더링하기 전에 Spring 세션을 직접 확인한다.
+// /investments/portfolio 같은 화면 주소는 Spring이 아니라 Vite/Nginx가 React index.html로 처리한다.
+// React는 화면을 보여주기 전에 공개 API인 /api/session으로 Spring 로그인 상태만 확인한다.
 export default function ProtectedRoute() {
   const location = useLocation();
   const { status, session } = useSession();
@@ -30,6 +30,8 @@ export default function ProtectedRoute() {
   }
 
   if (!session?.authenticated) {
+    // 정상적인 SPA 흐름에서는 Spring Security RequestCache가 아니라 React가 원래 화면 경로를 기억한다.
+    // 예: /investments/portfolio -> /login?redirect=%2Finvestments%2Fportfolio
     const redirect = encodeURIComponent(`${location.pathname}${location.search}`);
     return <Navigate to={`/login?redirect=${redirect}`} replace />;
   }

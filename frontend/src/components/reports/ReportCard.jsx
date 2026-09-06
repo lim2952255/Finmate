@@ -1,4 +1,5 @@
 import { formatReportDateTime } from "../../utils/reportFormatting.js";
+import { NEWS_SENTIMENT_LABELS, normalizeNewsSentiment } from "../../utils/newsSentiment.js";
 
 // 뉴스 API의 제목과 요약에 포함될 수 있는 HTML 문자열을 일반 텍스트로 변환한다.
 function decodeText(value) {
@@ -35,12 +36,19 @@ export default function ReportCard({ item, index }) {
     : "NAVER 뉴스 검색";
   const title = decodeText(item.title);
   const description = decodeText(item.description);
+  const sentiment = normalizeNewsSentiment(item.sentiment);
 
   return (
     <article className="market-report-card">
       <div className="market-report-card-top">
         <span className="market-report-source">{source}</span>
-        <span className="market-report-rank">{String(index + 1).padStart(2, "0")}</span>
+        <div className="market-report-card-labels">
+          {/* 종목 뉴스와 같은 색상 규칙으로 시장 기사의 감성 결과를 강조한다. */}
+          <span className={`market-report-sentiment market-report-sentiment--${sentiment.toLowerCase()}`}>
+            {NEWS_SENTIMENT_LABELS[sentiment]}
+          </span>
+          <span className="market-report-rank">{String(index + 1).padStart(2, "0")}</span>
+        </div>
       </div>
 
       <h3>

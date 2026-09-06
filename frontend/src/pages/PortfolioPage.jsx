@@ -7,6 +7,9 @@ import useDocumentTitle from "../hooks/useDocumentTitle.js";
 import "../styles/portfolio.css";
 
 const SEPARATED = "SEPARATED";
+const DOMESTIC = "DOMESTIC";
+const OVERSEAS = "OVERSEAS";
+const ALLOCATION_COLORS = ["#315bea", "#0ea5e9", "#f59e0b", "#f97316", "#8b5cf6", "#ec4899", "#84cc16"];
 
 function toNumber(value) {
   if (value === null || value === undefined || value === "") return Number.NaN;
@@ -86,27 +89,64 @@ function UnifiedWaitingCard() {
   );
 }
 
-function IndustryAllocations({ allocations }) {
-  if (!allocations.length) return null;
+function isDomesticMarket(market) {
+  return market === "KOSPI" || market === "KOSDAQ";
+}
+
+function AllocationDonut({ allocation, marketView, onMarketViewChange }) {
+  if (!allocation.items.length && !allocation.unavailable) return null;
 
   return (
-    <section className="industry-allocation">
-      <h2>업종별 비중</h2>
-      <div className="industry-allocation-grid">
-        {allocations.map((item) => (
-          <article className="industry-allocation-card" key={`${item.currency}-${item.groupName}-${item.industryName}`}>
-            <div className="industry-allocation-heading">
-              <span className={`industry-chip${item.industryName === "없음" ? " is-empty" : ""}`}>{item.industryName}</span>
-              <span className="industry-allocation-tags">
-                <span className="industry-allocation-currency">{item.groupName}</span>
-                <span className="industry-allocation-currency">{item.currency}</span>
-              </span>
-            </div>
-            <div className="industry-allocation-bar" aria-hidden="true"><span style={{ width: `${Math.min(item.percentage, 100)}%` }} /></div>
-            <p className="industry-allocation-value">{item.percentage.toFixed(2)}% · 매입금액 {formatNumber(item.purchaseAmount, fractionDigits(item.currency))} {item.currency}</p>
-          </article>
-        ))}
+    <section className="portfolio-allocation" aria-labelledby="portfolio-allocation-title">
+      <div className="portfolio-allocation-header">
+        <div>
+          <span className="eyebrow">ASSET MIX</span>
+          <h2 id="portfolio-allocation-title">테마별 자산 비중</h2>
+          <p>선택한 시장은 업종별로, 반대 시장은 하나의 비중으로 묶어 보여줍니다.</p>
+        </div>
+        <div className="portfolio-market-view" role="group" aria-label="테마 비중 시장 선택">
+          <button type="button" className={marketView === DOMESTIC ? "is-active" : ""} aria-pressed={marketView === DOMESTIC} onClick={() => onMarketViewChange(DOMESTIC)}>국내 종목 비중</button>
+          <button type="button" className={marketView === OVERSEAS ? "is-active" : ""} aria-pressed={marketView === OVERSEAS} onClick={() => onMarketViewChange(OVERSEAS)}>해외 종목 비중</button>
+        </div>
       </div>
+
+      {allocation.unavailable ? (
+        <p className="portfolio-allocation-empty" role="status">USD/KRW 환율을 조회하지 못해 국내·해외 통합 비중을 계산할 수 없습니다.</p>
+      ) : (
+        <div className="portfolio-allocation-body">
+          <div className="portfolio-donut-wrap">
+            <svg className="portfolio-donut" viewBox="0 0 120 120" role="img" aria-label={allocation.items.map((item) => `${item.name} ${item.percentage.toFixed(2)}%`).join(", ")}>
+              <circle className="portfolio-donut-track" cx="60" cy="60" r="48" pathLength="100" />
+              {allocation.items.map((item, index) => {
+                const currentOffset = allocation.items
+                  .slice(0, index)
+                  .reduce((sum, previous) => sum + previous.percentage, 0);
+                return (
+                  <circle key={`${item.kind}-${item.name}`} className="portfolio-donut-slice" cx="60" cy="60" r="48" pathLength="100"
+                    stroke={item.color} strokeDasharray={`${item.percentage} ${100 - item.percentage}`} strokeDashoffset={-currentOffset}>
+                    <title>{item.name} {item.percentage.toFixed(2)}%</title>
+                  </circle>
+                );
+              })}
+            </svg>
+            <div className="portfolio-donut-center" aria-hidden="true">
+              <strong>100%</strong>
+              <span>{marketView === DOMESTIC ? "국내 기준" : "해외 기준"}</span>
+            </div>
+          </div>
+          <ul className="portfolio-allocation-legend">
+            {allocation.items.map((item) => (
+              <li key={`${item.kind}-${item.name}`}>
+                <span className="portfolio-allocation-swatch" style={{ backgroundColor: item.color }} aria-hidden="true" />
+                <span className="portfolio-allocation-name">{item.name}</span>
+                <strong>{item.percentage.toFixed(2)}%</strong>
+                <small>{formatNumber(item.amount, 0)} KRW</small>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {!allocation.unavailable && <p className="portfolio-allocation-note">총 구성자산 {formatNumber(allocation.total, 0)} KRW · 종목은 매입금액, 현금은 주문 예약금을 포함한 총 예수금을 원화로 환산해 계산합니다.</p>}
     </section>
   );
 }
@@ -118,6 +158,7 @@ export default function PortfolioPage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [currencyView, setCurrencyView] = useState(SEPARATED);
+  const [marketView, setMarketView] = useState(DOMESTIC);
   const [realtimePrices, setRealtimePrices] = useState({});
   const [pendingInvestmentId, setPendingInvestmentId] = useState("");
 
@@ -194,23 +235,67 @@ export default function PortfolioPage() {
     });
   }, [currencyView, holdings, usdKrwRate]);
 
-  const allocations = useMemo(() => {
-    if (currencyView === SEPARATED) {
-      return (data?.industryAllocations || []).map((item) => ({ ...item, purchaseAmount: toNumber(item.purchaseAmount), percentage: toNumber(item.percentage) }));
-    }
+  const allocation = useMemo(() => {
+    const selectedThemes = new Map();
+    let counterpartAmount = 0;
+    let cashAmount = 0;
+    let unavailable = false;
 
-    const grouped = new Map();
-    let total = 0;
+    const toKrw = (amount, currency) => {
+      const converted = convertCurrency(amount, currency, "KRW", usdKrwRate);
+      if (!Number.isFinite(converted)) unavailable = true;
+      return converted;
+    };
+
     holdings.forEach((holding) => {
-      const purchaseAmount = convertCurrency(holding.averagePriceValue * holding.quantityValue, holding.currency, currencyView, usdKrwRate);
-      const key = `${holding.industryGroup}\u0000${holding.industry}`;
-      const current = grouped.get(key) || { currency: currencyView, groupName: holding.industryGroup, industryName: holding.industry, purchaseAmount: 0 };
-      current.purchaseAmount += purchaseAmount;
-      grouped.set(key, current);
-      total += purchaseAmount;
+      const purchaseAmount = toKrw(holding.averagePriceValue * holding.quantityValue, holding.currency);
+      if (!Number.isFinite(purchaseAmount) || purchaseAmount <= 0) return;
+      const domestic = isDomesticMarket(holding.market);
+      const selected = marketView === DOMESTIC ? domestic : !domestic;
+      if (selected) {
+        const theme = holding.industry && holding.industry !== "없음" ? holding.industry : "미분류";
+        selectedThemes.set(theme, (selectedThemes.get(theme) || 0) + purchaseAmount);
+      } else {
+        counterpartAmount += purchaseAmount;
+      }
     });
-    return [...grouped.values()].map((item) => ({ ...item, percentage: total ? item.purchaseAmount / total * 100 : 0 })).sort((left, right) => right.purchaseAmount - left.purchaseAmount);
-  }, [currencyView, data, holdings, usdKrwRate]);
+
+    (data?.cashBalances || []).forEach((balance) => {
+      const nativeAmount = toNumber(balance.totalBalance);
+      if (!Number.isFinite(nativeAmount) || nativeAmount <= 0) return;
+      const amount = toKrw(nativeAmount, balance.currency);
+      if (Number.isFinite(amount) && amount > 0) cashAmount += amount;
+    });
+
+    if (unavailable) return { items: [], total: 0, unavailable: true };
+
+    const themeItems = [...selectedThemes.entries()]
+      .map(([name, amount]) => ({ name, amount, kind: "theme" }))
+      .sort((left, right) => right.amount - left.amount || left.name.localeCompare(right.name, "ko"));
+    const rawItems = themeItems.slice(0, 7);
+    const otherThemesAmount = themeItems.slice(7).reduce((sum, item) => sum + item.amount, 0);
+    if (otherThemesAmount > 0) rawItems.push({ name: "기타", amount: otherThemesAmount, kind: "other-themes" });
+    if (counterpartAmount > 0) rawItems.push({ name: marketView === DOMESTIC ? "해외" : "국내", amount: counterpartAmount, kind: "counterpart" });
+    if (cashAmount > 0) rawItems.push({ name: "현금", amount: cashAmount, kind: "cash" });
+    rawItems.sort((left, right) => right.amount - left.amount || left.name.localeCompare(right.name, "ko"));
+    let themeColorIndex = 0;
+    const total = rawItems.reduce((sum, item) => sum + item.amount, 0);
+    return {
+      total,
+      unavailable: false,
+      items: rawItems.map((item) => ({
+        ...item,
+        percentage: total ? item.amount / total * 100 : 0,
+        color: item.kind === "cash"
+          ? "#14b8a6"
+          : item.kind === "counterpart"
+            ? "#64748b"
+            : item.kind === "other-themes"
+              ? "#94a3b8"
+              : ALLOCATION_COLORS[themeColorIndex++ % ALLOCATION_COLORS.length]
+      }))
+    };
+  }, [data, holdings, marketView, usdKrwRate]);
 
   const displayHolding = (holding) => {
     const targetCurrency = currencyView === SEPARATED ? holding.currency : currencyView;
@@ -271,7 +356,7 @@ export default function PortfolioPage() {
                 {summaries.map((summary) => <SummaryCard key={summary.currency} summary={summary} converted={currencyView !== SEPARATED} />)}
                 {currencyView === SEPARATED && <UnifiedWaitingCard />}
               </div>}
-              <IndustryAllocations allocations={allocations} />
+              <AllocationDonut allocation={allocation} marketView={marketView} onMarketViewChange={setMarketView} />
 
               {!!holdings.length && (
                 <div className="table-scroll">

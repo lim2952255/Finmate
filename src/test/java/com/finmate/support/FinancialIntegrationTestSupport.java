@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.math.BigDecimal;
 
 // 스프링 컨텍스트 로딩
 @SpringBootTest(properties = {
@@ -60,6 +61,10 @@ public abstract class FinancialIntegrationTestSupport extends MySqlIntegrationTe
             // getReference()는 일반적으로 즉시 SELECT하지 않고 프록시를 반환하며, ID 외의 실제 데이터가 필요할 때 DB를 조회할 수 있다.
             User managedUser = entityManager.getReference(User.class, user.getId());
             Account account = Account.create(accountNumber, bankCode, currencyCode); // 계좌 생성
+            // 계좌 생성 시 자동 지급이 없어졌으므로 기존 이체 테스트의 준비 잔액 300만원을 명시적으로 입금한다.
+            if (currencyCode == CurrencyCode.KRW) {
+                account.deposit(new BigDecimal("3000000"));
+            }
             managedUser.addAccount(account); // 연관관계 설정
             entityManager.persist(account); // Account 엔티티를 EntityManager에 등록한다.
             entityManager.flush(); // 이후에 EntityManager를 flush함으로서 영속성 컨텍스트의 변경사항을 DB에 반영한다.

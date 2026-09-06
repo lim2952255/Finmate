@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 // 스프링 시큐리티에 대한 설정을 추가한다.
 @Configuration
@@ -27,10 +28,12 @@ public class SecurityConfig {
 			FinMateUserDetailsService userDetailsService, // 로그인 Id를 기반으로 DB에서 사용자를 조회하고 검증하는 서비스
 			FinMateOidcUserService oidcUserService,
 			FinMateOAuth2UserService oauth2UserService,
+			OAuth2RedirectSessionStore oauth2RedirectSessionStore, // Redirect 경로를 담은 세션 스토어 추가
 			PasswordEncoder passwordEncoder, // 비밀번호를 암호화해서 비교하는 객체
 			@Value("${finmate.oauth.google.enabled:false}") boolean googleOAuthEnabled,
 			@Value("${finmate.oauth.kakao.enabled:false}") boolean kakaoOAuthEnabled,
-			@Value("${finmate.oauth.naver.enabled:false}") boolean naverOAuthEnabled
+			@Value("${finmate.oauth.naver.enabled:false}") boolean naverOAuthEnabled,
+			@Value("${finmate.frontend-base-url:http://localhost:5173}") String frontendBaseUrl
 	) throws Exception {
 
 		// DaoAuthenticationProvider는 DB에 저장된 사용자 정보를 기반으로 아이디와 비밀번호를 인증하는 객체이다.
@@ -40,10 +43,11 @@ public class SecurityConfig {
 				new DaoAuthenticationProvider(userDetailsService);
 		authenticationProvider.setPasswordEncoder(passwordEncoder);
 
-			// React가 전달한 내부 redirect를 검증해 로그인 후 원래 화면으로 돌아간다.
+		// React가 전달한 내부 redirect를 검증해 로그인 후 원래 화면으로 돌아간다.
 		SavedRequestAwareAuthenticationSuccessHandler savedRequestSuccessHandler =
 				new SavedRequestAwareAuthenticationSuccessHandler();
 		savedRequestSuccessHandler.setDefaultTargetUrl("/");
+		HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
 		LoginUrlAuthenticationEntryPoint pageAuthenticationEntryPoint =
 				new LoginUrlAuthenticationEntryPoint("/login");
 
@@ -127,11 +131,42 @@ public class SecurityConfig {
 							.userService(oauth2UserService) // OAuth2UserService와 OidcUserService를 등록한다.
 							.oidcUserService(oidcUserService)
 					)
-					.failureUrl("/login?oauth2Error")
+					.successHandler((request, response, authentication) -> {
+						// RequestCache는 비로그인 사용자가 Spring의 보호 경로를 요청했을 때만 그 주소를 자동 저장한다.
+						// 정상 React 로그인 흐름의 /api/auth/**와 /oauth2/**는 공개 경로이므로 RequestCache 저장 대상이 아니다.
+						// 이 SavedRequest가 관찰된 8080 redirect의 최초 원인이었다고 단정하지 않는다. 프록시 Host 해석이나 기존 redirect가
+						// 브라우저를 8080으로 보낸 뒤 생긴 2차 기록일 수도 있다. OAuth 복귀 정책에서는 필요 없으므로 방어적으로 제거한다.
+						requestCache.removeRequest(request, response);
+						// RequestCache 값 대신 OAuth 시작 API가 검증해 별도로 저장한 React 원래 경로를 한 번 꺼낸다.
+						String redirect = oauth2RedirectSessionStore.consume(request);
+						// 로컬은 localhost:5173, 운영은 서비스 도메인인 frontendBaseUrl과 내부 경로를 결합한다.
+						response.sendRedirect(frontendUrl(frontendBaseUrl, redirect));
+					})
+					.failureHandler((request, response, exception) -> {
+						requestCache.removeRequest(request, response);
+						String redirect = oauth2RedirectSessionStore.consume(request);
+						String failureUrl = "/login?oauth2Error&redirect=" + URLEncoder.encode(
+								redirect,
+								StandardCharsets.UTF_8
+						);
+						response.sendRedirect(frontendUrl(frontendBaseUrl, failureUrl));
+					})
 			);
 		}
 
 		return http.build();
+	}
+
+	private String frontendUrl(String frontendBaseUrl, String path) {
+		String normalizedBaseUrl = frontendBaseUrl.endsWith("/")
+				? frontendBaseUrl.substring(0, frontendBaseUrl.length() - 1)
+				: frontendBaseUrl;
+		return normalizedBaseUrl + path;
+	}
+
+	@Bean
+	public OAuth2RedirectSessionStore oauth2RedirectSessionStore() {
+		return new OAuth2RedirectSessionStore();
 	}
 
 	@Bean

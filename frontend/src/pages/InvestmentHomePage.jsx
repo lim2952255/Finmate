@@ -103,6 +103,8 @@ export default function InvestmentHomePage() {
                         <CurrencySwitcher balances={primaryBalances} label="사용 가능 예수금" compact />
                       </div>
                       <div className="primary-account-actions">
+                        {/* 대표 증권계좌를 입금 대상으로 전달해 기존 예수금 입금 화면을 재사용한다. */}
+                        <Link to={`/accounts/transfer-investment?investmentNumber=${encodeURIComponent(primaryInvestment.accountNumber)}`}>예수금 입금</Link>
                         <a href={`/investments/transfer?from=${encodeURIComponent(primaryInvestment.accountNumber)}&fromSecuritiesCompanyCode=${primaryInvestment.securitiesCompanyCode}`}>투자금 이체</a>
                         <a href={`/investments/currency-exchange?investmentNumber=${encodeURIComponent(primaryInvestment.accountNumber)}&securitiesCompanyCode=${primaryInvestment.securitiesCompanyCode}`}>환전</a>
                         <a href="/investments/portfolio">포트폴리오 보기</a>

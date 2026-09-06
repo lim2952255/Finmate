@@ -37,40 +37,41 @@ class InvestmentOpeningIntegrationTest extends FinancialIntegrationTestSupport {
     private AccountNumberRegistryRepository registryRepository;
 
     @Test
-    @DisplayName("INV-001: 열 번째 투자계좌까지 개설하고 KRW·USD 예수금을 함께 생성한다")
-    void inv001_tenthInvestmentIsAllowedAndCreatesBothCurrencyBalances() {
+    @DisplayName("INV-001: 세 번째 투자계좌까지 개설하고 KRW·USD 예수금을 함께 생성한다")
+    void inv001_thirdInvestmentIsAllowedAndCreatesBothCurrencyBalances() {
         User user = persistUser("investment-owner");
-        // 총 9개의 증권계좌를 개설
-        for (int i = 0; i < 9; i++) {
-            persistInvestment(user, investmentNumber(i), SecuritiesCompanyCode.KIWOOM);
-        }
-        // 한개의 증권계좌를 추가로 개설 -> 해당 사용자 명의 증권계좌는 총 10개이며, 더이상 증권계좌를 개설할 수 없다.
+        // 실제 개설 경로를 통해 첫 증권계좌의 대표 지정과 추가 개설 시 대표 유지도 확인한다.
+        Long firstId = investmentService.openInvestment(openInvestment(), user);
+        assertThat(investmentRepository.findById(firstId).orElseThrow().isPrimary()).isTrue();
+        Long secondId = investmentService.openInvestment(openInvestment(), user);
+        // 한개의 증권계좌를 추가로 개설 -> 해당 사용자 명의 증권계좌는 총 3개이며, 더이상 증권계좌를 개설할 수 없다.
         Long investmentId = investmentService.openInvestment(openInvestment(), user);
 
-        assertThat(investmentRepository.countByUser_Id(user.getId())).isEqualTo(10);
+        assertThat(investmentRepository.countByUser_Id(user.getId())).isEqualTo(3);
         // CashBalanceRepository에 KRW와 USD 통화 예수금만 생성되었는지를 검사한다.
         assertThat(cashBalanceRepository.findByInvestmentAccount_Id(investmentId))
                 .extracting(InvestmentCashBalance::getCurrencyCode)
                 .containsExactlyInAnyOrder(CurrencyCode.KRW, CurrencyCode.USD);
 
-        // 테스트용 증권계좌를 개설하는 PersistInvestment는 registryRepository에 계좌번호를 저장하지 않기 떄문에,
-        // Long investmentId = investmentService.openInvestment(openInvestment(), user);를 통해 개설한 계좌 1건에 대해서만 RegistryRepository에 저장된다.
-        assertThat(registryRepository.count()).isEqualTo(1);
+        assertThat(investmentRepository.findById(firstId).orElseThrow().isPrimary()).isTrue();
+        assertThat(investmentRepository.findById(secondId).orElseThrow().isPrimary()).isFalse();
+        assertThat(investmentRepository.findById(investmentId).orElseThrow().isPrimary()).isFalse();
+        assertThat(registryRepository.count()).isEqualTo(3);
     }
 
     @Test
-    @DisplayName("INV-001: 열한 번째 투자계좌는 계좌번호를 발급하지 않고 거부한다")
-    void inv001_eleventhInvestmentIsRejectedWithoutIssuingNumber() {
+    @DisplayName("INV-001: 네 번째 투자계좌는 계좌번호를 발급하지 않고 거부한다")
+    void inv001_fourthInvestmentIsRejectedWithoutIssuingNumber() {
         User user = persistUser("investment-owner");
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 3; i++) {
             persistInvestment(user, investmentNumber(i), SecuritiesCompanyCode.KIWOOM);
         }
 
-        // 사용자가 개설할 수 있는 증권 계좌는 총 10개까지이기 때문에 열한번째 증권계좌 개설시에는 예외가 발생한다.
+        // 사용자가 개설할 수 있는 증권 계좌는 총 3개까지이기 때문에 네번째 증권계좌 개설시에는 예외가 발생한다.
         assertThatThrownBy(() -> investmentService.openInvestment(openInvestment(), user))
-                .hasMessage("증권 계좌는 최대 10개까지만 개설할 수 있습니다.");
+                .hasMessage("증권 계좌는 최대 3개까지만 개설할 수 있습니다.");
 
-        assertThat(investmentRepository.countByUser_Id(user.getId())).isEqualTo(10);
+        assertThat(investmentRepository.countByUser_Id(user.getId())).isEqualTo(3);
         assertThat(registryRepository.count()).isZero();
     }
 
