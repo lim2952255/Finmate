@@ -1078,6 +1078,54 @@
             min-height: 0;
         }
 
+        /* KIS 시황/공시 브리핑은 뉴스 탭과 같은 카드 구조를 쓰되 보라색 계열로 구분한다. */
+        .stock-news-toolbar.stock-disclosure-toolbar {
+            background:
+                    radial-gradient(circle at 88% 0%, rgba(251, 191, 36, 0.2), transparent 19rem),
+                    linear-gradient(135deg, #172554 0%, #3730a3 62%, #4f46e5 100%);
+        }
+
+        .stock-news-keyword-area.stock-disclosure-summary-area {
+            background: #f5f3ff;
+        }
+
+        .stock-disclosure-analysis-note {
+            display: flex;
+            min-width: 0;
+            flex-direction: column;
+            gap: 3px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .stock-disclosure-analysis-note strong {
+            color: #4338ca;
+            font-size: 13px;
+        }
+
+        .stock-news-item.stock-disclosure-item {
+            min-height: 175px;
+        }
+
+        .stock-news-item.stock-disclosure-item::before {
+            background: linear-gradient(90deg, #4f46e5, transparent 78%);
+        }
+
+        .stock-disclosure-item .stock-news-meta span {
+            color: #6366f1;
+            font-weight: 800;
+        }
+
+        .stock-disclosure-empty {
+            margin-top: 16px;
+        }
+
+        .stock-disclosure-empty p {
+            margin: 7px 0 0;
+            color: #64748b;
+            font-size: 13px;
+        }
+
         .stock-news-toolbar {
             position: relative;
             display: flex;

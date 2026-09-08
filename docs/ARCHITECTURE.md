@@ -132,6 +132,9 @@ WebSocket 메시지가 도착하면 현재 봉의 고가·저가·종가와 당�
   저장한다. 해외 개별 종목 연봉은 KIS 월봉을 연 단위로 집계한다.
 - `StockNewsService`: `{종목명} 시장정보`로 NAVER 뉴스 후보를 한 번 조회하고 설정으로 선택한 랭킹 전략
   하나의 Top 10을 종목별 MySQL 캐시에 저장한다.
+- `StockDisclosureService`: 국내 종목의 KIS 시황/공시 제목을 온디맨드로 조회하고 자료원 구분 없이 수집한다.
+  신규 제목은 기존 `FinBertNewsSentimentAnalyzer`로 분석한 뒤 개별 이력 행으로 저장하며 화면에는 최신
+  10건을 반환한다. KIS 또는 모델 장애 시 마지막 정상 저장 결과를 유지한다.
 - `MarketReportService`: KOSPI·KOSDAQ·NASDAQ·S&P 500·금리·환율 주제별 NAVER 뉴스 후보에 설정된
   랭킹 전략을 적용하고, 상위 10건을 주제별 MySQL 공유 캐시에 저장한다.
 - `NewsRankingStrategy`: 종목 뉴스와 시장 리포트가 함께 사용하는 뉴스 정렬·선별 규약이다. 운영 서비스는
@@ -153,6 +156,7 @@ JPA 엔티티, enum, 정책과 DTO를 포함한다. 잔액 변경, 자산 잠금
 - 종목 마스터 파일과 국내 업종코드 파일 다운로드
 - 종목 일·주·월·연 기간별 시세와 랭킹 REST API client
 - 국내 종목 상세의 현재가·재무비율·손익계산서·대차대조표·투자자 일별 수급 REST client
+- 국내 종목별 종합 시황/공시 제목 REST client
 - KIS WebSocket approval key, 연결·재연결, 구독 메시지와 payload 파싱
 
 Redis 접근 코드는 `service.stock.ranking.StockRankingCacheService`에 있어 엄격한 계층 분리는 아니다.

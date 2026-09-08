@@ -239,15 +239,14 @@
 
 .portfolio-allocation-body {
     display: grid;
-    grid-template-columns: minmax(230px, 0.8fr) minmax(320px, 1.2fr);
+    grid-template-columns: minmax(360px, 0.9fr) minmax(320px, 1.1fr);
     align-items: center;
     gap: 32px;
 }
 
 .portfolio-donut-wrap {
-    position: relative;
-    width: min(100%, 320px);
-    aspect-ratio: 1;
+    width: min(100%, 520px);
+    aspect-ratio: 5 / 3;
     margin: 0 auto;
 }
 
@@ -255,13 +254,12 @@
     display: block;
     width: 100%;
     height: 100%;
-    transform: rotate(-90deg);
 }
 
 .portfolio-donut-track,
 .portfolio-donut-slice {
     fill: none;
-    stroke-width: 18;
+    stroke-width: 20;
 }
 
 .portfolio-donut-track {
@@ -276,26 +274,44 @@
     opacity: 0.78;
 }
 
-.portfolio-donut-center {
-    position: absolute;
-    inset: 31%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+.portfolio-donut-labels {
     pointer-events: none;
 }
 
-.portfolio-donut-center strong {
-    color: var(--color-heading);
-    font-size: clamp(22px, 3vw, 31px);
+.portfolio-donut-labels polyline {
+    fill: none;
+    stroke: #94a3b8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1;
 }
 
-.portfolio-donut-center span {
-    margin-top: 4px;
-    color: #64748b;
-    font-size: 11px;
+.portfolio-donut-labels text {
+    fill: #334155;
+    font-size: 9px;
+    font-weight: 800;
+}
+
+.portfolio-donut-labels .portfolio-donut-label-value {
+    fill: #64748b;
+    font-size: 8px;
+    font-variant-numeric: tabular-nums;
+}
+
+.portfolio-donut-center {
+    text-anchor: middle;
+    pointer-events: none;
+}
+
+.portfolio-donut-center-value {
+    fill: var(--color-heading);
+    font-size: 19px;
+    font-weight: 850;
+}
+
+.portfolio-donut-center-caption {
+    fill: #64748b;
+    font-size: 8px;
     font-weight: 750;
 }
 
@@ -475,6 +491,12 @@
     display: flex;
     gap: 8px;
     margin: 0;
+}
+
+@media (max-width: 900px) {
+    .portfolio-allocation-body {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 720px) {

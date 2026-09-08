@@ -10,6 +10,13 @@ const SEPARATED = "SEPARATED";
 const DOMESTIC = "DOMESTIC";
 const OVERSEAS = "OVERSEAS";
 const ALLOCATION_COLORS = ["#315bea", "#0ea5e9", "#f59e0b", "#f97316", "#8b5cf6", "#ec4899", "#84cc16"];
+const DONUT_CENTER = { x: 150, y: 90 };
+const DONUT_RADIUS = 64;
+const DONUT_LABEL_RADIUS = 76;
+const DONUT_LABEL_LIMIT = 6;
+const DONUT_LABEL_MIN_Y = 18;
+const DONUT_LABEL_MAX_Y = 162;
+const DONUT_LABEL_GAP = 23;
 
 function toNumber(value) {
   if (value === null || value === undefined || value === "") return Number.NaN;
@@ -93,8 +100,52 @@ function isDomesticMarket(market) {
   return market === "KOSPI" || market === "KOSDAQ";
 }
 
+function distributeDonutLabels(labels) {
+  const positioned = [...labels].sort((left, right) => left.anchorY - right.anchorY);
+  positioned.forEach((label, index) => {
+    const previousY = positioned[index - 1]?.labelY ?? DONUT_LABEL_MIN_Y - DONUT_LABEL_GAP;
+    label.labelY = Math.max(DONUT_LABEL_MIN_Y, label.anchorY, previousY + DONUT_LABEL_GAP);
+  });
+
+  if (positioned.at(-1)?.labelY > DONUT_LABEL_MAX_Y) {
+    positioned[positioned.length - 1].labelY = DONUT_LABEL_MAX_Y;
+    for (let index = positioned.length - 2; index >= 0; index -= 1) {
+      positioned[index].labelY = Math.min(positioned[index].labelY, positioned[index + 1].labelY - DONUT_LABEL_GAP);
+    }
+  }
+
+  return positioned;
+}
+
+function formatDonutLabelName(name) {
+  return name.length > 7 ? `${name.slice(0, 6)}…` : name;
+}
+
+function buildDonutLabels(items) {
+  const visibleItems = new Set([...items]
+    .sort((left, right) => right.percentage - left.percentage)
+    .slice(0, DONUT_LABEL_LIMIT));
+  let offset = 0;
+  const labels = items.flatMap((item) => {
+    const middleAngle = -90 + (offset + item.percentage / 2) * 3.6;
+    offset += item.percentage;
+    if (!visibleItems.has(item)) return [];
+
+    const radians = middleAngle * Math.PI / 180;
+    const anchorX = DONUT_CENTER.x + Math.cos(radians) * DONUT_LABEL_RADIUS;
+    const anchorY = DONUT_CENTER.y + Math.sin(radians) * DONUT_LABEL_RADIUS;
+    return [{ ...item, anchorX, anchorY, side: anchorX >= DONUT_CENTER.x ? "right" : "left" }];
+  });
+
+  return [
+    ...distributeDonutLabels(labels.filter((label) => label.side === "left")),
+    ...distributeDonutLabels(labels.filter((label) => label.side === "right"))
+  ];
+}
+
 function AllocationDonut({ allocation, marketView, onMarketViewChange }) {
   if (!allocation.items.length && !allocation.unavailable) return null;
+  const donutLabels = buildDonutLabels(allocation.items);
 
   return (
     <section className="portfolio-allocation" aria-labelledby="portfolio-allocation-title">
@@ -115,24 +166,41 @@ function AllocationDonut({ allocation, marketView, onMarketViewChange }) {
       ) : (
         <div className="portfolio-allocation-body">
           <div className="portfolio-donut-wrap">
-            <svg className="portfolio-donut" viewBox="0 0 120 120" role="img" aria-label={allocation.items.map((item) => `${item.name} ${item.percentage.toFixed(2)}%`).join(", ")}>
-              <circle className="portfolio-donut-track" cx="60" cy="60" r="48" pathLength="100" />
+            <svg className="portfolio-donut" viewBox="0 0 300 180" role="img" aria-label={allocation.items.map((item) => `${item.name} ${item.percentage.toFixed(2)}%`).join(", ")}>
+              <circle className="portfolio-donut-track" cx={DONUT_CENTER.x} cy={DONUT_CENTER.y} r={DONUT_RADIUS} pathLength="100" />
               {allocation.items.map((item, index) => {
                 const currentOffset = allocation.items
                   .slice(0, index)
                   .reduce((sum, previous) => sum + previous.percentage, 0);
                 return (
-                  <circle key={`${item.kind}-${item.name}`} className="portfolio-donut-slice" cx="60" cy="60" r="48" pathLength="100"
-                    stroke={item.color} strokeDasharray={`${item.percentage} ${100 - item.percentage}`} strokeDashoffset={-currentOffset}>
+                  <circle key={`${item.kind}-${item.name}`} className="portfolio-donut-slice" cx={DONUT_CENTER.x} cy={DONUT_CENTER.y} r={DONUT_RADIUS} pathLength="100"
+                    stroke={item.color} strokeDasharray={`${item.percentage} ${100 - item.percentage}`} strokeDashoffset={-currentOffset}
+                    transform={`rotate(-90 ${DONUT_CENTER.x} ${DONUT_CENTER.y})`}>
                     <title>{item.name} {item.percentage.toFixed(2)}%</title>
                   </circle>
                 );
               })}
+              <g className="portfolio-donut-labels" aria-hidden="true">
+                {donutLabels.map((item) => {
+                  const right = item.side === "right";
+                  const elbowX = right ? 230 : 70;
+                  const lineEndX = right ? 292 : 8;
+                  const textX = right ? 288 : 12;
+                  return (
+                    <g key={`${item.kind}-${item.name}`}>
+                      <polyline points={`${item.anchorX},${item.anchorY} ${elbowX},${item.labelY} ${lineEndX},${item.labelY}`} />
+                      <circle cx={item.anchorX} cy={item.anchorY} r="2.2" fill={item.color} />
+                      <text x={textX} y={item.labelY - 4} textAnchor={right ? "end" : "start"}>{formatDonutLabelName(item.name)}</text>
+                      <text className="portfolio-donut-label-value" x={textX} y={item.labelY + 7} textAnchor={right ? "end" : "start"}>{item.percentage.toFixed(2)}%</text>
+                    </g>
+                  );
+                })}
+              </g>
+              <g className="portfolio-donut-center" aria-hidden="true">
+                <text className="portfolio-donut-center-value" x={DONUT_CENTER.x} y={DONUT_CENTER.y - 2}>100%</text>
+                <text className="portfolio-donut-center-caption" x={DONUT_CENTER.x} y={DONUT_CENTER.y + 13}>{marketView === DOMESTIC ? "국내 기준" : "해외 기준"}</text>
+              </g>
             </svg>
-            <div className="portfolio-donut-center" aria-hidden="true">
-              <strong>100%</strong>
-              <span>{marketView === DOMESTIC ? "국내 기준" : "해외 기준"}</span>
-            </div>
           </div>
           <ul className="portfolio-allocation-legend">
             {allocation.items.map((item) => (

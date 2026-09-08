@@ -39,6 +39,7 @@ WebSocket 체결값을 함께 사용하면 서로 다른 환경의 현재가·�
 | 국내 종목별 투자자매매동향(일별) | `/uapi/domestic-stock/v1/quotations/investor-trade-by-stock-daily` | `FHPTJ04160001` |
 | 국내 주식 공매도 일별추이 | `/uapi/domestic-stock/v1/quotations/daily-short-sale` | `FHPST04830000` |
 | 국내 주식 일별 대차거래 추이 | `/uapi/domestic-stock/v1/quotations/daily-loan-trans` | `HHPST074500C0` |
+| 국내 종목 종합 시황/공시 제목 | `/uapi/domestic-stock/v1/quotations/news-title` | `FHKST01011800` |
 | 해외 거래량 랭킹 | `/uapi/overseas-stock/v1/ranking/trade-vol` | `HHDFS76310010` |
 | 해외 거래대금 랭킹 | `/uapi/overseas-stock/v1/ranking/trade-pbmn` | `HHDFS76320010` |
 | 해외 업종별코드조회 | `/uapi/overseas-price/v1/quotations/industry-price` | `HHDFS76370100` |
@@ -72,6 +73,16 @@ API가 한 번에 반환하는 최근 일별 응답 중 DB 최신일 다음 날 
 거래일 다음 날부터 새로 확정된 거래일까지의 누락 구간만 추가한다. 화면은 최근 1개월을 기본 표시하며
 사용자가 3개월로 전환할 수 있다. 화면 조회 범위와 DB 보관 범위는 분리되어 있으며, 3개월이 지났다는
 이유로 기존 확정 행을 삭제하지 않는다.
+
+국내 종목 시황/공시는 KIS `종합 시황/공시(제목)` 응답을 자료원(`dorg`)으로 구분하지 않고 모두 사용한다.
+이 API는 시황과 공시를 함께 반환하며 현재 응답만으로 두 종류를 확실하게 구분하지 않으므로 화면도
+`시황/공시`로 표시한다.
+KIS가 제공하는 내용 조회용 일련번호와 제공업체 코드를 종목별 외부 식별자로 사용하고, 식별자가 없는
+예외 응답은 자료원·제목·작성시각의 결정적 fingerprint로 중복을 막는다. 신규 제목만
+`KR-FinBert-SC`로 분석하여 `호재·보통·악재` 감성을 함께 MySQL에 누적 저장한다. 이 값은 공시 본문이나
+실제 주가 영향을 분석한 결과가 아니라 제목 표현의 감성 분류다. 종목 상세 화면은 최신 10건만 표시하되
+오래된 저장 행을 삭제하지 않는다. 기본 갱신 간격은 10분이며 KIS 또는 모델 추론 실패 시 마지막 정상
+DB 데이터를 반환한다. 해외 종목은 이 국내 공시 API의 대상이 아니다.
 종목 랭킹 갱신은 `StockMarketSchedules`의 거래 가능 시간을 기준으로 판단한다. KOSPI/KOSDAQ은
 기존 KRX 운영시간을 유지하고, NASDAQ은 현지 시각 기준 프리마켓 04:00부터 정규장과
 애프터마켓을 거쳐 20:00까지 갱신한다. 정규장 또는 시간외 장 마감 직후 2분 이내에는 최종

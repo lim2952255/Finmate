@@ -14,7 +14,8 @@ const tabs = [
   { value: "quote", label: "시세" },
   { value: "financial", label: "재무" },
   { value: "investor", label: "투자자" },
-  { value: "news", label: "뉴스" }
+  { value: "news", label: "뉴스" },
+  { value: "disclosure", label: "시황/공시" }
 ];
 
 const MINUTE_INTERVALS = {
@@ -138,6 +139,72 @@ function NewsPanel({ stockId }) {
         })}
       </div>
       {!newsItems.length && <div className="empty-state"><strong>선별된 뉴스가 없습니다.</strong></div>}
+    </div>
+  );
+}
+
+// KIS 제목 데이터는 원문 링크가 없는 빠른 브리핑으로, NAVER 뉴스 탭과 별도로 보여준다.
+function DisclosurePanel({ stockId }) {
+  const [state, setState] = useState({ loading: true, data: null, error: null });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    // 서버가 10분 신선도와 중복 저장을 관리하므로 화면은 종목별 최신 목록만 요청한다.
+    getJson(`/api/stocks/${stockId}/disclosures`, { signal: controller.signal })
+      .then((data) => setState({ loading: false, data, error: null }))
+      .catch((error) => {
+        if (error.name !== "AbortError") setState({ loading: false, data: null, error });
+      });
+    return () => controller.abort();
+  }, [stockId]);
+
+  if (state.loading) return <PageLoading message="최근 시황/공시와 AI 분석 결과를 불러오고 있습니다." />;
+  if (state.error) return <p className="overview-error" role="alert">{state.error.message}</p>;
+
+  const disclosureItems = state.data?.items || [];
+  // API도 10건을 반환하지만 화면 계약을 명확히 유지하기 위해 한 번 더 제한한다.
+  const recentItems = disclosureItems.slice(0, 10);
+  const sentimentCounts = countNewsSentiments(recentItems);
+
+  return (
+    <div className="stock-news-panel stock-disclosure-panel">
+      <div className="stock-news-toolbar stock-disclosure-toolbar">
+        <div className="stock-news-heading">
+          <span className="stock-news-heading-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2h9l4 4v16H6z" /><path d="M14 2v5h5M9 12h6M9 16h6" /></svg>
+          </span>
+          <div><span className="stock-news-kicker">KIS MARKET &amp; DISCLOSURE</span><h2>최근 시황/공시</h2><p>KIS에서 수집한 종목 관련 시황과 공시 제목을 FinBERT로 분석한 결과입니다.</p></div>
+        </div>
+        {state.data?.updatedAt && <div className="stock-news-cache-info"><div className="detail-updated-at">업데이트 {formatPublishedAt(state.data.updatedAt)}</div></div>}
+      </div>
+      <div className="stock-news-keyword-area stock-disclosure-summary-area">
+        <div className="stock-disclosure-analysis-note"><strong>AI 제목 분석</strong><span>시황/공시 본문이 아닌 제목의 표현을 기준으로 분류한 참고 정보입니다.</span></div>
+        <div className="stock-news-sentiment-summary" aria-label="시황/공시 AI 제목 분석 요약">
+          <span className="stock-news-summary-item stock-news-summary-item--positive">호재: <strong>{sentimentCounts.POSITIVE}개</strong></span>
+          <span className="stock-news-summary-item stock-news-summary-item--neutral">보통: <strong>{sentimentCounts.NEUTRAL}개</strong></span>
+          <span className="stock-news-summary-item stock-news-summary-item--negative">악재: <strong>{sentimentCounts.NEGATIVE}개</strong></span>
+        </div>
+      </div>
+      {recentItems.length > 0 ? (
+        <div className="stock-news-list stock-disclosure-list">
+          {recentItems.map((item, index) => {
+            const sentimentLabel = NEWS_SENTIMENT_LABELS[item.sentiment] || "보통";
+            return <article className="stock-news-item stock-disclosure-item" key={item.id ?? `${item.title}-${item.disclosedAt}`}>
+              <div className="stock-news-item-top">
+                <span className="stock-news-source">{item.source || "KIS"}</span>
+                <div className="stock-news-labels">
+                  <span className={`stock-news-sentiment stock-news-sentiment--${item.sentiment?.toLowerCase() || "neutral"}`}>
+                    {sentimentLabel}
+                  </span>
+                  <span className="stock-news-rank">{String(index + 1).padStart(2, "0")}</span>
+                </div>
+              </div>
+              <h3>{item.title}</h3>
+              <div className="stock-news-meta"><time dateTime={item.disclosedAt}>{formatPublishedAt(item.disclosedAt)}</time><span>AI 제목 분석</span></div>
+            </article>;
+          })}
+        </div>
+      ) : <div className="empty-state stock-disclosure-empty"><strong>표시할 시황/공시가 없습니다.</strong><p>새로운 항목이 수집되면 최근 10건을 보여드립니다.</p></div>}
     </div>
   );
 }
@@ -420,6 +487,7 @@ export default function StockDetailPage() {
                 {tab === "financial" && <FinancialPanel detail={data} onConcept={openConcept} />}
                 {tab === "investor" && <InvestorPanel detail={data} onConcept={openConcept} />}
                 {tab === "news" && <NewsPanel stockId={stockId} />}
+                {tab === "disclosure" && <DisclosurePanel stockId={stockId} />}
               </div>
               <ChatPanel stockId={stockId} currentUserId={data.currentUserId} stockName={data.nameKo} />
               <section className="stock-action-section"><div>{data.tradingAvailable && !data.realtimePriceAvailable ? <span className="stock-action-button primary disabled" aria-disabled="true">실시간 시세 수신 대기</span> : <Link className="stock-action-button primary" to={`/investments/stocks/order/${stockId}`}>{data.tradingAvailable ? "주식 매수 / 매도" : "예약 주문"}</Link>}<p className="stock-action-note">{data.tradingAvailable && !data.realtimePriceAvailable ? "실시간 주가가 수신되면 주문할 수 있습니다." : data.tradingAvailable ? `거래 가능 시간: ${data.tradingTimeDescription}` : "장 마감 후에는 예약 주문을 등록할 수 있습니다."}</p></div><div className="stock-action-links"><Link className="stock-action-button" to="/investments/stocks/search">종목 검색</Link><Link className="stock-action-button" to="/investments/stocks/watchlist">관심 종목</Link><Link className="stock-action-button" to="/investments">투자 홈</Link></div></section>

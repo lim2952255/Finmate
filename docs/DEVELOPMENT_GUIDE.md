@@ -69,6 +69,9 @@ NEWS_SENTIMENT_MODEL_PATH=models/kr-finbert-sentiment/model.onnx
 NEWS_SENTIMENT_TOKENIZER_PATH=models/kr-finbert-sentiment/tokenizer.json
 NEWS_SENTIMENT_MAX_TOKEN_LENGTH=256
 NEWS_SENTIMENT_DIRECTIONAL_THRESHOLD=0.65
+
+# 국내 종목 KIS 공시 제목 갱신 간격(분)
+DISCLOSURE_REFRESH_INTERVAL_MINUTES=10
 ```
 
 현재 `.env`에 추가 KIS 운영·모의 계좌 관련 이름이 존재할 수 있으나 `application.properties`와 `KisProperties`가 직접 읽는 것은 위 공통 키들이다. `KIS_ACCESS_TOKEN`도 현재 코드에서 직접 주입하지 않는다.
@@ -137,6 +140,11 @@ MySQL에 저장되고 `NAVER_NEWS_CACHE_TTL_HOURS`가 지난 뒤 다음 조회�
 각각 화면의 `호재`, `보통`, `악재`로 표시한다. 긍정 또는 부정 예측의 최대 확률이
 `NEWS_SENTIMENT_DIRECTIONAL_THRESHOLD`보다 낮으면 보수적으로 `보통`으로 처리한다.
 기존 캐시에 감성 결과가 없으면 TTL과 관계없이 해당 종목 또는 시장 주제 뉴스를 한 번 다시 조회해 새 형식으로 저장한다.
+
+종목 상세 시황/공시 탭은 국내 종목에 한해 KIS `종합 시황/공시(제목)` API를 사용한다. 응답의 자료원으로
+시황과 공시를 임의 구분하지 않고 신규 항목을 모두 기존 KR-FinBert-SC 모델에 제목 단위로 전달해 결과를
+개별 DB 행에 저장한다. 기본 갱신 간격은 `DISCLOSURE_REFRESH_INTERVAL_MINUTES`이며 화면에는 최근 10건을
+표시한다. 본문이 아닌 제목만 분석하므로 화면도 이를 `AI 제목 분석`으로 명시한다.
 
 이 모델 저장소에는 명시적인 라이선스가 없으므로 공개 또는 상업 운영에 배포하기 전 모델 제작자에게 사용 조건을
 확인해야 한다. Docker 로컬 구성은 `models/kr-finbert-sentiment`를 자동 마운트한다. EC2에서는 다음처럼 운영
