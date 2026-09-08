@@ -49,7 +49,7 @@ FinMate는 일반 은행 계좌와 모의 투자 계좌를 한 애플리케이�
 
 ### 사용자와 인증
 
-`AuthApiController`와 `UserService`가 로컬 회원가입을 처리하고, Spring Security가 폼 로그인과 Google·Kakao·Naver 로그인을 함께 처리한다. 로컬 로그인은 `FinMateUserDetailsService`와 `BCryptPasswordEncoder`로 아이디·비밀번호를 검증한다. Google·Kakao는 `FinMateOidcUserService`가 검증된 OIDC `sub`를 사용하고, Naver는 `FinMateOAuth2UserService`가 사용자 정보 응답의 `response.id`를 사용해 `OAuthAccount`의 로컬 `User`와 연결한다. 최초 소셜 로그인에는 비밀번호가 없는 `User`를 생성하며 공급자 비밀번호·액세스 토큰·리프레시 토큰은 DB에 저장하지 않는다.
+`AuthApiController`와 `UserService`가 비밀번호 확인을 포함한 로컬 회원가입과 이름·전화번호·이메일 기반의 아이디 찾기를 처리하고, `UserAccountApiController`가 로그인된 로컬 사용자의 현재 비밀번호를 다시 확인한 뒤 비밀번호를 변경한다. Spring Security가 폼 로그인과 Google·Kakao·Naver 로그인을 함께 처리한다. 로컬 로그인은 `FinMateUserDetailsService`와 `BCryptPasswordEncoder`로 아이디·비밀번호를 검증한다. Google·Kakao는 `FinMateOidcUserService`가 검증된 OIDC `sub`를 사용하고, Naver는 `FinMateOAuth2UserService`가 사용자 정보 응답의 `response.id`를 사용해 `OAuthAccount`의 로컬 `User`와 연결한다. 최초 소셜 로그인에는 비밀번호가 없는 `User`를 생성하며 공급자 비밀번호·액세스 토큰·리프레시 토큰은 DB에 저장하지 않는다.
 
 두 로그인 방식 모두 인증 결과를 공통 `FinMateAuthenticatedPrincipal`로 다루고 `SecurityContext`를 서버 HTTP Session에 보존한다. 따라서 계좌와 투자 자산의 소유권 기준은 로그인 방식과 관계없이 기존 `User.id`다. 이메일이 같다는 이유로 기존 로컬 계정과 자동 연결하지 않으며, 명시적인 계정 연결 기능은 현재 구현되지 않았다.
 

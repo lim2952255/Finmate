@@ -41,9 +41,11 @@ public class User {
     private String username;
 
     @Pattern(regexp = "01[0-9]-[0-9]{4}-[0-9]{4}$", message = "전화번호 형식은 010-0000-0000형식입니다.")
+    @Column(unique = true)
     private String telephone;
 
     @Pattern(regexp = "^[\\w.%+-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$", message = "올바른 이메일 형식을 입력해주세요.")
+    @Column(unique = true)
     private String email;
 
     @Pattern(regexp = "^[a-zA-Z0-9]{8,20}",message = "아이디에는 숫자,영문자만 사용 가능하며 최소 길이는 8, 최대 길이는 20이어야 합니다.")

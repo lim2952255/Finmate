@@ -43,7 +43,11 @@ public abstract class FinancialIntegrationTestSupport extends MySqlIntegrationTe
             int sequence = SEQUENCE.incrementAndGet();
             User user = new User();
             user.setUsername(name);
-            user.setTelephone("010-0000-0000");
+            user.setTelephone(String.format(
+                    "010-%04d-%04d",
+                    (sequence / 10_000) % 10_000,
+                    sequence % 10_000
+            ));
             user.setEmail("integration" + sequence + "@finmate.test");
             user.setUserId(String.format("testuser%04d", sequence));
             user.setPassword("password1!");

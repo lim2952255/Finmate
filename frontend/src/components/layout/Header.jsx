@@ -66,6 +66,9 @@ function AuthenticatedActions({ session }) {
         />
         <button className="button-quiet" type="submit">로그아웃</button>
       </form>
+      {session.passwordChangeAvailable && (
+        <Link className="button-quiet" to="/settings/password">비밀번호 변경</Link>
+      )}
       <Link className="header-cta" to="/accounts">마이페이지</Link>
     </div>
   );

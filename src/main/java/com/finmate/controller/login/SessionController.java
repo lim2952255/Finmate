@@ -29,17 +29,23 @@ public class SessionController {
 
         // 비로그인 사용자는 principal이 null이다.
         if (principal == null) {
-            return new SessionResponse(false, null, csrf);
+            return new SessionResponse(false, null, false, csrf);
         }
 
-        // 로그인 사용자는 Header에 표시할 이름까지 반환한다.
-        return new SessionResponse(true, principal.getDisplayName(), csrf);
+        // 로그인 아이디가 있는 로컬 계정에만 비밀번호 변경 화면을 노출한다.
+        return new SessionResponse(
+                true,
+                principal.getDisplayName(),
+                principal.getUserId() != null,
+                csrf
+        );
     }
 
     // 세션 로그인 정보를 리턴한다.
     public record SessionResponse(
             boolean authenticated,
             String displayName,
+            boolean passwordChangeAvailable, // 로컬 사용자 계정만 패스워드 변경이 가능하다. OAuth 사용자는 패스워드 변경이 불가능하다.
             CsrfResponse csrf
     ) {
     }

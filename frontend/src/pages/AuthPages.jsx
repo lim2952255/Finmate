@@ -14,6 +14,17 @@ function LogoMark() {
   return <span className="logo-mark" aria-hidden="true"><span /><span /><span /></span>;
 }
 
+function formatTelephoneInput(value) {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
+
+function formatTelephone(event) {
+  event.currentTarget.value = formatTelephoneInput(event.currentTarget.value);
+}
+
 // 로그인과 회원가입 왼쪽 영역은 문구만 바꾸고 동일한 브랜드 레이아웃을 재사용한다.
 function AuthBrand({ signup = false }) {
   const highlights = signup
@@ -107,6 +118,7 @@ export function LoginPage() {
               <div className="field-group"><label htmlFor="login-password">비밀번호</label><input id="login-password" name="password" type="password" autoComplete="current-password" placeholder="비밀번호를 입력하세요" required /></div>
               <button className="auth-submit" type="submit" disabled={!csrf}>로그인</button>
             </form>
+            <p className="auth-signup"><Link to="/find-id">아이디 찾기</Link></p>
             <SocialLoginList options={options} redirect={redirect} />
             <p className="auth-signup">아직 계정이 없나요? <Link to="/signup">회원가입</Link></p>
           </div>
@@ -120,15 +132,25 @@ export function SignupPage() {
   useDocumentTitle("회원가입 | FinMate");
   const navigate = useNavigate();
   const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const submit = async (event) => {
     event.preventDefault();
+    setError(null);
     const form = Object.fromEntries(new FormData(event.currentTarget));
+    if (form.password !== form.passwordConfirmation) {
+      setError(new Error("비밀번호와 비밀번호 확인이 일치하지 않습니다."));
+      return;
+    }
+
+    setSubmitting(true);
     try {
       await postJson("/api/auth/signup", form);
       navigate("/login", { replace: true });
     } catch (requestError) {
       setError(requestError);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -142,13 +164,61 @@ export function SignupPage() {
             {error && <p className="alert alert-error" role="alert">{error.message}</p>}
             <form className="auth-form" onSubmit={submit}>
               <div className="field-group"><label htmlFor="signup-name">이름</label><input id="signup-name" name="username" autoComplete="name" placeholder="이름을 입력하세요" required /></div>
-              <div className="field-group"><label htmlFor="signup-telephone">전화번호</label><input id="signup-telephone" name="telephone" type="tel" autoComplete="tel" placeholder="010-0000-0000" required /></div>
+              <div className="field-group"><label htmlFor="signup-telephone">전화번호</label><input id="signup-telephone" name="telephone" type="tel" inputMode="numeric" autoComplete="tel" placeholder="010-0000-0000" maxLength={13} onInput={formatTelephone} required /></div>
               <div className="field-group"><label htmlFor="signup-email">이메일</label><input id="signup-email" name="email" type="email" autoComplete="email" placeholder="example@finmate.com" required /></div>
               <div className="field-group"><label htmlFor="signup-user-id">아이디</label><input id="signup-user-id" name="userId" autoComplete="username" placeholder="로그인 아이디를 입력하세요" required /></div>
-              <div className="field-group"><label htmlFor="signup-password">비밀번호</label><input id="signup-password" name="password" type="password" autoComplete="new-password" placeholder="비밀번호를 입력하세요" required /></div>
-              <button className="auth-submit" type="submit">가입하기</button>
+              <div className="field-group"><label htmlFor="signup-password">비밀번호</label><input id="signup-password" name="password" type="password" autoComplete="new-password" placeholder="영문, 숫자, 특수문자 포함 10자 이상" required /></div>
+              <div className="field-group"><label htmlFor="signup-password-confirmation">비밀번호 확인</label><input id="signup-password-confirmation" name="passwordConfirmation" type="password" autoComplete="new-password" placeholder="비밀번호를 한 번 더 입력하세요" required /></div>
+              <button className="auth-submit" type="submit" disabled={submitting}>{submitting ? "가입 중..." : "가입하기"}</button>
             </form>
             <p className="auth-signup">이미 계정이 있나요? <Link to="/login">로그인</Link></p>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+export function FindIdPage() {
+  useDocumentTitle("아이디 찾기 | FinMate");
+  const [error, setError] = useState(null);
+  const [userId, setUserId] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setError(null);
+    setUserId(null);
+    setSubmitting(true);
+
+    try {
+      const form = Object.fromEntries(new FormData(event.currentTarget));
+      const response = await postJson("/api/auth/find-id", form);
+      // 서버에서 세 가입 정보가 모두 일치할 때만 반환한 로컬 로그인 아이디를 표시한다.
+      setUserId(response.userId);
+    } catch (requestError) {
+      setError(requestError);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="page auth-page">
+      <main className="main auth-main">
+        <section className="auth-card">
+          <AuthBrand />
+          <div className="auth-form-panel">
+            <div className="auth-heading"><span className="eyebrow">FIND ACCOUNT</span><h2>아이디 찾기</h2><p>일반 회원가입 시 입력한 정보를 확인해 주세요.</p></div>
+            {error && <p className="alert alert-error" role="alert">{error.message}</p>}
+            {userId && <p className="alert alert-success" role="status">회원님의 아이디는 <strong>{userId}</strong>입니다.</p>}
+            <form className="auth-form" onSubmit={submit}>
+              <div className="field-group"><label htmlFor="find-id-name">이름</label><input id="find-id-name" name="username" autoComplete="name" placeholder="이름을 입력하세요" required /></div>
+              <div className="field-group"><label htmlFor="find-id-telephone">전화번호</label><input id="find-id-telephone" name="telephone" type="tel" inputMode="numeric" autoComplete="tel" placeholder="010-0000-0000" maxLength={13} onInput={formatTelephone} required /></div>
+              <div className="field-group"><label htmlFor="find-id-email">이메일</label><input id="find-id-email" name="email" type="email" autoComplete="email" placeholder="example@finmate.com" required /></div>
+              <button className="auth-submit" type="submit" disabled={submitting}>{submitting ? "확인 중..." : "아이디 찾기"}</button>
+            </form>
+            <p className="auth-signup"><Link to="/login">로그인으로 돌아가기</Link></p>
           </div>
         </section>
       </main>

@@ -74,7 +74,11 @@ abstract class StockSettlementIntegrationTestSupport extends MySqlIntegrationTes
             int sequence = SEQUENCE.incrementAndGet();
             User user = new User();
             user.setUsername("stock-settlement-" + sequence);
-            user.setTelephone("010-0000-0000");
+            user.setTelephone(String.format(
+                    "011-%04d-%04d",
+                    (sequence / 10_000) % 10_000,
+                    sequence % 10_000
+            ));
             user.setEmail("stock-settlement-" + sequence + "@finmate.test");
             user.setUserId(String.format("settle%08d", sequence));
             user.setPassword("password1!");
