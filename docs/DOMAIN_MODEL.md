@@ -28,6 +28,8 @@ erDiagram
     Stock ||--o{ DomesticStockLoanTransactionDaily : has
     Stock ||--o| OverseasStockMetadata : has
     Stock ||--o| StockNewsCache : caches
+    Stock ||--o{ StockDisclosure : announces
+    Stock ||--o| StockDisclosureRefreshState : refreshes_disclosures
     Stock ||--o{ StockChatMessage : discusses
     User ||--o{ StockChatMessage : writes
     Stock ||--o{ StockPriceLine : marks
@@ -150,6 +152,15 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
   `NEGATIVE` 감성값이 포함되며 화면에서는 각각 호재, 보통, 악재로 표시한다.
 - 두 캐시는 NAVER 뉴스 원문을 대체하는 기사 저장소가 아니라 동일 검색 결과를 기본 6시간 동안 재사용하기
   위한 응답 캐시이며, 화면에서는 제목·요약·출처 링크를 제공하고 원문은 언론사 페이지로 연결한다.
+
+### 종목 시황/공시
+
+- `StockDisclosure`는 국내 종목별 KIS 시황/공시 제목 한 건을 개별 행으로 누적 저장한다.
+- `(stock_id, external_key)`가 unique이며 KIS 제공업체 코드와 내용 일련번호를 우선 식별자로 사용한다.
+- 자료원, 제목, 작성시각과 KR-FinBert-SC의 `POSITIVE`, `NEUTRAL`, `NEGATIVE` 분석 결과를 함께 보관한다.
+- `StockDisclosureRefreshState`는 항목이 0건인 정상 응답도 갱신 성공으로 기록하여 불필요한 반복 호출을 막는다.
+- 화면 조회는 최신 10건으로 제한하지만 이 제한 때문에 과거 저장 행을 삭제하지 않는다.
+- 감성값은 시황/공시 제목의 언어적 방향을 나타내며 본문 분석, 가격 예측 또는 매매 의견이 아니다.
 
 ### StockConceptCard
 
