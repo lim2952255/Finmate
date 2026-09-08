@@ -45,8 +45,9 @@ JPA 코드에는 위 관계의 자식→부모 참조가 주로 구현되어 있
 
 서비스 내부의 사용자 신원과 금융 자산 소유권 기준을 저장한다.
 
-- 주요 필드: `username`, `telephone`, `email`, unique `userId`, 암호화된 `password`
-- 로컬 가입자는 `userId`와 BCrypt `password`를 사용한다.
+- 주요 필드: `username`, unique `telephone`, `email`, `userId`, 암호화된 `password`
+- 로컬 가입자는 비밀번호와 비밀번호 확인이 일치해야 하며, `userId`와 BCrypt `password`를 사용한다.
+- 로그인된 로컬 사용자는 현재 비밀번호 검증 후에만 새로운 BCrypt 비밀번호로 변경할 수 있다.
 - 소셜 로그인 전용 사용자는 `userId`와 `password`가 없을 수 있다.
 - `simulationFundingGranted`: 모의 시작 자금 지급 여부. 계좌를 삭제해도 사용자에 남아 재지급을 막는다.
 - `Account`와 `OneToMany` 양방향 관계

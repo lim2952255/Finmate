@@ -1,5 +1,7 @@
 package com.finmate.controller.login;
 
+import com.finmate.domain.user.dto.FindUserIdRequest;
+import com.finmate.domain.user.dto.FindUserIdResponse;
 import com.finmate.domain.user.dto.SignupRequest;
 import com.finmate.global.security.OAuth2RedirectSessionStore;
 import com.finmate.service.user.UserService;
@@ -60,10 +62,18 @@ public class AuthApiController {
         response.sendRedirect(request.getContextPath() + "/oauth2/authorization/" + registrationId);
     }
 
+	// 회원가입 요청 API
     @PostMapping("/signup")
     public ResponseEntity<Void> signup(@Valid @RequestBody SignupRequest request) {
         userService.save(request);
         return ResponseEntity.noContent().build();
+    }
+
+	// 사용자 아이디 찾기 API
+    @PostMapping("/find-id")
+    public FindUserIdResponse findUserId(@Valid @RequestBody FindUserIdRequest request) {
+        // OAuth 전용 사용자는 로그인 아이디가 없으므로 서비스에서 로컬 계정만 조회한다.
+        return new FindUserIdResponse(userService.findUserId(request));
     }
 
     private boolean isOAuthEnabled(String registrationId) {

@@ -378,6 +378,115 @@
 }
 
 .operation-page { max-width: none; }
+.password-change-page {
+    display: grid;
+    width: min(100%, 1080px);
+    min-height: calc(100vh - 68px);
+    margin: 0 auto;
+    padding-block: clamp(32px, 6vh, 72px);
+    place-items: center;
+}
+.password-change-card {
+    display: grid;
+    grid-template-columns: minmax(300px, .82fr) minmax(420px, 1.18fr);
+    width: 100%;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: 24px;
+    box-shadow: 0 24px 60px rgba(30, 52, 90, .12);
+}
+.password-change-intro {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 570px;
+    padding: 48px;
+    color: #fff;
+    background:
+            radial-gradient(circle at 15% 8%, rgba(94, 220, 201, .28), transparent 16rem),
+            linear-gradient(145deg, #132142 0%, #243f82 100%);
+}
+.password-change-icon {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    margin-bottom: 28px;
+    color: #fff;
+    background: rgba(255, 255, 255, .14);
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 14px;
+    font-size: 22px;
+    font-weight: 900;
+    place-items: center;
+}
+.password-change-intro .eyebrow { color: #91e5dc; }
+.password-change-intro h1 {
+    margin: 12px 0 16px;
+    color: #fff;
+    font-size: clamp(32px, 4vw, 42px);
+    line-height: 1.18;
+}
+.password-change-intro p {
+    margin: 0;
+    color: rgba(235, 242, 255, .78);
+    line-height: 1.7;
+}
+.password-change-intro ul {
+    display: grid;
+    gap: 10px;
+    margin: 28px 0 0;
+    padding: 0;
+    color: rgba(244, 248, 255, .9);
+    font-size: 14px;
+    font-weight: 750;
+    list-style: none;
+}
+.password-change-intro li::before {
+    margin-right: 9px;
+    color: #91e5dc;
+    content: "✓";
+}
+.password-change-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(36px, 5vw, 58px);
+}
+.password-change-panel .page-heading { margin-bottom: 22px; }
+.password-change-panel .page-heading h2 {
+    margin: 6px 0 7px;
+    font-size: 31px;
+}
+.password-change-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 17px;
+    width: 100%;
+}
+.password-change-form label { display: grid; gap: 7px; }
+.password-change-form input {
+    width: 100%;
+    max-width: none;
+    min-height: 48px;
+    padding: 11px 14px;
+}
+.password-change-form small {
+    color: var(--color-muted);
+    font-size: 12px;
+    font-weight: 700;
+}
+.password-change-form button {
+    width: 100%;
+    max-width: none;
+    min-height: 48px;
+    margin-top: 3px;
+}
+.password-change-back {
+    align-self: center;
+    margin-top: 20px;
+    font-size: 14px;
+}
 .operation-form,
 .limit-workspace { display: grid; gap: 18px; padding: 28px; background: #fff; border: 1px solid var(--color-border); border-radius: 20px; box-shadow: var(--shadow-soft); }
 .operation-form { max-width: none !important; }
@@ -402,3 +511,13 @@
 .limit-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }.limit-summary div { display: grid; gap: 5px; padding: 15px; background: #fff; border: 1px solid #e4eaf4; border-radius: 12px; }.limit-summary span { color: var(--color-muted); font-size: 13px; }.limit-summary strong { color: var(--color-heading); font-size: 18px; }
 
 @media (max-width: 640px) { .operation-form,.limit-workspace { padding: 18px; }.limit-summary,.exchange-fields { grid-template-columns: 1fr; } }
+
+@media (max-width: 820px) {
+    .password-change-page { padding-block: 24px; }
+    .password-change-card { grid-template-columns: 1fr; }
+    .password-change-intro { min-height: auto; padding: 34px 28px; }
+    .password-change-icon { margin-bottom: 20px; }
+    .password-change-intro h1 { font-size: 32px; }
+    .password-change-intro ul { display: none; }
+    .password-change-panel { padding: 34px 28px; }
+}

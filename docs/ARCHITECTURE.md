@@ -59,7 +59,8 @@ JSON 요청으로 받고 기존 Service의 검증과 트랜잭션을 재사용�
 - `StockPriceLineController`: 로그인 사용자·종목별 차트 가로선 조회, 생성, 개별 삭제와 전체 초기화
 - `StockConceptController`: 종목 ID와 enum 개념 코드를 받아 종목 상세의 개념정보 JSON 반환
 - `TradingApiController`: 주문 화면 데이터, 일반·예약 주문 접수와 취소
-- `AuthApiController`: 회원가입과 활성화된 소셜 로그인 공급자 정보를 JSON으로 반환
+- `AuthApiController`: 회원가입, 로컬 계정 아이디 찾기와 활성화된 소셜 로그인 공급자 정보를 JSON으로 반환
+- `UserAccountApiController`: 인증된 로컬 사용자의 현재 비밀번호를 확인한 뒤 새 BCrypt 비밀번호로 변경
 
 Spring Security의 `SecurityFilterChain`이 폼 로그인·Google/Kakao OIDC·Naver OAuth2 로그인·로그아웃과 URL 인가를 처리한다. 로컬 로그인은 `FinMateUserDetailsService`와 `DaoAuthenticationProvider`를 사용한다. `FinMateOidcUserService`는 Google·Kakao OIDC 사용자를, `FinMateOAuth2UserService`는 Naver OAuth2 사용자를 로컬 `User`에 매핑한다. 보호 컨트롤러는 로그인 방식과 무관하게 `@AuthenticationPrincipal FinMateAuthenticatedPrincipal`에서 로컬 사용자 ID를 받아 서비스 계층의 소유권 검증에 전달한다.
 

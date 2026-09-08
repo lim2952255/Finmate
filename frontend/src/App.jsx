@@ -4,7 +4,7 @@ import AccountHomePage from "./pages/AccountHomePage.jsx";
 import AccountListPage from "./pages/AccountListPage.jsx";
 import AccountOpenPage from "./pages/AccountOpenPage.jsx";
 import AccountOperationPage from "./pages/AccountOperationPage.jsx";
-import { LoginPage, SignupPage } from "./pages/AuthPages.jsx";
+import { FindIdPage, LoginPage, SignupPage } from "./pages/AuthPages.jsx";
 import HomePage from "./pages/HomePage.jsx";
 import InvestmentLearningPage from "./pages/InvestmentLearningPage.jsx";
 import InvestmentHomePage from "./pages/InvestmentHomePage.jsx";
@@ -15,6 +15,7 @@ import StockSearchPage from "./pages/StockSearchPage.jsx";
 import WatchlistPage from "./pages/WatchlistPage.jsx";
 import TransactionHistoryPage from "./pages/TransactionHistoryPage.jsx";
 import PortfolioPage from "./pages/PortfolioPage.jsx";
+import PasswordChangePage from "./pages/PasswordChangePage.jsx";
 import { MarketDataDetailPage, MarketDataIndexPage } from "./pages/MarketDataPage.jsx";
 import StockDetailPage from "./pages/StockDetailPage.jsx";
 import { OrderPage, TradingHistoryPage } from "./pages/TradingPages.jsx";
@@ -27,9 +28,11 @@ export default function App() {
       <Route path="/home" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+      <Route path="/find-id" element={<FindIdPage />} />
 
       {/* 이 그룹 안의 화면은 ProtectedRoute의 세션 검사를 통과해야 렌더링된다. */}
       <Route element={<ProtectedRoute />}>
+        <Route path="/settings/password" element={<PasswordChangePage />} />
         <Route path="/investment-learning" element={<InvestmentLearningPage />} />
         <Route path="/accounts" element={<AccountHomePage />} />
         <Route path="/accounts/list" element={<AccountListPage />} />
